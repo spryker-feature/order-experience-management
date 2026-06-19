@@ -1,0 +1,45 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-footer',
+} %}
+
+{% define data = {
+    review: required,
+    schedule: required,
+    currencyIsoCode: required,
+    confirmModalTriggerClassName: required,
+} %}
+
+{% block extraClass %} box {% endblock %}
+
+{% block body %}
+    <div class="grid grid--justify grid--middle">
+        {% block data %}
+            <div class="col col--expand">
+                <small class="text-muted">
+                    {{ 'recurring_orders.review.footer.summary' | trans({
+                        '%removed%': data.review.removedItemCount,
+                    }) }}
+                </small>
+            </div>
+        {% endblock %}
+        {% block actions %}
+            <div class="col">
+                {% set backButtonClassName = 'button button--hollow' %}
+                {% set acceptButtonClassName = 'button spacing-left' %}
+                {% block backButton %}
+                    <a href="{{ url('recurring-orders/detail', {uuid: data.schedule.uuid}) }}" class="{{ backButtonClassName }}" data-qa="recurring-order-review-back-link">
+                        {{ 'recurring_orders.review.back_to_detail' | trans }}
+                    </a>
+                {% endblock %}
+
+                {% block acceptButton %}
+                    <button type="button" class="{{ acceptButtonClassName }} {{ data.confirmModalTriggerClassName }}" data-qa="recurring-order-review-accept-cta">
+                        {{ 'recurring_orders.review.cta.accept_and_place' | trans }}
+                    </button>
+                {% endblock %}
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}

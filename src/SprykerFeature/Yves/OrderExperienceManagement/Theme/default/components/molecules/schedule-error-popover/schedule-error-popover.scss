@@ -1,0 +1,16 @@
+@use 'sass:map';
+
+@mixin subscription-schedule-error-popover($name: '.schedule-error-popover') {
+    #{$name} {
+        &__button {
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            color: map.get($setting-color-actions, 'warning');
+        }
+
+        @content;
+    }
+}
+
+@include subscription-schedule-error-popover();

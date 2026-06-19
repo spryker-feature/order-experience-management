@@ -1,0 +1,62 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'schedule-next-execution',
+} %}
+
+{% define data = {
+    schedule: required,
+    skipUrl: required,
+    statusActive: '',
+    statusPaused: '',
+    statusReviewRequired: '',
+    skipModalTriggerClassName: required,
+    resumeModalTriggerClassName: required,
+} %}
+
+{% block extraClass %} box {% endblock %}
+
+{% set status = data.schedule.status %}
+{% set priceMode = data.schedule.priceMode %}
+
+{% block component %}
+    {% if status != data.statusPaused %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    {% set headingLineClassName = '' %}
+    {% block headingLine %}
+        <p class="{{ headingLineClassName }}">{{ 'recurring_orders.detail.next_execution.title' | trans }}</p>
+    {% endblock %}
+
+    {% set triggerInfoWrapperClassName = 'grid grid--gap' %}
+    {% set triggerDateColClassName = 'col col--expand' %}
+    {% set triggerActionColClassName = 'col' %}
+    {% block triggerInfoWrapper %}
+        <div class="{{ triggerInfoWrapperClassName }}">
+            {% if data.schedule.nextTriggerDate %}
+                <div class="{{ triggerDateColClassName }}">
+                    {% set dateClassName = 'title--h6' %}
+                    {% block date %}
+                        <p class="{{ dateClassName }}" data-qa="recurring-order-next-trigger-date">
+                            {{ data.schedule.nextTriggerDate | formatDate }}
+                        </p>
+                    {% endblock %}
+                </div>
+            {% endif %}
+
+            {% if status in [data.statusActive, data.statusReviewRequired] %}
+                <div class="{{ triggerActionColClassName }}">
+                    {% set buttonClassName = 'button button--hollow' %}
+                    {% block button %}
+                        <button class="{{ buttonClassName }} {{ data.skipModalTriggerClassName }}" data-qa="recurring-order-skip-button">
+                            {{ 'recurring_orders.detail.actions.skip' | trans }}
+                        </button>
+                    {% endblock %}
+                </div>
+            {% endif %}
+        </div>
+    {% endblock %}
+{% endblock %}

@@ -1,0 +1,23 @@
+namespace: SprykerFeatureTest\Service\OrderExperienceManagement
+
+paths:
+    tests: .
+    data: ../../../_data
+    support: _support
+    output: ../../../_output
+
+coverage:
+    enabled: true
+    remote: false
+    whitelist: { include: ['../../../../src/*'] }
+
+suites:
+    Service:
+        path: .
+        actor: OrderExperienceManagementServiceTester
+        modules:
+            enabled:
+                - \SprykerTest\Shared\Testify\Helper\Environment
+                - \SprykerTest\Service\Testify\Helper\ServiceHelper
+                - \SprykerTest\Shared\Testify\Helper\DependencyHelper
+                - \SprykerTest\Service\Testify\Helper\DependencyProviderHelper

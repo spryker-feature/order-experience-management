@@ -1,0 +1,59 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-unchanged-items',
+} %}
+
+{% define data = {
+    unchangedItems: [],
+    currencyIsoCode: required,
+} %}
+
+{% block component %}
+    {% if data.unchangedItems | length %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    <details open>
+        <summary>
+            {{ (data.unchangedItems | length === 1 ? 'recurring_orders.review.unchanged.title' :'recurring_orders.review.unchanged.title.plural') | trans ({'%count%': data.unchangedItems | length}) }}
+        </summary>
+
+        {% set contentClassName = 'box' %}
+        {% block content %}
+            <div class="{{ contentClassName }}">
+                {% for item in data.unchangedItems %}
+                    {% set gridClassName = 'grid grid--gap' %}
+                    {% block grid %}
+                        <div class="{{ gridClassName }}">
+                            {% block info %}
+                                <div class="col col--expand">
+                                    <div>
+                                        {% block itemName %}
+                                        <strong>{{ item.productName }}</strong>
+                                        {% if item.sku %}
+                                            <small class="text-muted">({{ item.sku }})</small>
+                                        {% endif %}
+                                    {% endblock %}
+                                    </div>
+                                </div>
+                            {% endblock %}
+
+                            {% block itemPriceInfo %}
+                                <div class="col">
+                                    <small>{{ item.quantity }}x {{ item.referenceGrossPrice | money(true, data.currencyIsoCode) }}</small>
+                                </div>
+                            {% endblock %}
+                        </div>
+                    {% endblock %}
+
+                    {% block separator %}
+                        <hr class="separator" />
+                    {% endblock %}
+                {% endfor %}
+            </div>
+        {% endblock %}
+    </details>
+{% endblock %}

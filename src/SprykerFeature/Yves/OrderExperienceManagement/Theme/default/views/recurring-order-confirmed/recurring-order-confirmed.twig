@@ -1,0 +1,8 @@
+{% block body %}
+    {% include molecule('recurring-order-confirmed', 'OrderExperienceManagement') with {
+        data: {
+            recurringOrderSettings: _view.recurringOrderSettings,
+            cadenceTypeEveryNWeeks: _view.cadenceTypeEveryNWeeks,
+        }
+    } only %}
+{% endblock %}

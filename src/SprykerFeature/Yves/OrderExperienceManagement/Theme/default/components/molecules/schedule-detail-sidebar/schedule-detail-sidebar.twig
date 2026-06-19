@@ -1,0 +1,111 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'schedule-detail-sidebar',
+} %}
+
+{% define data = {
+    schedule: required,
+    statusClassMap: required,
+    quote: data.quote,
+} %}
+
+{% block extraClass %} box {% endblock %}
+
+{% block body %}
+    {% set titleClassName = config.name ~ '__title'%}
+    {% block title %}
+        <h4 class="{{ titleClassName }}">{{ 'recurring_orders.detail.sidebar.title' | trans }}</h4>
+    {% endblock %}
+
+    {% set definitionListClassName = config.name ~ '__fields' %}
+    {% set definitionListKeyClassName = config.name ~ '__label' %}
+    {% set definitionListValueClassName = config.name ~ '__value spacing-bottom' %}
+    {% set definitionListLinkClassName = 'link' %}
+
+    {% block definitionList %}
+        <dl class="{{ definitionListClassName }}">
+            {% block originalOrder %}
+                {% if data.schedule.idSourceSalesOrder %}
+                    <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.source_order' | trans }}</dt>
+                    <dd class="{{ definitionListValueClassName }}">
+                        <a href="{{ path('customer/order/details', {id: data.schedule.idSourceSalesOrder}) }}"
+                            class="{{ definitionListLinkClassName }}"
+                            target="_blank">
+                            {{ 'recurring_orders.detail.history.view_order' | trans }}
+                        </a>
+                    </dd>
+                {% endif %}
+            {% endblock %}
+
+            {% block cadence %}
+                <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.cadence' | trans }}</dt>
+                <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-cadence">
+                    {{ ('recurring_orders.cadence.' ~ data.schedule.cadenceType) | trans }}
+                    {% if data.schedule.cadenceValue %}
+                        ({{ data.schedule.cadenceValue }})
+                    {% endif %}
+                </dd>
+            {% endblock %}
+
+            {% block status %}
+                <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.status' | trans }}</dt>
+                <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-status-badge">
+                    {% include molecule('status') with {
+                        data: {
+                            label: ('recurring_orders.status.' ~ data.schedule.status) | trans,
+                            status: data.statusClassMap[data.schedule.status],
+                        }
+                    } only %}
+                </dd>
+            {% endblock %}
+
+            {% block createdAt %}
+                {% if data.schedule.createdAt %}
+                    <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.created' | trans }}</dt>
+                    <dd class="{{ definitionListValueClassName }}">{{ data.schedule.createdAt | formatDate }}</dd>
+                {% endif %}
+            {% endblock %}
+
+            {% block createdBy %}
+                {% if data.schedule.createdByName %}
+                    <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.created_by' | trans }}</dt>
+                    <dd class="{{ definitionListValueClassName }}">{{ data.schedule.createdByName }}</dd>
+                {% endif %}
+            {% endblock %}
+
+            {% block additionalInfo %}
+                {% widget 'CostCenterDetailWidget' args [data.quote] with {
+                    data: {
+                        definitionListKeyClassName: definitionListKeyClassName,
+                        definitionListValueClassName: definitionListValueClassName,
+                    },
+                    embed: {
+                        configName: config.name
+                    },
+                } only %}
+                    {% block body %}
+                        {% embed molecule('cost-center-detail', 'PurchasingControl') with {
+                            data: {
+                                costCenterName: data.costCenterName,
+                                budgetName: data.budgetName,
+                            },
+                            embed: {
+                                configName: embed.configName,
+                            },
+                        } only %}
+                            {% block component %}
+                                {% block listItems %}
+                                    {% set listKeyClassName = embed.configName ~ '__label' %}
+                                    {% set listValueClassName = embed.configName ~ '__value spacing-bottom' %}
+
+                                    {{ parent() }}
+                                {% endblock %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endblock %}
+                {% endwidget %}
+            {% endblock %}
+        </dl>
+    {% endblock %}
+{% endblock %}

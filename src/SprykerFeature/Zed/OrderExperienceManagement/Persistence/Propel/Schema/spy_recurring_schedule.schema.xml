@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd"
+          name="zed"
+          namespace="Orm\Zed\OrderExperienceManagement\Persistence"
+          package="src.Orm.Zed.OrderExperienceManagement.Persistence"
+          defaultIdMethod="native">
+
+    <table name="spy_recurring_schedule" identifierQuoting="true">
+        <column name="id_recurring_schedule" type="INTEGER" required="true" primaryKey="true" autoIncrement="true"/>
+        <column name="uuid" type="VARCHAR" size="36" required="false"/>
+        <column name="fk_customer" type="INTEGER" required="true"/>
+        <column name="fk_company_user" type="INTEGER" required="false"/>
+        <column name="fk_source_sales_order" type="INTEGER" required="false"/>
+        <column name="name" type="VARCHAR" size="255" required="false"/>
+        <column name="cadence_type" type="VARCHAR" size="32" required="true"/>
+        <column name="cadence_value" type="INTEGER" required="false"/>
+        <column name="first_trigger_date" type="DATE" required="true"/>
+        <column name="next_trigger_date" type="DATE" required="true"/>
+        <column name="notification_window_hours" type="INTEGER" required="true" defaultValue="48"/>
+        <column name="status" type="VARCHAR" size="32" required="true" defaultValue="draft" description="a denormalized state from StateMachine"/>
+        <column name="fk_state_machine_item_state" type="INTEGER" required="false"/>
+        <column name="payment_method" type="VARCHAR" size="255" required="true"/>
+        <column name="store_name" type="VARCHAR" size="64" required="true"/>
+        <column name="currency_iso_code" type="VARCHAR" size="5" required="true"/>
+        <column name="price_mode" type="VARCHAR" size="16" required="true"/>
+        <column name="customer_reference" type="VARCHAR" size="255" required="false"/>
+        <column name="locale_name" type="VARCHAR" size="16" required="false"/>
+        <column name="quote_data" type="CLOB" required="true"/>
+        <column name="created_at" type="TIMESTAMP" required="true"/>
+        <column name="updated_at" type="TIMESTAMP" required="true"/>
+
+        <foreign-key name="spy_recurring_schedule-fk_customer" foreignTable="spy_customer">
+            <reference local="fk_customer" foreign="id_customer"/>
+        </foreign-key>
+        <foreign-key name="spy_recurring_schedule-fk_company_user" foreignTable="spy_company_user">
+            <reference local="fk_company_user" foreign="id_company_user"/>
+        </foreign-key>
+        <foreign-key name="spy_recurring_schedule-fk_source_order" foreignTable="spy_sales_order">
+            <reference local="fk_source_sales_order" foreign="id_sales_order"/>
+        </foreign-key>
+        <index name="ix_recurring_schedule_due">
+            <index-column name="status"/>
+            <index-column name="next_trigger_date"/>
+        </index>
+        <index name="ix_recurring_schedule_sm_state">
+            <index-column name="fk_state_machine_item_state"/>
+        </index>
+
+        <behavior name="uuid">
+            <parameter name="key_columns" value="id_recurring_schedule"/>
+        </behavior>
+        <behavior name="timestampable"/>
+
+        <id-method-parameter value="spy_recurring_schedule_pk_seq"/>
+    </table>
+
+    <table name="spy_recurring_schedule_item" identifierQuoting="true">
+        <column name="id_recurring_schedule_item" type="INTEGER" required="true" primaryKey="true" autoIncrement="true"/>
+        <column name="fk_recurring_schedule" type="INTEGER" required="true"/>
+        <column name="sku" type="VARCHAR" size="255" required="true"/>
+        <column name="product_name" type="VARCHAR" size="255" required="false"/>
+        <column name="quantity" type="INTEGER" required="true"/>
+        <column name="next_delivery_quantity" type="INTEGER" required="false"/>
+        <column name="reference_gross_price" type="INTEGER" required="true"/>
+        <column name="reference_net_price" type="INTEGER" required="true"/>
+        <column name="merchant_reference" type="VARCHAR" size="255" required="false"/>
+        <column name="product_offer_reference" type="VARCHAR" size="255" required="false"/>
+        <column name="group_key" type="VARCHAR" size="512" required="false"/>
+        <column name="bundle_item_identifier" type="VARCHAR" size="255" required="false"/>
+        <column name="related_bundle_item_identifier" type="VARCHAR" size="255" required="false"/>
+        <column name="configurable_bundle_template_uuid" type="VARCHAR" size="255" required="false"/>
+        <column name="configured_bundle_group_key" type="VARCHAR" size="255" required="false"/>
+        <column name="configurable_bundle_name" type="VARCHAR" size="255" required="false"/>
+        <column name="configured_bundle_quantity" type="INTEGER" required="false"/>
+        <column name="fk_shipment_method" type="INTEGER" required="false"/>
+        <column name="shipment_unit_gross_price" type="INTEGER" required="false"/>
+        <column name="shipment_unit_net_price" type="INTEGER" required="false"/>
+        <column name="item_data" type="LONGVARCHAR" required="true"/>
+
+        <foreign-key name="spy_recurring_schedule_item-fk_schedule" foreignTable="spy_recurring_schedule" onDelete="CASCADE">
+            <reference local="fk_recurring_schedule" foreign="id_recurring_schedule"/>
+        </foreign-key>
+        <foreign-key name="spy_recurring_schedule_item-fk_shipment_method" foreignTable="spy_shipment_method" onDelete="SET NULL">
+            <reference local="fk_shipment_method" foreign="id_shipment_method"/>
+        </foreign-key>
+
+        <index name="spy_recurring_schedule_item-related_bundle">
+            <index-column name="fk_recurring_schedule"/>
+            <index-column name="related_bundle_item_identifier"/>
+        </index>
+
+        <index name="spy_recurring_schedule_item-configured_bundle">
+            <index-column name="fk_recurring_schedule"/>
+            <index-column name="configured_bundle_group_key"/>
+        </index>
+
+        <id-method-parameter value="spy_recurring_schedule_item_pk_seq"/>
+    </table>
+
+    <table name="spy_recurring_schedule_history" identifierQuoting="true">
+        <column name="id_recurring_schedule_history" type="INTEGER" required="true" primaryKey="true" autoIncrement="true"/>
+        <column name="fk_recurring_schedule" type="INTEGER" required="true"/>
+        <column name="fk_sales_order" type="INTEGER" required="false"/>
+        <column name="event_type" type="VARCHAR" size="64" required="true"/>
+        <column name="detail" type="LONGVARCHAR" required="false"/>
+        <column name="created_at" type="TIMESTAMP" required="true"/>
+
+        <foreign-key name="spy_recurring_schedule_history-fk_schedule" foreignTable="spy_recurring_schedule" onDelete="CASCADE">
+            <reference local="fk_recurring_schedule" foreign="id_recurring_schedule"/>
+        </foreign-key>
+        <foreign-key name="spy_recurring_schedule_history-fk_sales_order" foreignTable="spy_sales_order">
+            <reference local="fk_sales_order" foreign="id_sales_order"/>
+        </foreign-key>
+
+        <index name="ix_recurring_schedule_history_schedule">
+            <index-column name="fk_recurring_schedule"/>
+        </index>
+
+        <behavior name="timestampable">
+            <parameter name="disable_updated_at" value="true"/>
+        </behavior>
+
+        <id-method-parameter value="spy_recurring_schedule_history_pk_seq"/>
+    </table>
+
+</database>

@@ -1,0 +1,9 @@
+[
+    {
+        "fileName": "src/SprykerFeature/Zed/OrderExperienceManagement/Business/OrderExperienceManagementFacade.php",
+        "description": "Zed Business Layer - Facade: The method `SprykerFeature\\Zed\\OrderExperienceManagement\\Business\\OrderExperienceManagementFacade::triggerManualEventForSchedule()()` uses `new` to instantiate an object which violates rule \"No instantiations with 'new'\"",
+        "rule": "FacadeRule",
+        "ruleset": "Spryker Zed",
+        "priority": "1"
+    }
+]

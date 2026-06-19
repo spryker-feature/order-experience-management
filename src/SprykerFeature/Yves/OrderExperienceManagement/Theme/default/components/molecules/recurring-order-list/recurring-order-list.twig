@@ -1,0 +1,141 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-list',
+} %}
+
+{% define data = {
+    recurringSchedules: [],
+    pagination: [],
+    searchForm: [],
+    attentionCount: 0,
+    attentionStatusCounts: 0,
+    statusClassMap: [],
+    title: 'recurring_orders.list.title' | trans,
+    activePage: 'recurring-orders',
+} %}
+
+{% set jsPrefix = 'js-recurring-order-' %}
+{% set formClass = 'js-recurring-order-search-form' %}
+
+{% block body %}
+    {% set searchForm = data.searchForm %}
+    {% include molecule('recurring-order-attention-banner', 'OrderExperienceManagement') with {
+        data: {
+            count: data.attentionCount,
+            attentionStatusCounts: data.attentionStatusCounts,
+        },
+    } only %}
+
+    {% set wrapperClassName = 'box' %}
+    {% block wrapper %}
+        <div class="{{ wrapperClassName }}">
+            {% block formStart %}
+                {{ form_start(searchForm, {
+                    attr: {
+                        class: formClass,
+                    },
+                }) }}
+            {% endblock %}
+
+            {% block filtersSection %}
+                {% set filters = searchForm.filters.children
+                    | map(filter => {
+                        row: filter,
+                        class: 'col--md-6 col--lg-4',
+                        attr: { class: jsPrefix ~ filter.vars.name ~ '-target' },
+                    })
+                %}
+
+                {% include molecule('form-filters') with {
+                    data: {
+                        filters: filters,
+                    },
+                } only %}
+            {% endblock %}
+
+            {% block activeFilters %}
+                {% include molecule('form-active-filters') with {
+                    class: 'spacing-bottom spacing-bottom--big',
+                    data: {
+                        form: searchForm,
+                        jsPrefix: jsPrefix,
+                        formClass: formClass,
+                    },
+                } only %}
+            {% endblock %}
+
+            {% block recurringOrderList %}
+                {% set columns = [
+                    {
+                        id: 'spy_recurring_schedule.name',
+                        title: 'recurring_orders.list.column.name',
+                        sortable: true,
+                    },
+                    {
+                        id: 'spy_recurring_schedule.status',
+                        title: 'recurring_orders.list.column.status',
+                        sortable: true,
+                        type: 'status',
+                    },
+                    {
+                        id: 'spy_recurring_schedule.next_trigger_date',
+                        title: 'recurring_orders.list.column.next_order_date',
+                        sortable: true,
+                    },
+                    {
+                        id: 'spy_recurring_schedule.cadence_type',
+                        title: 'recurring_orders.list.column.frequency',
+                        sortable: true,
+                    },
+                    {
+                        id: 'spy_recurring_schedule.actions',
+                        type: 'actions',
+                    },
+                ] %}
+
+                {% set rows = data.recurringSchedules | map(schedule => {
+                    'spy_recurring_schedule.name': (schedule.name ?: schedule.uuid),
+                    'spy_recurring_schedule.status': {
+                        label: 'recurring_orders.status.' ~ schedule.status,
+                        status: data.statusClassMap[schedule.status],
+                    },
+                    'spy_recurring_schedule.next_trigger_date': schedule.status == 'cancelled' ? '—' : schedule.nextTriggerDate,
+                    'spy_recurring_schedule.cadence_type': ('recurring_orders.cadence.' ~ schedule.cadenceType) | trans
+                    ~ (schedule.cadenceValue ? ' (' ~ schedule.cadenceValue ~ ')' : ''),
+                    'spy_recurring_schedule.actions': [{
+                        url: url('recurring-orders/detail', { uuid: schedule.uuid }),
+                        label: 'purchasing_control.budget.action.view',
+                        qa: 'recurring-order-view-button',
+                    }],
+                }) %}
+
+                
+                <div data-qa="recurring-order-list-table">
+                    {% block table %}
+                        {% include molecule('advanced-table') with {
+                            data: {
+                                columns: columns,
+                                rows: rows,
+                                emptyText: 'recurring_orders.list.empty',
+                                sortableForm: searchForm,
+                                sortableFormClass: formClass,
+                                pagination: {
+                                    parameters: app.request.query.all,
+                                    currentPage: data.pagination.page,
+                                    paginationPath: 'recurring-orders',
+                                    maxPage: data.pagination.lastPage,
+                                    showAlwaysFirstAndLast: true,
+                                },
+                            }
+                        } only %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
+
+            {% block formEnd %}
+                {{ form_end(searchForm) }}
+            {% endblock %}
+        </div>
+    {% endblock %}
+{% endblock %}

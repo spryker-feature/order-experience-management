@@ -1,0 +1,72 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-flagged-items',
+} %}
+
+{% define data = {
+    flaggedItems: [],
+    reviewReasonLabelMap: {},
+    reviewReasonBadgeMap: {},
+    currencyIsoCode: required,
+} %}
+
+{% block component %}
+    {% if data.flaggedItems | length %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    {% set titleClassName = 'title--h6' %}
+    {% block title %}
+        <h2 class="{{ titleClassName }}">{{ 'recurring_orders.review.flagged.title' | trans }} ({{ data.flaggedItems | length }})</h2>
+    {% endblock %}
+
+    {% set contentClassName = 'box' %}
+    {% block content %}
+        <div class="{{ contentClassName }}" data-qa="recurring-order-review-flagged-items">
+            {% for flaggedItem in data.flaggedItems %}
+                {% set gridClassName = 'grid grid--gap' %}
+
+                {% block grid %}
+                    <div class="{{ gridClassName }}">
+                        {% block info %}
+                            <div class="col col--expand">
+                                <div>
+                                    {% block itemName %}
+                                        <strong>{{ flaggedItem.recurringScheduleItem.productName }}</strong>
+                                        {% if flaggedItem.recurringScheduleItem.sku %}
+                                            <small class="text-muted">({{ flaggedItem.recurringScheduleItem.sku }})</small>
+                                        {% endif %}
+                                    {% endblock %}
+
+                                    {% block itemStatus %}
+                                        {% for reviewReason in flaggedItem.reviewReasons %}
+                                            {% include molecule('status') with {
+                                                data: {
+                                                    label: (data.reviewReasonLabelMap[reviewReason] ?? reviewReason) | trans,
+                                                    status: data.reviewReasonBadgeMap[reviewReason],
+                                                },
+                                            } only %}
+                                        {% endfor %}
+                                    {% endblock %}
+                                </div>
+
+                                {% block itemPriceInfo %}
+                                    {% if (flaggedItem.previousPrice is not null) %}
+                                        <small>{{ flaggedItem.recurringScheduleItem.quantity }}x <s>{{ flaggedItem.previousPrice | money(true, data.currencyIsoCode) }}</s> {{ flaggedItem.currentPrice | money(true, data.currencyIsoCode) }}</small>
+                                    {% endif %}
+                                {% endblock %}
+                            </div>
+                        {% endblock %}
+                    </div>
+                {% endblock %}
+
+                {% block separator %}
+                    <hr class="separator" />
+                {% endblock %}
+            {% endfor %}
+        </div>
+    {% endblock %}
+{% endblock %}

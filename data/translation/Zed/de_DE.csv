@@ -1,0 +1,12 @@
+"Recurring Orders","Wiederkehrende Bestellungen"
+"Configuration for recurring order schedules.","Konfiguration für wiederkehrende Bestellpläne."
+General,Allgemein
+"General recurring order settings.","Allgemeine Einstellungen für wiederkehrende Bestellungen."
+Schedule,Zeitplan
+"Controls how recurring order schedules behave.","Steuert das Verhalten von Zeitplänen für wiederkehrende Bestellungen."
+"Schedule Grace Period",Benachrichtigungsvorlaufzeit
+"Number of hours before the next order trigger date when the pre-order notification is sent to the customer.","Anzahl der Stunden vor dem nächsten Bestellauslösedatum, zu dem die Vorbenachrichtigung an den Kunden gesendet wird."
+"Enter time in hours","Zeit in Stunden eingeben"
+"Schedule grace period is required","Die Benachrichtigungsvorlaufzeit ist erforderlich."
+"Must be at least 1 hour","Muss mindestens 1 Stunde betragen."
+"Cannot exceed 720 hours (30 days)","Darf 720 Stunden (30 Tage) nicht überschreiten."

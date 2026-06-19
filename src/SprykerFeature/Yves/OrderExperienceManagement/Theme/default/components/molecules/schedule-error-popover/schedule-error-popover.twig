@@ -1,0 +1,64 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'schedule-error-popover',
+    tag: 'span',
+} %}
+
+{% define data = {
+    errors: required,
+    orderUid: required,
+    createdAt: null,
+} %}
+
+{% block body %}
+    {% set triggerClassName = config.name ~ '__button ' ~  config.jsName ~ '__trigger--' ~ data.orderUid %}
+    {% block button %}
+        <button
+            type="button"
+            class="{{ triggerClassName }}"
+            aria-haspopup="true"
+            popovertarget="{{ data.orderUid }}"
+            aria-label="{{ 'recurring_orders.history.errors.show' | trans }}"
+        >
+            {% set iconName = 'action-warning-triangle' %}
+            {% set iconModifiers = [] %}
+            {% block icon %}
+                {% include atom('icon') with {
+                    modifiers: iconModifiers,
+                    data: {
+                        name: iconName,
+                    },
+                } only %}
+            {% endblock %}
+        </button>
+    {% endblock %}
+
+    {% block popup%}
+        {% include molecule('main-popup') with {
+            data: {
+                title: 'recurring_orders.scheduled.order.errors.title' | trans,
+                content: block('errors'),
+            },
+            attributes: {
+                'content-id': data.orderUid,
+                'trigger-class-name': triggerClassName,
+            },
+        } only %}
+    {% endblock %}
+{% endblock %}
+
+{% set errorsListClassName = 'list' %}
+{% set errorsListItemClassName = 'list__item' %}
+{% block errors %}
+    {% if data.createdAt %}
+        <p>{{ data.createdAt | formatDateTime }}</p>
+    {% endif %}
+    <ul class="{{ errorsListClassName }}">
+        {% for error in data.errors %}
+            <li class="{{ errorsListItemClassName }}">
+                {{ error.message | trans(error.parameters ?? {}) }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

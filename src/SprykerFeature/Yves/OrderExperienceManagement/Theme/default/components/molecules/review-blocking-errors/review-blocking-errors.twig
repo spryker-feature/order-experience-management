@@ -1,0 +1,17 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-blocking-errors',
+} %}
+
+{% define data = {
+    blockingErrors: [],
+} %}
+
+{% block body %}
+    <ul class="alert alert--danger list">
+        {% for blockingError in data.blockingErrors %}
+            <li class="list__item">{{ blockingError.message | trans(blockingError.parameters ?? {}) }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

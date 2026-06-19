@@ -1,0 +1,467 @@
+<?xml version="1.0"?>
+<transfers xmlns="spryker:transfer-01"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="spryker:transfer-01 http://static.spryker.com/transfer-01.xsd">
+
+    <transfer name="RecurringSchedule">
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="uuid" type="string"/>
+        <property name="idCustomer" type="int"/>
+        <property name="idCompanyUser" type="int"/>
+        <property name="idSourceSalesOrder" type="int"/>
+        <property name="idStateMachineItemState" type="int"/>
+        <property name="name" type="string"/>
+        <property name="cadenceType" type="string"/>
+        <property name="cadenceValue" type="int"/>
+        <property name="firstTriggerDate" type="string"/>
+        <property name="nextTriggerDate" type="string"/>
+        <property name="nextTriggerDateAfterSkip" type="string"/>
+        <property name="notificationWindowHours" type="int"/>
+        <property name="status" type="string"/>
+        <property name="paymentMethod" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="currencyIsoCode" type="string"/>
+        <property name="priceMode" type="string"/>
+        <property name="customerReference" type="string"/>
+        <property name="quoteData" type="string"/>
+        <property name="idCostCenter" type="int"/>
+        <property name="idBudget" type="int"/>
+        <property name="items" type="RecurringScheduleItem[]" singular="item"/>
+        <property name="history" type="RecurringScheduleHistory[]" singular="historyItem"/>
+        <property name="historyPagination" type="Pagination"/>
+        <property name="createdByName" type="string"/>
+        <property name="estimatedTotal" type="int"/>
+        <property name="createdAt" type="string"/>
+        <property name="localeName" type="string"/>
+        <property name="recurringOrderDetailUrl" type="string"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleItem">
+        <property name="idRecurringScheduleItem" type="int"/>
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="sku" type="string"/>
+        <property name="productName" type="string"/>
+        <property name="quantity" type="int"/>
+        <property name="nextDeliveryQuantity" type="int"/>
+        <property name="referenceGrossPrice" type="int"/>
+        <property name="referenceNetPrice" type="int"/>
+        <property name="merchantReference" type="string"/>
+        <property name="productOfferReference" type="string"/>
+        <property name="groupKey" type="string"/>
+        <property name="bundleItemIdentifier" type="string"/>
+        <property name="relatedBundleItemIdentifier" type="string"/>
+        <property name="bundledItems" type="RecurringScheduleItem[]" singular="bundledItem"/>
+        <property name="configurableBundleTemplateUuid" type="string"/>
+        <property name="configurableBundleTemplateSlotUuid" type="string"/>
+        <property name="configuredBundleGroupKey" type="string"/>
+        <property name="configurableBundleName" type="string"/>
+        <property name="configuredBundleQuantity" type="int"/>
+        <property name="idShipmentMethod" type="int"/>
+        <property name="shipmentUnitGrossPrice" type="int"/>
+        <property name="shipmentUnitNetPrice" type="int"/>
+        <property name="itemData" type="string"/>
+        <property name="itemTotal" type="int"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleCollection">
+        <property name="recurringSchedules" type="RecurringSchedule[]" singular="recurringSchedule"/>
+        <property name="pagination" type="Pagination"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleStatusCount" strict="true">
+        <property name="status" type="string"/>
+        <property name="count" type="int"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleStatusCountCollection" strict="true">
+        <property name="statusCounts" type="RecurringScheduleStatusCount[]" singular="statusCount"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleCriteria">
+        <property name="recurringScheduleConditions" type="RecurringScheduleConditions"/>
+        <property name="sortCollection" type="Sort[]" singular="sort"/>
+        <property name="pagination" type="Pagination"/>
+        <property name="historyPagination" type="Pagination"/>
+        <property name="customer" type="Customer"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleConditions">
+        <property name="uuids" type="string[]" singular="uuid"/>
+        <property name="customerIds" type="int[]" singular="customerId"/>
+        <property name="companyIds" type="int[]" singular="companyId"/>
+        <property name="companyBusinessUnitIds" type="int[]" singular="companyBusinessUnitId"/>
+        <property name="statuses" type="string[]" singular="status"/>
+        <property name="idRecurringSchedules" type="int[]" singular="idRecurringSchedule"/>
+        <property name="names" type="string[]" singular="name"/>
+        <property name="isWithHistory" type="bool"/>
+        <property name="isWithItems" type="bool"/>
+        <property name="isWithCustomer" type="bool"/>
+        <property name="isWithQuoteData" type="bool"/>
+        <property name="isWithSkipPreview" type="bool"/>
+        <property name="groupItemsByGroupKey" type="bool"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleDueData" strict="true">
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="nextTriggerDate" type="string"/>
+        <property name="notificationWindowHours" type="int"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleError" strict="true">
+        <property name="message" type="string"/>
+        <property name="parameters" type="array" singular="parameters"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleHistory" strict="true">
+        <property name="idRecurringScheduleHistory" type="int"/>
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="idSalesOrder" type="int"/>
+        <property name="eventType" type="string"/>
+        <property name="detail" type="string"/>
+        <property name="createdAt" type="string"/>
+        <property name="orderReference" type="string"/>
+        <property name="failureReason" type="string"/>
+        <property name="errors" type="RecurringScheduleError[]" singular="error"/>
+    </transfer>
+
+    <!-- Groups all recurring-order checkout intent on the quote.
+         Null means "not a recurring order". PlaceOrderCommand sets this to null before
+         calling CheckoutFacade::placeOrder() — that null is the infinite-loop guard. -->
+    <transfer name="RecurringOrderSettings" strict="true">
+        <property name="cadenceType" type="string"/>
+        <property name="cadenceValue" type="int"/>
+        <property name="scheduleName" type="string"/>
+    </transfer>
+
+    <!-- Extend Quote transfer — single field instead of individual recurring properties -->
+    <transfer name="Quote">
+        <property name="recurringOrderSettings" type="RecurringOrderSettings"/>
+        <property name="currency" type="Currency"/>
+        <property name="priceMode" type="string"/>
+        <property name="customerReference" type="string"/>
+        <property name="expenses" type="Expense[]" singular="expense"/>
+        <property name="payments" type="Payment[]" singular="payment"/>
+        <property name="payment" type="Payment" deprecated="Use payments property instead."/>
+        <property name="quoteRequestVersionReference" type="string"/>
+        <property name="idQuote" type="int"/>
+        <property name="billingAddress" type="Address"/>
+        <property name="shippingAddress" type="Address" deprecated="Use item level shipping addresses (item.shipment.shippingAddress) instead."/>
+        <property name="items" type="Item[]" singular="item"/>
+        <property name="customer" type="Customer"/>
+        <property name="store" type="Store"/>
+        <property name="totals" type="Totals"/>
+        <property name="idCostCenter" type="int"/>
+        <property name="idBudget" type="int"/>
+        <property name="orderReference" type="string"/>
+        <property name="isLocked" type="bool"/>
+        <property name="bundleItems" type="Item[]" singular="bundleItem"/>
+        <property name="isAddressSavingSkipped" type="bool" deprecated="Use address transfer property (shippingAddress.isAddressSavingSkipped) instead."/>
+        <property name="voucherCode" type="string"/>
+        <property name="voucherDiscounts" type="Discount[]" singular="voucherDiscount"/>
+        <property name="usedNotAppliedVoucherCodes" type="array" singular="usedNotAppliedVoucherCode"/>
+    </transfer>
+
+    <transfer name="RecurringOrderQuoteUpdateRequest" strict="true">
+        <property name="idQuote" type="int"/>
+        <property name="recurringOrderSettings" type="RecurringOrderSettings"/>
+        <property name="customer" type="Customer"/>
+    </transfer>
+
+    <transfer name="RecurringOrderQuoteUpdateResponse" strict="true">
+        <property name="isSuccessful" type="bool"/>
+        <property name="errors" type="Error[]" singular="error"/>
+        <property name="quote" type="Quote"/>
+    </transfer>
+
+    <transfer name="StateMachineItem">
+        <property name="identifier" type="int"/>
+        <property name="idItemState" type="int"/>
+        <property name="stateName" type="string"/>
+    </transfer>
+
+    <transfer name="CheckoutResponse">
+        <property name="isSuccess" type="bool"/>
+        <property name="errors" type="CheckoutError[]" singular="error"/>
+        <property name="saveOrder" type="SaveOrder"/>
+    </transfer>
+
+    <transfer name="Item">
+        <property name="sku" type="string"/>
+        <property name="name" type="string"/>
+        <property name="quantity" type="int"/>
+        <property name="unitGrossPrice" type="int"/>
+        <property name="unitNetPrice" type="int"/>
+        <property name="merchantReference" type="string"/>
+        <property name="productOfferReference" type="string"/>
+        <property name="shipment" type="Shipment"/>
+        <property name="idSalesOrderItem" type="int"/>
+        <property name="uuid" type="string"/>
+        <property name="idSalesOrder" type="int"/>
+        <property name="groupKey" type="string"/>
+        <property name="bundleItemIdentifier" type="string"/>
+        <property name="relatedBundleItemIdentifier" type="string"/>
+        <property name="unitPrice" type="int"/>
+        <property name="sumPrice" type="int"/>
+        <property name="priceProduct" type="PriceProduct"/>
+        <property name="sumGrossPrice" type="int"/>
+        <property name="sumNetPrice" type="int"/>
+        <property name="configuredBundle" type="ConfiguredBundle"/>
+        <property name="sourceUnitGrossPrice" type="int"/>
+        <property name="amount" type="decimal" description="A numerical value, often used for price, quantity, or discount."/>
+        <property name="sourceUnitNetPrice" type="int"/>
+        <property name="forcedUnitGrossPrice" type="bool" deprecated="Will be removed with a next major release"/>
+    </transfer>
+
+    <transfer name="StateMachineProcess">
+        <property name="stateMachineName" type="string"/>
+        <property name="processName" type="string"/>
+    </transfer>
+
+    <transfer name="Pagination">
+        <property name="page" type="int"/>
+        <property name="nbResults" type="int"/>
+        <property name="maxPerPage" type="int"/>
+        <property name="limit" type="int"/>
+        <property name="offset" type="int"/>
+        <property name="firstIndex" type="int"/>
+        <property name="lastIndex" type="int"/>
+        <property name="firstPage" type="int"/>
+        <property name="lastPage" type="int"/>
+        <property name="nextPage" type="int"/>
+        <property name="previousPage" type="int"/>
+    </transfer>
+
+    <transfer name="Sort">
+        <property name="field" type="string"/>
+        <property name="isAscending" type="bool"/>
+    </transfer>
+
+    <transfer name="Error">
+        <property name="message" type="string"/>
+    </transfer>
+
+    <transfer name="Currency">
+        <property name="code" type="string"/>
+    </transfer>
+
+    <transfer name="Expense">
+        <property name="idSalesExpense" type="int"/>
+        <property name="shipment" type="Shipment"/>
+        <property name="unitNetPrice" type="int"/>
+        <property name="unitGrossPrice" type="int"/>
+    </transfer>
+
+    <transfer name="Payment">
+        <property name="paymentMethod" type="string"/>
+        <property name="paymentMethodName" type="string"/>
+        <property name="paymentSelection" type="string"/>
+    </transfer>
+
+    <transfer name="CheckoutError">
+        <property name="message" type="string"/>
+        <property name="parameters" type="array" singular="parameters"/>
+        <property name="groupKey" type="string"/>
+        <property name="errorType" type="string"/>
+    </transfer>
+
+    <transfer name="SaveOrder">
+        <property name="idSalesOrder" type="int"/>
+        <property name="orderReference" type="string"/>
+    </transfer>
+
+    <transfer name="Shipment">
+        <property name="method" type="ShipmentMethod"/>
+        <property name="merchantReference" type="string" description="A unique reference identifier for a merchant."/>
+        <property name="idSalesShipment" type="int"/>
+        <property name="shippingAddress" type="Address"/>
+        <property name="uuid" type="string" strict="true"/>
+        <property name="shipmentTypeUuid" type="string" strict="true"/>
+    </transfer>
+
+    <transfer name="QuoteResponse">
+        <property name="isSuccessful" type="bool"/>
+        <property name="quoteTransfer" type="Quote"/>
+        <property name="errors" type="QuoteError[]" singular="error"/>
+    </transfer>
+
+    <transfer name="Address">
+        <property name="idSalesOrderAddress" type="int"/>
+        <property name="isAddressSavingSkipped" type="bool"/>
+    </transfer>
+
+    <transfer name="Customer">
+        <property name="idCustomer" type="int"/>
+        <property name="companyUserTransfer" type="CompanyUser"/>
+        <property name="lastName" type="string"/>
+        <property name="firstName" type="string"/>
+        <property name="email" type="string"/>
+        <property name="anonymizedAt" type="string"/>
+        <property name="locale" type="Locale"/>
+        <property name="isGuest" type="bool"/>
+    </transfer>
+
+    <transfer name="Store">
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="ShipmentMethod">
+        <property name="idShipmentMethod" type="int"/>
+    </transfer>
+
+    <transfer name="QuoteError">
+        <property name="message" type="string"/>
+    </transfer>
+
+    <transfer name="CompanyUser">
+        <property name="idCompanyUser" type="int"/>
+        <property name="fkCompany" type="int"/>
+        <property name="fkCompanyBusinessUnit" type="int"/>
+        <property name="companyBusinessUnit" type="CompanyBusinessUnit"/>
+        <property name="customer" type="Customer"/>
+    </transfer>
+
+    <transfer name="Totals">
+        <property name="shipmentTotal" type="int"/>
+        <property name="subtotal" type="int"/>
+        <property name="expenseTotal" type="int"/>
+        <property name="grandTotal" type="int"/>
+        <property name="discountTotal" type="int"/>
+        <property name="taxTotal" type="TaxTotal"/>
+    </transfer>
+
+    <transfer name="TaxTotal">
+        <property name="amount" type="int"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleEventRequest" strict="true">
+        <property name="uuid" type="string"/>
+        <property name="event" type="string"/>
+        <property name="idCustomer" type="int"/>
+        <property name="customer" type="Customer"/>
+        <property name="isSuccessful" type="bool"/>
+        <property name="nextExecutionDate" type="string"/>
+        <property name="acceptedItems" type="RecurringScheduleItemReview[]" singular="acceptedItem"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleEventResponse" strict="true">
+        <property name="isSuccessful" type="bool"/>
+        <property name="errors" type="Error[]" singular="error"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleCollectionRequest" strict="true">
+        <property name="recurringSchedules" type="RecurringSchedule[]" singular="recurringSchedule"/>
+        <property name="customer" type="Customer"/>
+        <property name="isTransactional" type="bool"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleCollectionResponse" strict="true">
+        <property name="recurringSchedules" type="RecurringSchedule[]" singular="recurringSchedule"/>
+        <property name="errors" type="Error[]" singular="error"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleValidationResult" strict="true">
+        <property name="isValid" type="bool"/>
+        <property name="itemReviews" type="RecurringScheduleItemReview[]" singular="itemReview"/>
+        <property name="blockingErrors" type="RecurringScheduleError[]" singular="blockingError"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleItemReview" strict="true">
+        <property name="recurringScheduleItem" type="RecurringScheduleItem"/>
+        <property name="reviewReasons" type="string[]" singular="reviewReason"/>
+        <property name="previousPrice" type="int"/>
+        <property name="currentPrice" type="int"/>
+        <property name="isPurchasable" type="bool"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleReviewResponse" strict="true">
+        <property name="recurringSchedule" type="RecurringSchedule"/>
+        <property name="flaggedItems" type="RecurringScheduleItemReview[]" singular="flaggedItem"/>
+        <property name="unchangedItems" type="RecurringScheduleItem[]" singular="unchangedItem"/>
+        <property name="blockingErrors" type="RecurringScheduleError[]" singular="blockingError"/>
+        <property name="originalTotal" type="int"/>
+        <property name="updatedTotal" type="int"/>
+        <property name="removedItemCount" type="int"/>
+        <property name="priceChangeCount" type="int"/>
+        <property name="substitutedCount" type="int"/>
+        <property name="unavailableCount" type="int"/>
+    </transfer>
+
+    <transfer name="CompanyBusinessUnitCriteriaFilter">
+        <property name="idCompany" type="int"/>
+    </transfer>
+
+    <transfer name="Locale">
+        <property name="localeName" type="string"/>
+    </transfer>
+
+    <transfer name="Mail">
+        <property name="recurringSchedule" type="RecurringSchedule"/>
+        <property name="customer" type="Customer"/>
+        <property name="storeName" type="string"/>
+        <property name="templates" type="MailTemplate[]" singular="template"/>
+        <property name="type" type="string"/>
+        <property name="locale" type="Locale"/>
+        <property name="subject" type="string"/>
+        <property name="subjectTranslationParameters" type="string[]" singular="subjectTranslationParameter"/>
+        <property name="recipients" type="MailRecipient[]" singular="recipient"/>
+    </transfer>
+
+    <transfer name="CustomerCriteriaFilter">
+        <property name="customerIds" type="int[]" singular="idCustomer" strict="true"/>
+    </transfer>
+
+    <transfer name="CustomerCollection">
+        <property name="customers" type="Customer[]" singular="customer"/>
+    </transfer>
+
+    <transfer name="CompanyBusinessUnit">
+        <property name="name" type="string"/>
+        <property name="idCompanyBusinessUnit" type="int"/>
+    </transfer>
+
+    <transfer name="MailTemplate">
+        <property name="name" type="string"/>
+        <property name="isHtml" type="bool"/>
+    </transfer>
+
+    <transfer name="MailRecipient">
+        <property name="email" type="string"/>
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="CompanyBusinessUnitCollection">
+        <property name="companyBusinessUnits" type="CompanyBusinessUnit[]" singular="companyBusinessUnit"/>
+    </transfer>
+
+    <transfer name="CustomerResponse">
+        <property name="isSuccess" type="bool"/>
+        <property name="customerTransfer" type="Customer"/>
+    </transfer>
+
+    <transfer name="CartChange">
+        <property name="quote" type="Quote"/>
+        <property name="items" type="Item[]" singular="item"/>
+    </transfer>
+
+    <transfer name="PriceProduct">
+    </transfer>
+
+    <transfer name="ConfiguredBundle">
+        <property name="quantity" type="int"/>
+        <property name="groupKey" type="string"/>
+        <property name="template" type="ConfigurableBundleTemplate"/>
+    </transfer>
+
+    <transfer name="ConfigurableBundleTemplate">
+        <property name="uuid" type="string"/>
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="CalculableObject">
+        <property name="originalQuote" type="Quote"/>
+    </transfer>
+
+    <transfer name="Discount">
+    </transfer>
+
+</transfers>

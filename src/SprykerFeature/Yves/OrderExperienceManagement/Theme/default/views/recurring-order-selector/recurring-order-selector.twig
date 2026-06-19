@@ -1,0 +1,14 @@
+{% extends template('widget') %}
+
+{% define data = {
+    isVisible: _widget.isVisible,
+    isConfirmed: _widget.isConfirmed,
+} %}
+
+{% block body %}
+    {% include molecule('recurring-order-selector', 'OrderExperienceManagement') with {
+        data: {
+            isConfirmed: data.isConfirmed,
+        }
+    } only %}
+{% endblock %}

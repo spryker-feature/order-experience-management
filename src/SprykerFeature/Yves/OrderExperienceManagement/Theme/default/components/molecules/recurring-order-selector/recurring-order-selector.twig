@@ -1,0 +1,89 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-selector',
+    tag: 'recurring-order-selector',
+} %}
+
+{% define data = {
+    isConfirmed: required,
+} %}
+
+{% block body %}
+    {% set wrapperClass = "box" %}
+    {% set ajaxProviderClassName = "#{config.jsName}-ajax-provider" %}
+    {% set ajaxContainerClassName = "#{config.jsName}__wrapper" %}
+
+    {% block wrapper %}
+        <div class="{{ wrapperClass }}">
+            {% set headingClass = "spacing-bottom clearfix" %}
+            {% set titleClass = "title--h6" %}
+
+            {% block recurringToggle %}
+                <div class="{{ headingClass }}">
+                    {% set editButtonClass = "button button--hollow float-right" %}
+                    {% block editLink %}
+                        <button type="button" class="{{ editButtonClass }} {{ config.jsName }}__edit-button {{ config.name }}__edit-button is-hidden">
+                            {% include atom('icon') with {
+                                data: {
+                                    name: 'edit',
+                                },
+                            } only %}
+                        </button>
+                    {% endblock %}
+
+                    {% include atom('checkbox') with {
+                        class: titleClass,
+                        attributes: {
+                            name: 'recurring-order-enabled',
+                            checked: data.isConfirmed,
+                            'data-qa': 'recurring-order-toggle',
+                            'ajax-provider-selector': ajaxProviderClassName,
+                            'data-create-recurrent-order-url': path('recurring-order/form'),
+                            'data-clear-recurrent-order-url': path('recurring-order/clear'),
+                            'data-clear-recurrent-order-csrf-token': csrf_token('recurring-order-clear'),
+                            'data-edit-recurrent-order-url': path('recurring-order/form') ~ '?edit=1',
+                        },
+                        data: {
+                            label: 'recurring_orders.checkout.enable_label' | trans,
+                            inputClass: config.jsName ~ '__recurring-order-toggle',
+                        },
+                    } only %}
+
+                    <p>{{ 'recurring_orders.checkout.enable_description' | trans }}</p>
+                </div>
+            {% endblock %}
+
+            {% block ajax %}
+                {% block provider %}
+                    {% include molecule('ajax-provider') with {
+                        class: config.jsName ~ '__ajax-provider ' ~ ajaxProviderClassName,
+                        attributes: {
+                            url: path('recurring-order/form'),
+                            method: 'GET',
+                        },
+                    } only %}
+
+                    {% block loader %}
+                        {% include molecule('ajax-loader') with {
+                            attributes: {
+                                'provider-class-name': ajaxProviderClassName,
+                            },
+                        } only %}
+                    {% endblock %}
+
+                    {% block renderer %}
+                        {% include molecule('ajax-renderer') with {
+                            attributes: {
+                                'provider-class-name': ajaxProviderClassName,
+                                'target-class-name': ajaxContainerClassName,
+                                'mount-after-render': true,
+                            },
+                        } only %}
+                    {% endblock %}
+                {% endblock %}
+                <div class="{{ ajaxContainerClassName }}"></div>
+            {% endblock %}
+        </div>
+    {% endblock %}
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-summary-banner',
+} %}
+
+{% define data = {
+    review: required,
+    currencyIsoCode: required,
+} %}
+
+{% block component %}
+    {% if data.review.removedItemCount or
+          data.review.priceChangeCount or
+          data.review.substitutedCount or
+          data.review.unavailableCount %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    {% set gridClassName = config.name ~ '__alert alert alert--warning grid grid--gap grid--justify' %}
+    {% block grid %}
+        <div class="{{ gridClassName }}" data-qa="recurring-order-review-summary-banner">
+            <div class="col col--expand">
+                {% block items %}
+                    {% set summaryItems = [
+                        { count: data.review.priceChangeCount, key: 'recurring_orders.review.banner.price_change' },
+                        { count: data.review.substitutedCount, key: 'recurring_orders.review.banner.substituted' },
+                        { count: data.review.unavailableCount, key: 'recurring_orders.review.banner.unavailable' },
+                    ] %}
+
+                    {% set summaryParts = [] %}
+                    {% for item in summaryItems | filter(item => item.count > 0) %}
+                        {% set summaryParts = summaryParts | merge([item.key | trans({'%count%': item.count})]) %}
+                    {% endfor %}
+
+                    {{ summaryParts | join(' | ') }}
+                {% endblock %}
+            </div>
+            <div class="col">
+                {% block dataChange %}
+                    {% block oldValue %}
+                        <s>{{ data.review.originalTotal | money(true, data.currencyIsoCode) }}</s>
+                    {% endblock %}
+                    
+                    {% block newValue %}
+                        <span data-qa="recurring-order-review-footer-total">{{ data.review.updatedTotal | money(true, data.currencyIsoCode) }}</span>
+                    {% endblock %}
+                {% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+{% endblock %}

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<transfers
+    xmlns="spryker:databuilder-01"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="spryker:databuilder-01 http://static.spryker.com/databuilder-01.xsd"
+>
+
+    <transfer name="RecurringSchedule">
+        <property name="name" dataBuilderRule="unique()->words(3, true)"/>
+        <property name="cadenceType" dataBuilderRule="randomElement(['weekly'])"/>
+        <property name="firstTriggerDate" dataBuilderRule="date('Y-m-d')"/>
+        <property name="nextTriggerDate" dataBuilderRule="date('Y-m-d', strtotime('+7 days'))"/>
+        <property name="status" dataBuilderRule="randomElement(['active'])"/>
+        <property name="paymentMethod" dataBuilderRule="randomElement(['invoice'])"/>
+        <property name="storeName" dataBuilderRule="randomElement(['DE'])"/>
+        <property name="currencyIsoCode" dataBuilderRule="randomElement(['EUR'])"/>
+        <property name="priceMode" dataBuilderRule="randomElement(['GROSS_MODE'])"/>
+        <property name="quoteData" dataBuilderRule="randomElement(['{}'])"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleItem">
+        <property name="sku" dataBuilderRule="unique()->bothify('SKU-########')"/>
+        <property name="quantity" dataBuilderRule="numberBetween(1, 10)"/>
+        <property name="referenceGrossPrice" dataBuilderRule="numberBetween(100, 100000)"/>
+        <property name="referenceNetPrice" dataBuilderRule="numberBetween(100, 100000)"/>
+        <property name="itemData" dataBuilderRule="randomElement(['{}'])"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleHistory" strict="true">
+        <property name="eventType" dataBuilderRule="randomElement(['placed'])"/>
+    </transfer>
+
+</transfers>

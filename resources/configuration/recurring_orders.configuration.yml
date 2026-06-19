@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=../../../../Spryker/Configuration/resources/configuration/configuration-schema-v1.json
+features:
+    - key: recurring_orders
+      name: Recurring Orders
+      description: Configuration for recurring order schedules.
+      enabled: true
+      order: 0
+      tabs:
+          - key: general
+            name: General
+            description: General recurring order settings.
+            enabled: true
+            order: 0
+            groups:
+                - key: schedule
+                  name: Schedule
+                  description: Controls how recurring order schedules behave.
+                  enabled: true
+                  order: 0
+                  scopes:
+                      - global
+                  settings:
+                      - key: grace_period_hours
+                        name: Schedule Grace Period
+                        description: Number of hours before the next order trigger date when the pre-order notification is sent to the customer.
+                        placeholder: Enter time in hours
+                        type: integer
+                        default_value: 48
+                        enabled: true
+                        secret: false
+                        storefront: false
+                        scopes:
+                            - global
+                        constraints:
+                            - type: required
+                              message: Schedule grace period is required
+                            - type: min
+                              message: Must be at least 1 hour
+                              options: { min: 1 }
+                            - type: max
+                              message: Cannot exceed 720 hours (30 days)
+                              options: { max: 720 }

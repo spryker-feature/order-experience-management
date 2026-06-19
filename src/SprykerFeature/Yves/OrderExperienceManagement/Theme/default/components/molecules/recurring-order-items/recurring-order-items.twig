@@ -1,0 +1,64 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-items',
+}%}
+
+{% define data = {
+    schedule: [],
+}%}
+
+{% block component %}
+    {% if data.schedule.items | length %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    <div data-qa="recurring-order-detail-items">
+    {% set titleClassName = '' %}
+    {% block title %}
+        <h5 class="{{ titleClassName }}">{{ 'recurring_orders.detail.order_items.label' | trans }}</h5>
+    {% endblock %}
+
+    {% block table %}
+        {% set itemColumns = [
+            { id: 'product', title: 'recurring_orders.detail.order_items.column.product' },
+            { id: 'quantity', title: 'recurring_orders.detail.order_items.column.quantity' },
+            { id: 'total', title: 'recurring_orders.detail.order_items.column.total' },
+        ] %}
+
+        {% set itemRows = data.schedule.items | map(item => {
+            product: (item.productName ?: item.sku)
+                ~ (item.productName ? '<br><small class="text-muted">(' ~ item.sku ~ ')</small>' : '')
+                ~ (item.configurableBundleName
+                    ? '<br><small class="text-muted">' ~ ('recurring_orders.item.configurable_bundle_label' | trans({'%name%': item.configurableBundleName | trans | e})) ~ '</small>'
+                    : ''),
+            quantity: '<span class="' ~ config.jsName ~ '__qty-display">' ~ item.quantity ~ '</span>'
+                ~ '<input type="number" class="' ~ config.jsName ~ '__qty-input is-hidden" data-item-id="' ~ item.idRecurringScheduleItem ~ '" value="' ~ item.quantity ~ '" min="1">',
+            total: item.itemTotal | money(true, data.schedule.currencyIsoCode),
+        }) %}
+
+        {% include molecule('advanced-table') with {
+            data: {
+                columns: itemColumns,
+                rows: itemRows,
+                emptyText: 'recurring_orders.detail.order_items.empty',
+            },
+        } only %}
+    {% endblock %}
+
+    {% block summary%}
+        <div class="grid grid--justify spacing-top--small">
+            <div class="col">
+                <small class="text-muted">{{ 'recurring_orders.detail.estimated_total.info' | trans }}</small>
+            </div>
+            <div class="col col--right">
+                <strong>{{ 'recurring_orders.detail.estimated_total.label' | trans }}:
+                    {{ data.schedule.estimatedTotal | money(true, data.schedule.currencyIsoCode) }}
+                </strong>
+            </div>
+        </div>
+    {% endblock %}
+    </div>
+{% endblock %}

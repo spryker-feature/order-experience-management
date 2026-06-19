@@ -1,0 +1,110 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-form',
+    tag: 'recurring-order-form',
+} %}
+
+{% define data = {
+    form: required,
+    cadenceTypeEveryNWeeks: '',
+} %}
+
+{% define attributes  = {
+    'data-cadence-type-every-n-weeks': data.cadenceTypeEveryNWeeks,
+}%}
+
+{% block body %}
+    {% set ajaxProviderClass = "#{config.jsName}__ajax-provider" %}
+    {% set ajaxTriggerAttribute = "data-#{config.jsName}-ajax-trigger" %}
+    {% set ajaxContainerClassName = "js-recurring-order-selector__wrapper" %}
+    
+    {% block form%}
+        {% embed molecule('form') with {
+            data: {
+                form: data.form,
+                options: {
+                    attr: {
+                        action: path('recurring-order/save'),
+                    },
+                },
+                submit: {
+                    enable: true,
+                    attributes: ajaxTriggerAttribute,
+                    text: 'recurring_orders.checkout.confirm_button' | trans,
+                    qa: 'recurring-order-confirm-button',
+                },
+            },
+            embed: {
+                configJsName: config.jsName,
+            }
+        } only %}
+            {% block field %}
+                {% if fieldName == 'scheduleName' %}
+                    {{ form_row(field, {
+                        attr: {
+                            'data-qa': 'recurring-order-schedule-name-input',
+                        },
+                        rowAttr: {class: "#{config.name}__field #{fieldLayoutClass}"},
+                    }) }}
+                {% elseif fieldName == 'cadenceType' %}
+                    {{ form_row(field, {
+                        attr: {
+                            class: "#{embed.configJsName}__type",
+                            'data-qa': 'recurring-order-cadence-type-select',
+                        },
+                        rowAttr: {
+                            class: "#{config.name}__field #{fieldLayoutClass}"
+                        },
+                    }) }}
+                {% elseif fieldName == 'cadenceValue' %}
+                    {{ form_row(field, {
+                        attr: {
+                            'data-qa': 'recurring-order-cadence-value-input',
+                        },
+                        rowAttr: {class: "#{config.name}__field #{fieldLayoutClass} #{embed.configJsName}__value-wrapper"},
+                    }) }}
+                {% else %}
+                    {{ parent() }}
+                {% endif %}
+            {% endblock %}
+        {% endembed %}
+    {% endblock %}
+
+    {% block ajax %}
+        {% include molecule('ajax-form-submitter') with {
+            attributes: {
+                'provider-class-name': ajaxProviderClass,
+                'trigger-attribute': ajaxTriggerAttribute,
+                event: 'click:change',
+            },
+        } only %}
+
+        {% block provider %}
+            {% include molecule('ajax-provider') with {
+                class: ajaxProviderClass,
+                attributes: {
+                    method: 'POST',
+                },
+            } only %}
+        {% endblock %}
+
+        {% block loader %}
+            {% include molecule('ajax-loader') with {
+                attributes: {
+                    'provider-class-name': ajaxProviderClass,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block renderer %}
+            {% include molecule('ajax-renderer') with {
+                attributes: {
+                    'provider-class-name': ajaxProviderClass,
+                    'target-class-name': ajaxContainerClassName,
+                    'mount-after-render': true,
+                },
+            } only %}
+        {% endblock %}
+    {% endblock %}
+{% endblock %}

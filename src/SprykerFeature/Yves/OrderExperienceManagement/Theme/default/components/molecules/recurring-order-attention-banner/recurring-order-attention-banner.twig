@@ -1,0 +1,106 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-attention-banner',
+    tag: 'recurring-order-attention-banner',
+} %}
+
+{% define data = {
+    count: required,
+    attentionStatusCounts: required,
+} %}
+
+{% block component %}
+    {% if data.count > 0 %}
+        {{ parent()}}
+    {% endif %}
+{% endblock %}
+
+{% block extraClass %} box box--warning spacing-bottom {% endblock %}
+
+{% block body %}
+    {% set statusIconMap = {
+        'paused': 'action-warning',
+        'review_required': 'action-warning-triangle',
+        'failed': 'action-alert',
+    } %}
+
+    {% set statusBadgeMap = {
+        'active': 'success',
+        'draft': '',
+        'paused': 'warning',
+        'review_required': 'warning',
+        'failed': 'alert',
+        'cancelled': '',
+    } %}
+
+    {% set headingLineClassName = 'spacing-bottom'%}
+    {% block headingLine %}
+        <p class="{{ headingLineClassName }}">
+            {{ 'recurring_orders.attention_banner.message' | trans({'%count%': data.count}) }}
+        </p>
+    {% endblock %}
+
+    {% set statusesWrapperClassName = 'grid grid--gap spacing-bottom--small' %}
+    {% set statusInfoClassName = 'col' %}
+    {% set statusDefaultIconName = 'action-warning' %}
+    {% set statusIconModifiers = ['small'] %}
+    {% set statusCounterClassName = '' %}
+    {% set statusBadgeClassName = '' %}
+    {% block statuses %}
+        <div class="{{ statusesWrapperClassName }}">
+           {% for status, count in data.attentionStatusCounts | filter(count => count > 0) %}    
+                {% block info %}
+                    <div class="{{ statusInfoClassName }}">
+                        {% block badge %}
+                            {% embed molecule('status') with {
+                                data: {
+                                    label: ('recurring_orders.status.' ~ status) | trans,
+                                    status: statusBadgeMap[status] ?? '',
+                                },
+                                embed: {
+                                    statusIconModifiers: statusIconModifiers,
+                                    statusDefaultIconName: statusDefaultIconName,
+                                    count: count,
+                                    status: status,
+                                    statusIconMap: statusIconMap
+                                }
+                            } only %}
+                                {% block label %}
+                                    {% include atom('icon') with {
+                                        modifiers: embed.statusIconModifiers,
+                                        data: {
+                                            name: embed.statusIconMap[embed.status] ?? embed.statusDefaultIconName
+                                        },
+                                    } only %}
+
+                                    {{ embed.count }}
+
+                                    {{ parent() }}
+                                {% endblock %}
+                            {% endembed %}
+                        {% endblock %}
+                    </div>
+                {% endblock %}
+            {% endfor %}
+        </div>
+
+        {% set actionsWrapperClassName = 'grid grid--gap spacing-bottom--small' %}
+        {% set statusActionClassName = 'col' %}
+        {% set actionButtonClassName = 'button button--small button--hollow' %}
+        {% block actions %}
+            <div class="{{ actionsWrapperClassName }}">
+                {% for status, count in data.attentionStatusCounts | filter(count => count > 0) %}
+                    {% block action %}
+                        <div class="{{ statusActionClassName }}">
+                            <a href="{{ url('recurring-orders', {'recurring_order_search_form[filters][status]': status}) }}"
+                                class="{{ actionButtonClassName }}">
+                                {{ ('recurring_orders.attention_banner.link.' ~ status) | trans }}
+                            </a>
+                        </div>
+                    {% endblock %}
+                {% endfor %}
+            </div>
+        {% endblock %}
+    {% endblock %}
+{% endblock %}

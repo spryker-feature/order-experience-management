@@ -1,0 +1,53 @@
+{% extends template('page-layout-customer', 'CustomerPage') %}
+
+{% define data = {
+    schedule: _view.schedule,
+    quote: _view.quote,
+    statusClassMap: _view.statusClassMap,
+    statusIconMap: _view.statusIconMap,
+    errorBannerStatuses: _view.errorBannerStatuses,
+    statusActive: _view.statusActive,
+    statusPaused: _view.statusPaused,
+    statusCancelled: _view.statusCancelled,
+    statusReviewRequired: _view.statusReviewRequired,
+    statusFailed: _view.statusFailed,
+    historyEventTypeFailed: _view.historyEventTypeFailed,
+    historyEventTypeBadgeClassMap: _view.historyEventTypeBadgeClassMap,
+    pauseForm: _view.pauseForm,
+    confirmForm: _view.confirmForm,
+    skipForm: _view.skipForm,
+    cancelForm: _view.cancelForm,
+    resumeForm: _view.resumeForm,
+    retryForm: _view.retryForm,
+    title: _view.schedule.name ?: ('recurring_orders.detail.title' | trans),
+    activePage: 'recurring-orders',
+} %}
+
+{% block title %}{% endblock %}
+
+{% block customerContent %}
+    {% include molecule('schedule-detail', 'OrderExperienceManagement') with {
+        data: {
+            schedule: data.schedule,
+            quote: data.quote,
+            statusClassMap: data.statusClassMap,
+            statusIconMap: data.statusIconMap,
+            errorBannerStatuses: data.errorBannerStatuses,
+            statusActive: data.statusActive,
+            statusPaused: data.statusPaused,
+            statusCancelled: data.statusCancelled,
+            statusReviewRequired: data.statusReviewRequired,
+            statusFailed: data.statusFailed,
+            historyEventTypeFailed: data.historyEventTypeFailed,
+            historyEventTypeBadgeClassMap: data.historyEventTypeBadgeClassMap,
+            pauseForm: data.pauseForm,
+            confirmForm: data.confirmForm,
+            skipForm: data.skipForm,
+            cancelForm: data.cancelForm,
+            resumeForm: data.resumeForm,
+            retryForm: data.retryForm,
+            title: data.schedule.name ?: ('recurring_orders.detail.title' | trans),
+            activePage: data.activePage,
+        }
+    } only %}
+{% endblock %}

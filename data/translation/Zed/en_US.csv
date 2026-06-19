@@ -1,0 +1,12 @@
+"Recurring Orders","Recurring Orders"
+"Configuration for recurring order schedules.","Configuration for recurring order schedules."
+General,General
+"General recurring order settings.","General recurring order settings."
+Schedule,Schedule
+"Controls how recurring order schedules behave.","Controls how recurring order schedules behave."
+"Schedule Grace Period","Schedule Grace Period"
+"Number of hours before the next order trigger date when the pre-order notification is sent to the customer.","Number of hours before the next order trigger date when the pre-order notification is sent to the customer."
+"Enter time in hours","Enter time in hours"
+"Schedule grace period is required","Schedule grace period is required"
+"Must be at least 1 hour","Must be at least 1 hour"
+"Cannot exceed 720 hours (30 days)","Cannot exceed 720 hours (30 days)"

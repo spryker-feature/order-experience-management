@@ -1,0 +1,27 @@
+{% extends template('page-layout-customer', 'CustomerPage') %}
+
+{% define data = {
+    review: _view.review,
+    schedule: _view.schedule,
+    reviewReasonLabelMap: _view.reviewReasonLabelMap,
+    reviewReasonBadgeMap: _view.reviewReasonBadgeMap,
+    approveForm: _view.approveForm,
+    title: ('recurring_orders.review.title' | trans({'%name%': _view.schedule.name})),
+    activePage: 'recurring-orders',
+} %}
+
+{% block title %}{% endblock %}
+
+{% block customerContent %}
+    {% include molecule('schedule-review', 'OrderExperienceManagement') with {
+        data: {
+            review: data.review,
+            schedule: data.schedule,
+            reviewReasonLabelMap: data.reviewReasonLabelMap,
+            reviewReasonBadgeMap: data.reviewReasonBadgeMap,
+            approveForm: data.approveForm,
+            title: data.title,
+            activePage: data.activePage,
+        },
+    } only %}
+{% endblock %}

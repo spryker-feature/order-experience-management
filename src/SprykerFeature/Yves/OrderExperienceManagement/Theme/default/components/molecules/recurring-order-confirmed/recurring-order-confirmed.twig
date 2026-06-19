@@ -1,0 +1,43 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-confirmed',
+} %}
+
+{% define data = {
+    recurringOrderSettings: required,
+    cadenceTypeEveryNWeeks: required,
+} %}
+
+{% block body %}
+    {% set items = [
+        {
+            label: 'recurring_orders.checkout.cadence_label' | trans,
+            value: ('recurring_orders.cadence.' ~ data.recurringOrderSettings.cadenceType) | trans,
+            enabled: true,
+        },
+        {
+            label: 'recurring_orders.checkout.cadence_value_label' | trans,
+            value: data.recurringOrderSettings.cadenceValue,
+            enabled: data.recurringOrderSettings.cadenceType == data.cadenceTypeEveryNWeeks and data.recurringOrderSettings.cadenceValue,
+        },
+        {
+            label: 'recurring_orders.checkout.schedule_name_label' | trans,
+            value: data.recurringOrderSettings.scheduleName,
+            enabled: data.recurringOrderSettings.scheduleName is not empty,
+        },
+    ] %}
+    {% set listClassName = 'list' %}
+    {% set listItemClassName = 'list__item' %}
+
+    {% block list %}
+        <ul class="{{ listClassName }}">
+            {% for item in items | filter(item => item.enabled) %}
+                <li class="{{ listItemClassName }}">
+                    <strong>{{ item.label }}:</strong>
+                    <span>{{ item.value }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endblock %}
+{% endblock %}

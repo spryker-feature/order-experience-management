@@ -1,0 +1,8 @@
+{% block body %}
+    {% include molecule('recurring-order-form', 'OrderExperienceManagement') with {
+        data: {
+            form: _view.form,
+            cadenceTypeEveryNWeeks: _view.cadenceTypeEveryNWeeks,
+        },
+    } only %}
+{% endblock %}

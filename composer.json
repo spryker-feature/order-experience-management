@@ -1,0 +1,88 @@
+{
+    "name": "spryker-feature/order-experience-management",
+    "type": "library",
+    "description": "OrderExperienceManagement module",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "spryker/application": "^3.46.0",
+        "spryker/cart": "^7.0.0",
+        "spryker/checkout": "^6.0.0",
+        "spryker/checkout-extension": "^1.0.0",
+        "spryker/company-business-unit": "^2.0.0",
+        "spryker/company-user": "^2.0.0",
+        "spryker/customer": "^7.0.0",
+        "spryker/glossary": "^3.0.0",
+        "spryker/kernel": "^3.30.0",
+        "spryker/locale": "^4.0.0",
+        "spryker/mail": "^4.9.0",
+        "spryker/mail-extension": "^1.0.0",
+        "spryker/payment": "^5.0.0",
+        "spryker/price-cart-connector": "^6.0.0",
+        "spryker/product-packaging-unit": "^4.0.0",
+        "spryker/propel-orm": "^1.0.0",
+        "spryker/quote": "^2.0.0",
+        "spryker/sales": "^11.0.0",
+        "spryker/shipment": "^8.0.0",
+        "spryker/state-machine": "^2.0.0",
+        "spryker/symfony": "^3.0.0",
+        "spryker/util-encoding": "^2.0.0",
+        "spryker/uuid-behavior": "^1.3.0",
+        "spryker/zed-request": "^3.0.0"
+    },
+    "require-dev": {
+        "spryker-feature/purchasing-control": "*",
+        "spryker-shop/customer-page": "*",
+        "spryker/code-sniffer": "*",
+        "spryker/company": "*",
+        "spryker/company-business-unit-sales-connector": "*",
+        "spryker/company-mail-connector": "*",
+        "spryker/company-role": "*",
+        "spryker/company-sales-connector": "*",
+        "spryker/configurable-bundle": "^2.0.0",
+        "spryker/container": "*",
+        "spryker/currency": "*",
+        "spryker/log": "*",
+        "spryker/permission": "*",
+        "spryker/propel": "*",
+        "spryker/router": "*",
+        "spryker/store": "*",
+        "spryker/testify": "*"
+    },
+    "suggest": {
+        "spryker-feature/purchasing-control": "ADD SUGGEST DESCRIPTION",
+        "spryker-shop/company-page": "ADD SUGGEST DESCRIPTION",
+        "spryker-shop/customer-page": "ADD SUGGEST DESCRIPTION",
+        "spryker-shop/shop-ui": "ADD SUGGEST DESCRIPTION",
+        "spryker/log": "ADD SUGGEST DESCRIPTION",
+        "spryker/router": "ADD SUGGEST DESCRIPTION"
+    },
+    "autoload": {
+        "psr-4": {
+            "SprykerFeature\\": "src/SprykerFeature/",
+            "SprykerFeatureTest\\Shared\\OrderExperienceManagement\\Helper\\": "tests/SprykerFeatureTest/Shared/OrderExperienceManagement/_support/Helper/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SprykerFeatureTest\\": "tests/SprykerFeatureTest/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "cs-check": "phpcs -p -s --standard=vendor/spryker/code-sniffer/SprykerStrict/ruleset.xml src/ tests/",
+        "cs-fix": "phpcbf -p --standard=vendor/spryker/code-sniffer/SprykerStrict/ruleset.xml src/ tests/"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

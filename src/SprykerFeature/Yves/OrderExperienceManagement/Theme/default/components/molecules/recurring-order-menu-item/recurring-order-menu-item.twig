@@ -1,0 +1,14 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-menu-item',
+}%}
+
+{% set itemClass = data.isActivePage ? 'menu__item--active' : '' %}
+
+{% block body %}
+    <li class="menu__item {{ itemClass }}">
+        <a href="{{ url('recurring-orders') }}"
+           data-id="sidebar-recurring-orders">{{ 'recurring_orders.menu_item' | trans }}</a>
+    </li>
+{% endblock %}

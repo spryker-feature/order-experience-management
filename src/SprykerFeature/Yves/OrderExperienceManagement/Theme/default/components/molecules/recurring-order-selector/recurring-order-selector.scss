@@ -1,0 +1,25 @@
+@mixin subscription-recurring-order-selector($name: '.recurring-order-selector') {
+    #{$name} {
+        &__heading {
+            margin-bottom: 1rem;
+        }
+
+        &__title {
+            @include helper-font-size(big);
+        }
+
+        &__edit-button {
+            display: none;
+        }
+
+        &:has(.recurring-order-confirmed__details) {
+            #{$name}__edit-button {
+                display: inline-block;
+            }
+        }
+
+        @content;
+    }
+}
+
+@include subscription-recurring-order-selector();

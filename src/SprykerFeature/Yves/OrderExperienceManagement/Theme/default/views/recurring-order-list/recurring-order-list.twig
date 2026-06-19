@@ -1,0 +1,27 @@
+{% extends template('page-layout-customer', 'CustomerPage') %}
+
+{% define data = {
+    recurringSchedules: _view.recurringSchedules,
+    pagination: _view.pagination,
+    searchForm: _view.searchForm,
+    attentionCount: _view.attentionCount,
+    attentionStatusCounts: _view.attentionStatusCounts,
+    statusClassMap: _view.statusClassMap,
+    title: 'recurring_orders.list.title' | trans,
+    activePage: 'recurring-orders',
+} %}
+
+{% block customerContent %}
+    {% include molecule('recurring-order-list', 'OrderExperienceManagement') with {
+        data: {
+            recurringSchedules: data.recurringSchedules,
+            pagination: data.pagination,
+            searchForm: data.searchForm,
+            attentionCount: data.attentionCount,
+            attentionStatusCounts: data.attentionStatusCounts,
+            statusClassMap: data.statusClassMap,
+            title: data.title,
+            activePage: data.activePage,
+        }
+    } only %}
+{% endblock %}

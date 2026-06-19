@@ -1,0 +1,65 @@
+namespace: SprykerFeatureTest\Zed\OrderExperienceManagement
+
+paths:
+    tests: .
+    data: ../../../_data
+    support: _support
+    output: ../../../_output
+
+coverage:
+    enabled: true
+    remote: false
+    whitelist: { include: ['../../../../src/*'] }
+
+suites:
+    Business:
+        path: Business
+        actor: OrderExperienceManagementBusinessTester
+        modules:
+            enabled:
+                - Asserts
+                - \SprykerTest\Shared\Testify\Helper\DataCleanupHelper
+                - \SprykerTest\Shared\Testify\Helper\Environment
+                - \SprykerTest\Shared\Testify\Helper\LocatorHelper:
+                      projectNamespaces:
+                          - SprykerFeature
+                - \SprykerTest\Shared\Propel\Helper\TransactionHelper
+                - \SprykerTest\Zed\Testify\Helper\Business\BusinessHelper
+                - \SprykerTest\Zed\Testify\Helper\Business\DependencyProviderHelper
+                - \SprykerTest\Shared\Testify\Helper\DependencyHelper
+                - \SprykerTest\Shared\Propel\Helper\PropelInstallHelper
+                - \SprykerTest\Shared\Testify\Helper\ConfigHelper
+                - \SprykerTest\Service\Container\Helper\ContainerHelper
+                - \SprykerTest\Zed\Store\Helper\StoreDependencyHelper
+                - \SprykerTest\Shared\Store\Helper\StoreDataHelper
+                - \SprykerTest\Shared\Currency\Helper\CurrencyDataHelper
+                - \SprykerTest\Shared\Customer\Helper\CustomerDataHelper
+                - \SprykerTest\Zed\Company\Helper\CompanyHelper
+                - \SprykerTest\Shared\CompanyUser\Helper\CompanyUserHelper
+                - \SprykerTest\Zed\CompanyBusinessUnit\Helper\CompanyBusinessUnitHelper
+                - \SprykerTest\Zed\CompanyRole\Helper\CompanyRoleHelper
+                - \SprykerTest\Zed\Permission\Helper\PermissionHelper
+                - \SprykerFeatureTest\Shared\OrderExperienceManagement\Helper\RecurringScheduleHelper
+    Communication:
+        path: Communication
+        actor: OrderExperienceManagementBusinessTester
+        modules:
+            enabled:
+                - Asserts
+                - \SprykerTest\Shared\Testify\Helper\DataCleanupHelper
+                - \SprykerTest\Shared\Testify\Helper\Environment
+                - \SprykerTest\Shared\Testify\Helper\LocatorHelper:
+                      projectNamespaces:
+                          - SprykerFeature
+                - \SprykerTest\Shared\Propel\Helper\TransactionHelper
+                - \SprykerTest\Zed\Testify\Helper\Business\BusinessHelper
+                - \SprykerTest\Zed\Testify\Helper\Business\DependencyProviderHelper
+                - \SprykerTest\Shared\Testify\Helper\DependencyHelper
+                - \SprykerTest\Shared\Propel\Helper\PropelInstallHelper
+                - \SprykerTest\Shared\Testify\Helper\ConfigHelper
+                - \SprykerTest\Service\Container\Helper\ContainerHelper
+                - \SprykerTest\Zed\Store\Helper\StoreDependencyHelper
+                - \SprykerTest\Shared\Store\Helper\StoreDataHelper
+                - \SprykerTest\Shared\Currency\Helper\CurrencyDataHelper
+                - \SprykerTest\Shared\Customer\Helper\CustomerDataHelper
+                - \SprykerFeatureTest\Shared\OrderExperienceManagement\Helper\RecurringScheduleHelper
