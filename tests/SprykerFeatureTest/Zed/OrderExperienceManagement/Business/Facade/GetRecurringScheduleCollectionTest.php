@@ -26,7 +26,7 @@ use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBu
  *
  * @group SprykerFeatureTest
  * @group Zed
- *  OrderExperienceManagement
+ * @group OrderExperienceManagement
  * @group Business
  * @group Facade
  * @group GetRecurringScheduleCollectionTest
@@ -34,6 +34,8 @@ use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBu
  */
 class GetRecurringScheduleCollectionTest extends Unit
 {
+    protected const int NON_EXISTENT_CUSTOMER_ID = 0;
+
     protected OrderExperienceManagementBusinessTester $tester;
 
     protected function setUp(): void
@@ -179,7 +181,7 @@ class GetRecurringScheduleCollectionTest extends Unit
         $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
             ->setRecurringScheduleConditions(
                 (new RecurringScheduleConditionsTransfer())
-                    ->addCustomerId(PHP_INT_MAX),
+                    ->addCustomerId(static::NON_EXISTENT_CUSTOMER_ID),
             );
 
         // Act

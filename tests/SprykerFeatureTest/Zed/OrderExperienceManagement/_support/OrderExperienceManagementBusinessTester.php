@@ -36,6 +36,9 @@ use SprykerFeatureTest\Zed\OrderExperienceManagement\Stub\FixedScheduleValidator
  * @method void comment($description)
  * @method void pause($vars = [])
  * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface getFacade()
+ * @method \Generated\Shared\Transfer\CompanyTransfer haveCompany(array $seedData = [])
+ * @method \Generated\Shared\Transfer\PermissionTransfer havePermission(\Spryker\Shared\PermissionExtension\Dependency\Plugin\PermissionPluginInterface $permissionPlugin)
+ * @method void preparePermissionStorageDependency(\Spryker\Zed\PermissionExtension\Dependency\Plugin\PermissionStoragePluginInterface $permissionStoragePlugin)
  *
  * @SuppressWarnings(PHPMD)
  */

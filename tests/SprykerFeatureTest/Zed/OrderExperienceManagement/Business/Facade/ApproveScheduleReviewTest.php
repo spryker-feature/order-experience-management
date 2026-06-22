@@ -30,7 +30,7 @@ use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBu
  *
  * @group SprykerFeatureTest
  * @group Zed
- *  OrderExperienceManagement
+ * @group OrderExperienceManagement
  * @group Business
  * @group Facade
  * @group ApproveScheduleReviewTest
@@ -55,6 +55,8 @@ class ApproveScheduleReviewTest extends Unit
 
     protected const string GROUP_KEY_A = 'group-key-a';
 
+    protected const int NON_EXISTENT_CUSTOMER_ID = 0;
+
     protected OrderExperienceManagementBusinessTester $tester;
 
     protected function setUp(): void
@@ -71,7 +73,7 @@ class ApproveScheduleReviewTest extends Unit
         // Arrange
         $requestTransfer = (new RecurringScheduleEventRequestTransfer())
             ->setUuid('non-existent-uuid')
-            ->setIdCustomer(PHP_INT_MAX);
+            ->setIdCustomer(static::NON_EXISTENT_CUSTOMER_ID);
 
         // Act
         $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
@@ -234,7 +236,7 @@ class ApproveScheduleReviewTest extends Unit
 
         // Schedule awaiting review is owned by a colleague in the same company, not by the acting company user.
         $recurringScheduleTransfer = $this->tester->haveRecurringSchedule(
-            (int)$colleagueCompanyUserTransfer->getCustomer()->getIdCustomer(),
+            (int)$colleagueCompanyUserTransfer->getCustomerOrFail()->getIdCustomer(),
             [
                 RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
                 RecurringScheduleTransfer::PRICE_MODE => static::PRICE_MODE_GROSS,
@@ -266,6 +268,7 @@ class ApproveScheduleReviewTest extends Unit
     }
 
     /**
+     * @param string $status
      * @param array<int, array<string, mixed>> $itemOverridesList
      *
      * @return array{0: string, 1: int, 2: int}
@@ -289,6 +292,9 @@ class ApproveScheduleReviewTest extends Unit
     }
 
     /**
+     * @param int $idCustomer
+     * @param int $idRecurringSchedule
+     *
      * @return array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
      */
     protected function findScheduleItems(int $idCustomer, int $idRecurringSchedule): array

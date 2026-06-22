@@ -34,6 +34,9 @@ class RecurringOrderSelectorForm extends AbstractType
         return '';
     }
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $this->addScheduleNameField($builder)
@@ -87,6 +90,7 @@ class RecurringOrderSelectorForm extends AbstractType
         $builder->add(static::FIELD_SCHEDULE_NAME, TextType::class, [
             'label' => 'recurring_orders.checkout.schedule_name_label',
             'required' => false,
+            'sanitize_xss' => true,
             'constraints' => [
                 new Length(['max' => 255]),
             ],
