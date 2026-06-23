@@ -17,6 +17,7 @@ use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Spryker\Shared\Kernel\Container\GlobalContainer;
+use Spryker\Shared\Log\LoggerTrait;
 use Spryker\Zed\Cart\Business\CartFacadeInterface;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
 use Spryker\Zed\Payment\Business\PaymentFacadeInterface;
@@ -24,9 +25,12 @@ use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementCon
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
+use Throwable;
 
 class RecurringOrderPlacer implements RecurringOrderPlacerInterface
 {
+    use LoggerTrait;
+
     protected const string GLOSSARY_KEY_ITEMS_NOT_PURCHASABLE = 'recurring_orders.error.items_not_purchasable';
 
     protected const string ERROR_SCHEDULE_NOT_FOUND = 'Recurring schedule not found.';
@@ -76,7 +80,14 @@ class RecurringOrderPlacer implements RecurringOrderPlacerInterface
         $this->writeHistory($scheduleTransfer, $checkoutResponseTransfer);
 
         if (!$checkoutResponseTransfer->getIsSuccess()) {
-            $this->mailNotificationSender->notifyPlacementFailure($scheduleTransfer->getIdRecurringScheduleOrFail());
+            try {
+                $this->mailNotificationSender->notifyPlacementFailure($scheduleTransfer->getIdRecurringScheduleOrFail());
+            } catch (Throwable $throwable) {
+                $this->getLogger()->error(
+                    sprintf('Placement failure notification email could not be sent for schedule ID %d: %s', $scheduleTransfer->getIdRecurringScheduleOrFail(), $throwable->getMessage()),
+                    ['exception' => $throwable],
+                );
+            }
         }
 
         return $checkoutResponseTransfer;

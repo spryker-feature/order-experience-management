@@ -21,6 +21,7 @@ use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleHistoryQuery;
+use RuntimeException;
 use Spryker\Zed\Cart\Business\CartFacadeInterface;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
@@ -218,6 +219,44 @@ class PlaceOrderCommandTest extends Unit
         );
 
         // Assert
+        $historyEntity = SpyRecurringScheduleHistoryQuery::create()
+            ->filterByFkRecurringSchedule($scheduleTransfer->getIdRecurringScheduleOrFail())
+            ->findOne();
+        $this->assertNotNull($historyEntity);
+        $this->assertSame(SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED, $historyEntity->getEventType());
+        $this->assertHistoryDetail('checkout failed', $historyEntity->getDetail());
+    }
+
+    public function testRunDoesNotThrowAndWritesHistoryWhenPlacementFailureNotificationThrows(): void
+    {
+        // Arrange
+        $scheduleTransfer = $this->haveScheduleWithItem([RecurringScheduleTransfer::CUSTOMER_REFERENCE => static::CUSTOMER_REFERENCE]);
+
+        $cartFacadeMock = $this->createCartFacadeMockReturningReloadedQuote();
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CART, $cartFacadeMock);
+
+        $checkoutFacadeMock = $this->createMock(CheckoutFacadeInterface::class);
+        $checkoutFacadeMock->method('placeOrder')->willReturn(
+            (new CheckoutResponseTransfer())->setIsSuccess(false)
+                ->addError((new CheckoutErrorTransfer())->setMessage('checkout failed')),
+        );
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CHECKOUT, $checkoutFacadeMock);
+
+        $paymentFacadeMock = $this->createMock(PaymentFacadeInterface::class);
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_PAYMENT, $paymentFacadeMock);
+
+        $mailFacadeMock = $this->createMock(MailFacadeInterface::class);
+        $mailFacadeMock->method('handleMail')->willThrowException(new RuntimeException('SMTP connection refused'));
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_MAIL, $mailFacadeMock);
+
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CUSTOMER, $this->createCustomerFacadeMockReturningBuyer());
+
+        // Act — must not throw even though mail is unavailable
+        $this->createCommand()->run(
+            (new StateMachineItemTransfer())->setIdentifier($scheduleTransfer->getIdRecurringScheduleOrFail()),
+        );
+
+        // Assert — failure history entry is still persisted
         $historyEntity = SpyRecurringScheduleHistoryQuery::create()
             ->filterByFkRecurringSchedule($scheduleTransfer->getIdRecurringScheduleOrFail())
             ->findOne();

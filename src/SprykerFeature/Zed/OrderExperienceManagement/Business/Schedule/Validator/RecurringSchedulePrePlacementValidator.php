@@ -11,12 +11,16 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validat
 
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
+use Spryker\Shared\Log\LoggerTrait;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
+use Throwable;
 
 class RecurringSchedulePrePlacementValidator implements RecurringSchedulePrePlacementValidatorInterface
 {
+    use LoggerTrait;
+
     /**
      * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\ScheduleValidatorPluginInterface> $scheduleValidatorPlugins
      */
@@ -57,7 +61,14 @@ class RecurringSchedulePrePlacementValidator implements RecurringSchedulePrePlac
             return true;
         }
 
-        $this->recurringOrderBuyerMailNotificationSender->notifyValidationFailed($idRecurringSchedule);
+        try {
+            $this->recurringOrderBuyerMailNotificationSender->notifyValidationFailed($idRecurringSchedule);
+        } catch (Throwable $throwable) {
+            $this->getLogger()->error(
+                sprintf('Validation failure notification email could not be sent for schedule ID %d: %s', $idRecurringSchedule, $throwable->getMessage()),
+                ['exception' => $throwable],
+            );
+        }
 
         return false;
     }

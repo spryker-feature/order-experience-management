@@ -397,7 +397,7 @@ class RecurringScheduleHelper extends Module
     protected function buildMinimalQuoteData(RecurringScheduleTransfer $recurringScheduleTransfer): string
     {
         $customerTransfer = $this->getModule('\SprykerTest\Shared\Customer\Helper\CustomerDataHelper')
-            ->haveConfirmedCustomer();
+            ->haveConfirmedCustomer(['locale_name' => 'en_US']);
 
         $storeTransfer = $this->getModule('\SprykerTest\Shared\Store\Helper\StoreDataHelper')
             ->haveStore([StoreTransfer::NAME => $recurringScheduleTransfer->getStoreNameOrFail()]);
