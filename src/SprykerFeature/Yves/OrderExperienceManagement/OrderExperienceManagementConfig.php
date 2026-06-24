@@ -93,12 +93,12 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getHistoryEventTypeBadgeClassMap(): array
     {
         return [
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PLACED => 'label--success',
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_SKIPPED => 'label--warning',
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED => 'label--danger',
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_CANCELLED => 'label--danger',
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PAUSED => 'label--info',
-            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_RESUMED => 'label--info',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PLACED => 'success',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_SKIPPED => 'warning',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED => 'alert',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_CANCELLED => 'alert',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PAUSED => 'info',
+            SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_RESUMED => 'info',
         ];
     }
 

@@ -111,8 +111,9 @@
         {% endif %}
 
         {% if data.schedule.status == data.statusReviewRequired %}
+            {% set reviewRequiredBlockClassName = "alert alert--warning spacing-bottom" %}
             {% block reviewRequired %}
-                <div class="alert alert--warning spacing-bottom">
+                <div class="{{ reviewRequiredBlockClassName }}">
                     <div>
                         {% set reviewRequiredButtonClassName = 'button' %}
                         {% block reviewRequiredText %}
@@ -132,46 +133,56 @@
 
     {% block grid %}
         <div class="grid">
-            <div class="col col--sm-12 col--lg-8 spacing-bottom">
-                {% include molecule('schedule-next-execution', 'OrderExperienceManagement') with {
-                    data: {
-                        schedule: data.schedule,
-                        skipUrl: url('recurring-order/skip', {uuid: data.schedule.uuid}),
-                        statusActive: data.statusActive,
-                        statusPaused: data.statusPaused,
-                        statusReviewRequired: data.statusReviewRequired,
-                        skipModalTriggerClassName: skipModalTriggerClassName,
-                        resumeModalTriggerClassName: resumeModalTriggerClassName,
-                    },
-                } only %}
+            {% block scheduleDetailContent %}
+                <div class="col col--sm-12 col--lg-8 spacing-bottom">
+                    {% block scheduleNextExecution %}
+                        {% include molecule('schedule-next-execution', 'OrderExperienceManagement') with {
+                            data: {
+                                schedule: data.schedule,
+                                skipUrl: url('recurring-order/skip', {uuid: data.schedule.uuid}),
+                                statusActive: data.statusActive,
+                                statusPaused: data.statusPaused,
+                                statusReviewRequired: data.statusReviewRequired,
+                                skipModalTriggerClassName: skipModalTriggerClassName,
+                                resumeModalTriggerClassName: resumeModalTriggerClassName,
+                            },
+                        } only %}
+                    {% endblock %}
 
-                {% include molecule('recurring-order-items', 'OrderExperienceManagement') with {
-                    data: {
-                        schedule: data.schedule,
-                    }
-                } only %}
-            </div>
+                    {% block orderItems %}
+                        {% include molecule('recurring-order-items', 'OrderExperienceManagement') with {
+                            data: {
+                                schedule: data.schedule,
+                            },
+                        } only %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
 
-            <div class="col col--sm-12 col--lg-4 spacing-bottom">
-                {% include molecule('schedule-detail-sidebar', 'OrderExperienceManagement') with {
-                    data: {
-                        schedule: data.schedule,
-                        statusClassMap: data.statusClassMap,
-                        quote: data.quote,
-                    },
-                } only %}
-            </div>
+            {% block scheduleDetailSidebar %}
+                <div class="col col--sm-12 col--lg-4 spacing-bottom">
+                    {% include molecule('schedule-detail-sidebar', 'OrderExperienceManagement') with {
+                        data: {
+                            schedule: data.schedule,
+                            statusClassMap: data.statusClassMap,
+                            quote: data.quote,
+                        },
+                    } only %}
+                </div>
+            {% endblock %}
         </div>
     {% endblock %}
 
-    {% include molecule('schedule-execution-history', 'OrderExperienceManagement') with {
-        data: {
-            history: data.schedule.history,
-            statusClassMap: data.statusClassMap,
-            pagination: data.schedule.historyPagination,
-            uuid: data.schedule.uuid,
-        },
-    } only %}
+    {% block scheduleExecutionHistory %}
+        {% include molecule('schedule-execution-history', 'OrderExperienceManagement') with {
+            data: {
+                history: data.schedule.history,
+                statusClassMap: data.historyEventTypeBadgeClassMap,
+                pagination: data.schedule.historyPagination,
+                uuid: data.schedule.uuid,
+            },
+        } only %}
+    {% endblock %}
 
     {% block modals %}
         {% include molecule('schedule-action-modal', 'OrderExperienceManagement') with {

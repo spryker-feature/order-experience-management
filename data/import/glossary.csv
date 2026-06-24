@@ -32,8 +32,12 @@ recurring_orders.checkout.schedule_name_label,Schedule name,en_US
 recurring_orders.checkout.schedule_name_label,Name des Zeitplans,de_DE
 recurring_orders.checkout.section_title,Recurring Order,en_US
 recurring_orders.checkout.section_title,Wiederkehrende Bestellung,de_DE
+recurring_orders.checkout.validation.cadence_required,Please select a frequency.,en_US
+recurring_orders.checkout.validation.cadence_required,Bitte wählen Sie eine Häufigkeit aus.,de_DE
 recurring_orders.detail.access_denied,You do not have access to this recurring order.,en_US
 recurring_orders.detail.access_denied,Sie haben keinen Zugriff auf diese wiederkehrende Bestellung.,de_DE
+recurring_orders.detail.action.error,An error occurred while processing the action. Please try again.,en_US
+recurring_orders.detail.action.error,Bei der Verarbeitung der Aktion ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.,de_DE
 recurring_orders.detail.actions.cancel,Cancel Schedule,en_US
 recurring_orders.detail.actions.cancel,Zeitplan abbrechen,de_DE
 recurring_orders.detail.actions.pause,Pause,en_US
@@ -102,6 +106,12 @@ recurring_orders.detail.pause.modal.warning,Do you want to pause the schedule no
 recurring_orders.detail.pause.modal.warning,Möchten Sie den Zeitplan jetzt pausieren?,de_DE
 recurring_orders.detail.resume.modal.title,Resume schedule,en_US
 recurring_orders.detail.resume.modal.title,Zeitplan fortsetzen,de_DE
+recurring_orders.detail.resume.date_label,Next execution date,en_US
+recurring_orders.detail.resume.date_label,Datum der nächsten Ausführung,de_DE
+recurring_orders.detail.resume.validation.date_required,Please select a date.,en_US
+recurring_orders.detail.resume.validation.date_required,Bitte wählen Sie ein Datum aus.,de_DE
+recurring_orders.detail.resume.validation.date_in_past,The date must be today or in the future.,en_US
+recurring_orders.detail.resume.validation.date_in_past,Das Datum muss heute oder in der Zukunft liegen.,de_DE
 recurring_orders.detail.review_required.attention,Recurring order could not be processed automatically and requires your attention.,en_US
 recurring_orders.detail.review_required.attention,Der wiederkehrende Auftrag konnte nicht automatisch verarbeitet werden und erfordert Ihre Aufmerksamkeit.,de_DE
 recurring_orders.detail.sidebar.cadence,Cadence,en_US
