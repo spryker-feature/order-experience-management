@@ -26,14 +26,19 @@ class ScheduleItemRepricer implements ScheduleItemRepricerInterface
 
     public function repriceItems(QuoteTransfer $quoteTransfer): CartChangeTransfer
     {
+        // important: deep copy, not a clone $quoteTransfer
         $updatedQuoteTransfer = (new QuoteTransfer())->fromArray($quoteTransfer->toArray(), true);
 
         foreach ($updatedQuoteTransfer->getItems() as $itemTransfer) {
             $this->clearItemPrices($itemTransfer);
         }
 
+        // Use a context quote without items so volume-price quantity counting does not double-count the items
+        $contextQuoteTransfer = (new QuoteTransfer())->fromArray($updatedQuoteTransfer->toArray(), true);
+        $contextQuoteTransfer->setItems(new ArrayObject());
+
         $cartChangeTransfer = (new CartChangeTransfer())
-            ->setQuote($updatedQuoteTransfer)
+            ->setQuote($contextQuoteTransfer)
             ->setItems($updatedQuoteTransfer->getItems());
 
         /** @var \Generated\Shared\Transfer\CartChangeTransfer $cartChangeTransfer */
