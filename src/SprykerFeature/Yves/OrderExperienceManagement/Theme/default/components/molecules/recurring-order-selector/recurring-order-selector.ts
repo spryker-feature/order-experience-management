@@ -19,7 +19,14 @@ export default class RecurringOrderSelector extends Component {
             return;
         }
 
-        this.handleTogglerChange();
+        // Only the pre-confirmed state needs its content fetched on init. The unchecked branch
+        // of handleTogglerChange() must never run here: its 'clear' request rewrites the session
+        // quote concurrently with the summary form submit and can clobber checkoutConfirmed,
+        // making the place-order step silently bounce back to summary.
+        if (this.toggler.checked) {
+            this.handleTogglerChange();
+        }
+
         this.editButton?.addEventListener('click', () => this.handleEditChange());
         this.toggler.addEventListener('change', () => this.handleTogglerChange());
     }
