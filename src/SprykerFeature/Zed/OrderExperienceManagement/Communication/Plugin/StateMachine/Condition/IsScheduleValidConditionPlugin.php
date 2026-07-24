@@ -24,11 +24,21 @@ use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
  */
 class IsScheduleValidConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
         return $this->getFacade()->isRecurringScheduleValid($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/IsScheduleValid';

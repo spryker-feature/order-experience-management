@@ -25,6 +25,11 @@ use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
  */
 class IsPlacementDueConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
         $dueData = $this->getRepository()->findRecurringScheduleDueData($stateMachineItemTransfer->getIdentifierOrFail());
@@ -38,6 +43,11 @@ class IsPlacementDueConditionPlugin extends AbstractPlugin implements ConditionP
         return $triggerDate <= new DateTimeImmutable('now');
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/IsPlacementDue';

@@ -64,6 +64,11 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     protected const string PATTERN_RECURRING_ORDER_APPROVE_REVIEW = '/recurring-order/{uuid}/approve-review';
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function addRoutes(RouteCollection $routeCollection): RouteCollection
     {
         $routeCollection = $this->addSaveRoute($routeCollection);

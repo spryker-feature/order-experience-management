@@ -40,6 +40,11 @@ class PlaceOrderCommandPlugin extends AbstractPlugin implements CommandPluginInt
             ->placeOrder($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/PlaceOrder';

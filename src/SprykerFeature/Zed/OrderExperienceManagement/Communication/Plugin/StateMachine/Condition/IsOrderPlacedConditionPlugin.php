@@ -25,6 +25,11 @@ use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementCon
  */
 class IsOrderPlacedConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
         $historyTransfer = $this->getRepository()->findLatestHistoryByScheduleId($stateMachineItemTransfer->getIdentifierOrFail());
@@ -36,6 +41,11 @@ class IsOrderPlacedConditionPlugin extends AbstractPlugin implements ConditionPl
         return $historyTransfer->getEventType() === SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PLACED;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/IsOrderPlaced';

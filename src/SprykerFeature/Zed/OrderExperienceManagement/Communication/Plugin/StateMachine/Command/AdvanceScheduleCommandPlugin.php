@@ -38,6 +38,11 @@ class AdvanceScheduleCommandPlugin extends AbstractPlugin implements CommandPlug
             ->skip($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/AdvanceSchedule';

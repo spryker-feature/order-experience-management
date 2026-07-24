@@ -37,6 +37,11 @@ class CompletePlacementCommandPlugin extends AbstractPlugin implements CommandPl
             ->advance($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getName(): string
     {
         return 'RecurringOrders/CompletePlacement';
