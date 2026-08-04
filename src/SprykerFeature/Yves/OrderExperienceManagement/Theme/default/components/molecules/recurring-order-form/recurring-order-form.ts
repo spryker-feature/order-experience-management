@@ -4,8 +4,6 @@ export default class RecurringOrderForm extends Component {
     protected typeSelect: HTMLSelectElement | null;
     protected valueWrapper: HTMLElement | null;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.typeSelect = this.querySelector<HTMLSelectElement>(`.${this.jsName}__type`);
         this.valueWrapper = this.querySelector<HTMLElement>(`.${this.jsName}__value-wrapper`);

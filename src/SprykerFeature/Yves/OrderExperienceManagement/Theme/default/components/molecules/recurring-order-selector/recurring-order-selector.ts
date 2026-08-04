@@ -7,8 +7,6 @@ export default class RecurringOrderSelector extends Component {
     protected contentWrapper: HTMLDivElement | null;
     protected editButton: HTMLElement | null;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.toggler = this.querySelector<HTMLInputElement>(`.${this.jsName}__recurring-order-toggle`);
         this.ajaxProvider = this.querySelector<AjaxProvider>(`.${this.jsName}__ajax-provider`);

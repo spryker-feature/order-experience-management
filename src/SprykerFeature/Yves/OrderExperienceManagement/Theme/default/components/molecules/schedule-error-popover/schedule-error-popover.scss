@@ -1,7 +1,12 @@
+@use 'sass:meta';
 @use 'sass:map';
 
 @mixin subscription-schedule-error-popover($name: '.schedule-error-popover') {
     #{$name} {
+        @if meta.mixin-exists(subscription-schedule-error-popover-base-hook) {
+            @include subscription-schedule-error-popover-base-hook;
+        }
+
         &__button {
             background: none;
             padding: 0;
@@ -12,5 +17,3 @@
         @content;
     }
 }
-
-@include subscription-schedule-error-popover();

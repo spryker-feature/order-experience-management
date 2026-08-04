@@ -1,5 +1,11 @@
+@use 'sass:meta';
+
 @mixin subscription-recurring-order-selector($name: '.recurring-order-selector') {
     #{$name} {
+        @if meta.mixin-exists(subscription-recurring-order-selector-base-hook) {
+            @include subscription-recurring-order-selector-base-hook;
+        }
+
         &__heading {
             margin-bottom: 1rem;
         }
@@ -21,5 +27,3 @@
         @content;
     }
 }
-
-@include subscription-recurring-order-selector();
