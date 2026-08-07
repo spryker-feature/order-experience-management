@@ -17,10 +17,26 @@ interface ItemShipmentMethodResolverInterface
     /**
      * @return array<string, int> Shipment method id keyed by the expense merchant reference.
      */
-    public function buildExpenseShipmentMethodMap(QuoteTransfer $quoteTransfer): array;
+    public function buildShipmentMethodIdMapByMerchantReference(QuoteTransfer $quoteTransfer): array;
 
     /**
      * @param array<string, int> $shipmentMethodIdMap
      */
     public function applyShipmentMethodId(ItemTransfer $itemTransfer, array $shipmentMethodIdMap): void;
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\ItemTransfer>
+     */
+    public function applyFallbackShipments(array $itemTransfers, QuoteTransfer $quoteTransfer): array;
+
+    /**
+     * Copies each bundle child's shipment onto its bundle parent, so a rebuilt bundle ships as one unit.
+     *
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\ItemTransfer>
+     */
+    public function alignBundleShipments(array $itemTransfers): array;
 }

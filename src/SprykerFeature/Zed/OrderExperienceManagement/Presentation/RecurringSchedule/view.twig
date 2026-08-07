@@ -1,0 +1,86 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% block section_title %}
+    {{ 'Recurring Order Schedule' | trans }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Schedule Details' | trans } %}
+        {% block widget_content %}
+            {% set frequency = recurringSchedule.cadenceType ~ (recurringSchedule.cadenceValue ? ' (' ~ recurringSchedule.cadenceValue ~ ')' : '') %}
+            {% set detailRows = [
+                { label: 'Name', value: recurringSchedule.name, qa: 'name' },
+                { label: 'Company', value: recurringSchedule.companyName, qa: 'company' },
+                { label: 'Business Unit', value: recurringSchedule.businessUnitName, qa: 'business-unit' },
+                { label: 'Owner', value: recurringSchedule.createdByName, qa: 'owner' },
+                { label: 'Status', value: recurringSchedule.status, qa: 'status' },
+                { label: 'Frequency', value: frequency, qa: 'frequency' },
+                { label: 'Next Trigger Date', value: recurringSchedule.nextTriggerDate, qa: 'next-trigger-date' },
+            ] %}
+
+            <dl class="dl-horizontal">
+                {% for row in detailRows %}
+                    <dt>{{ row.label | trans }}</dt>
+                    <dd data-qa="recurring-schedule-view-{{ row.qa }}">{{ row.value }}</dd>
+                {% endfor %}
+                {% if idSourceSalesOrder %}
+                    <dt>{{ 'Original Order' | trans }}</dt>
+                    <dd data-qa="recurring-schedule-view-original-order">
+                        <a href="{{ url('/sales/detail', {'id-sales-order': idSourceSalesOrder}) }}">
+                            {{ sourceOrderReference ?: idSourceSalesOrder }}
+                        </a>
+                    </dd>
+                {% endif %}
+            </dl>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Scheduled Items' | trans } %}
+        {% block widget_content %}
+            {% set sumTotal = recurringSchedule.items | reduce((carry, item) => carry + item.itemTotal, 0) %}
+            <table class="table" data-qa="recurring-schedule-view-items">
+                <thead>
+                    <tr>
+                        <th>{{ 'Product Name' | trans }}</th>
+                        <th>{{ 'SKU' | trans }}</th>
+                        <th>{{ 'Merchant' | trans }}</th>
+                        <th>{{ 'Quantity' | trans }}</th>
+                        <th>{{ 'Price' | trans }}</th>
+                        <th>{{ 'Total' | trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recurringSchedule.items %}
+                        <tr>
+                            <td>
+                                {{ item.productName }}
+                                {% if item.configurableBundleName %}
+                                    <br><small class="text-muted" data-qa="recurring-schedule-view-item-configurable-bundle">
+                                        {{ 'Bundle: %name%' | trans({'%name%': configurableBundleNamesByGlossaryKey[item.configurableBundleName] | default(item.configurableBundleName)}) }}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ merchantNamesByReference[item.merchantReference] | default(item.merchantReference) }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ (item.quantity ? item.itemTotal / item.quantity / 100 : 0) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</td>
+                            <td>{{ (item.itemTotal / 100) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">{{ 'No scheduled items.' | trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                {% if recurringSchedule.items is not empty %}
+                    <tfoot>
+                        <tr>
+                            <th colspan="5" class="text-right">{{ 'Sum total' | trans }}</th>
+                            <th data-qa="recurring-schedule-view-sum-total">{{ (sumTotal / 100) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</th>
+                        </tr>
+                    </tfoot>
+                {% endif %}
+            </table>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

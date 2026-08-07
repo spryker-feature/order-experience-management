@@ -9,16 +9,20 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Notification;
 
+use Spryker\Shared\Log\LoggerTrait;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Mapper\RecurringOrderNotificationMailMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Reader\RecurringScheduleBuyerReaderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Resolver\NotificationRecipientResolverInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
+use Throwable;
 
 class RecurringOrderBuyerMailNotificationSender implements RecurringOrderBuyerMailNotificationSenderInterface
 {
+    use LoggerTrait;
+
     public function __construct(
-        protected readonly OrderExperienceManagementRepositoryInterface $subscriptionRepository,
+        protected readonly OrderExperienceManagementRepositoryInterface $repository,
         protected readonly RecurringScheduleBuyerReaderInterface $buyerReader,
         protected readonly NotificationRecipientResolverInterface $recipientResolver,
         private readonly RecurringOrderNotificationMailMapperInterface $mailMapper,
@@ -28,10 +32,17 @@ class RecurringOrderBuyerMailNotificationSender implements RecurringOrderBuyerMa
 
     public function notifyUpcomingOrder(int $idRecurringSchedule): void
     {
-        $this->sendNotification(
-            $idRecurringSchedule,
-            fn ($schedule, $buyer, $recipient) => $this->mailMapper->mapRecurringScheduleToMailTransfer($schedule, $buyer, $recipient),
-        );
+        try {
+            $this->sendNotification(
+                $idRecurringSchedule,
+                fn ($schedule, $buyer, $recipient) => $this->mailMapper->mapRecurringScheduleToMailTransfer($schedule, $buyer, $recipient),
+            );
+        } catch (Throwable $throwable) {
+            $this->getLogger()->error(
+                sprintf('Upcoming notification failed for schedule ID %d: %s', $idRecurringSchedule, $throwable->getMessage()),
+                ['exception' => $throwable],
+            );
+        }
     }
 
     public function notifyValidationFailed(int $idRecurringSchedule): void
@@ -55,7 +66,7 @@ class RecurringOrderBuyerMailNotificationSender implements RecurringOrderBuyerMa
      */
     protected function sendNotification(int $idRecurringSchedule, callable $buildMailTransfer): void
     {
-        $recurringScheduleTransfer = $this->subscriptionRepository->findRecurringScheduleById($idRecurringSchedule);
+        $recurringScheduleTransfer = $this->repository->findRecurringScheduleById($idRecurringSchedule);
 
         if ($recurringScheduleTransfer === null) {
             return;

@@ -9,10 +9,9 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
-use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
-use Spryker\Yves\Kernel\Controller\AbstractController;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderActionForm;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,13 +19,13 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementFactory getFactory()
  */
-abstract class AbstractRecurringOrderActionController extends AbstractController
+abstract class AbstractRecurringOrderActionController extends AbstractRecurringOrderController
 {
     protected const string REQUEST_PARAM_UUID = 'uuid';
 
-    protected const string MESSAGE_INVALID_CSRF_TOKEN = 'form.csrf.error.text';
+    protected const string GLOSSARY_KEY_INVALID_CSRF_TOKEN = 'form.csrf.error.text';
 
-    protected const string MESSAGE_ACTION_ERROR = 'recurring_orders.detail.action.error';
+    protected const string GLOSSARY_KEY_ACTION_ERROR = 'recurring_orders.detail.action.error';
 
     /**
      * @uses \SprykerShop\Yves\AgentPage\Plugin\Router\AgentPageRouteProviderPlugin::ROUTE_NAME_LOGIN
@@ -42,17 +41,6 @@ abstract class AbstractRecurringOrderActionController extends AbstractController
      */
     protected const string ROUTE_NAME_RECURRING_ORDER_DETAIL = 'recurring-orders/detail';
 
-    protected function resolveAuthenticatedCustomer(): ?CustomerTransfer
-    {
-        $customerTransfer = $this->getFactory()->getCustomerClient()->getCustomer();
-
-        if ($customerTransfer === null || $customerTransfer->getIdCustomer() === null) {
-            return null;
-        }
-
-        return $customerTransfer;
-    }
-
     protected function triggerScheduleEvent(Request $request, string $event): RedirectResponse
     {
         $customerTransfer = $this->resolveAuthenticatedCustomer();
@@ -64,7 +52,7 @@ abstract class AbstractRecurringOrderActionController extends AbstractController
         $form = $this->getFactory()->createRecurringOrderActionForm()->handleRequest($request);
 
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addErrorMessage(static::MESSAGE_INVALID_CSRF_TOKEN);
+            $this->addErrorMessage(static::GLOSSARY_KEY_INVALID_CSRF_TOKEN);
 
             return $this->createDetailRedirectResponse($form);
         }
@@ -78,10 +66,21 @@ abstract class AbstractRecurringOrderActionController extends AbstractController
         );
 
         if (!$responseTransfer->getIsSuccessful()) {
-            $this->addErrorMessage(static::MESSAGE_ACTION_ERROR);
+            $this->addErrorMessage(static::GLOSSARY_KEY_ACTION_ERROR);
         }
 
         return $this->createDetailRedirectResponse($form);
+    }
+
+    protected function addFormErrorMessages(FormInterface $form): void
+    {
+        foreach ($form->getErrors(true) as $formError) {
+            if (!$formError instanceof FormError) {
+                continue;
+            }
+
+            $this->addErrorMessage($formError->getMessage());
+        }
     }
 
     protected function createDetailRedirectResponse(FormInterface $form): RedirectResponse

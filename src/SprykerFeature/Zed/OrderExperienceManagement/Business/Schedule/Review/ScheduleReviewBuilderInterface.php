@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleReviewResponseTransfer;
 
@@ -17,11 +18,11 @@ interface ScheduleReviewBuilderInterface
     public function buildReview(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): RecurringScheduleReviewResponseTransfer;
 
     /**
-     * @param \Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer
      * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
      */
     public function buildApprovalReview(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
         array $acceptedItemReviewTransfers,
+        ?QuoteTransfer $quoteOverrideTransfer = null
     ): RecurringScheduleReviewResponseTransfer;
 }

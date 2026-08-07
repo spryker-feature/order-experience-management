@@ -9,12 +9,14 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Persistence;
 
+use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleForecastQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleHistoryQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleItemQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateHistoryQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery;
 use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
+use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleForecastMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleHistoryMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleItemMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleMapper;
@@ -49,6 +51,16 @@ class OrderExperienceManagementPersistenceFactory extends AbstractPersistenceFac
     public function createRecurringScheduleHistoryMapper(): RecurringScheduleHistoryMapper
     {
         return new RecurringScheduleHistoryMapper();
+    }
+
+    public function createRecurringScheduleForecastQuery(): SpyRecurringScheduleForecastQuery
+    {
+        return SpyRecurringScheduleForecastQuery::create();
+    }
+
+    public function createRecurringScheduleForecastMapper(): RecurringScheduleForecastMapper
+    {
+        return new RecurringScheduleForecastMapper();
     }
 
     public function createRecurringScheduleHistoryQuery(): SpyRecurringScheduleHistoryQuery

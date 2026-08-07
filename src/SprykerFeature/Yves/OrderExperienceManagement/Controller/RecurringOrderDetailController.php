@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
 use Generated\Shared\Transfer\PaginationTransfer;
-use Spryker\Yves\Kernel\Controller\AbstractController;
 use Spryker\Yves\Kernel\View\View;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -20,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementFactory getFactory()
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
  */
-class RecurringOrderDetailController extends AbstractController
+class RecurringOrderDetailController extends AbstractRecurringOrderController
 {
     protected const string REQUEST_PARAM_UUID = 'uuid';
 
@@ -42,13 +41,13 @@ class RecurringOrderDetailController extends AbstractController
      */
     protected const string ROUTE_NAME_RECURRING_ORDER_LIST = 'recurring-orders';
 
-    protected const string MESSAGE_ACCESS_DENIED = 'recurring_orders.detail.access_denied';
+    protected const string GLOSSARY_KEY_ACCESS_DENIED = 'recurring_orders.detail.access_denied';
 
     public function indexAction(Request $request): View|RedirectResponse
     {
-        $customerTransfer = $this->getFactory()->getCustomerClient()->getCustomer();
+        $customerTransfer = $this->resolveAuthenticatedCustomer();
 
-        if ($customerTransfer === null || $customerTransfer->getIdCustomer() === null) {
+        if ($customerTransfer === null) {
             return $this->redirectResponseInternal(static::ROUTE_NAME_LOGIN);
         }
 
@@ -63,7 +62,7 @@ class RecurringOrderDetailController extends AbstractController
             );
 
         if ($recurringScheduleTransfer === null) {
-            $this->addErrorMessage(static::MESSAGE_ACCESS_DENIED);
+            $this->addErrorMessage(static::GLOSSARY_KEY_ACCESS_DENIED);
 
             return $this->redirectResponseInternal(static::ROUTE_NAME_RECURRING_ORDER_LIST);
         }
@@ -74,11 +73,21 @@ class RecurringOrderDetailController extends AbstractController
             ->createRecurringScheduleQuoteDataDeserializer()
             ->deserialize($recurringScheduleTransfer->getQuoteData());
 
+        $editFormDataProvider = $this->getFactory()->createRecurringScheduleEditFormDataProvider();
+        $editForm = $this->getFactory()->createRecurringScheduleEditForm(
+            $editFormDataProvider->getData($recurringScheduleTransfer),
+            $editFormDataProvider->getOptions($recurringScheduleTransfer),
+        );
+
         return $this->view(
             [
                 'schedule' => $recurringScheduleTransfer,
                 'quote' => $quoteTransfer,
+                'editForm' => $editForm->createView(),
+                'cadenceTypeEveryNWeeks' => $config->getCadenceTypeEveryNWeeks(),
                 'statusClassMap' => $config->getStatusBadgeClassMap(),
+                'itemFlagLabelMap' => $config->getItemFlagLabelMap(),
+                'itemFlagBadgeMap' => $config->getItemFlagBadgeMap(),
                 'statusIconMap' => $config->getStatusIconMap(),
                 'errorBannerStatuses' => $config->getErrorBannerStatuses(),
                 'historyEventTypeBadgeClassMap' => $config->getHistoryEventTypeBadgeClassMap(),

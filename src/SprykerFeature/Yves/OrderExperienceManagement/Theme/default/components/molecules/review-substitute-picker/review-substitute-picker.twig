@@ -1,0 +1,129 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-substitute-picker',
+    tag: 'review-substitute-picker',
+} %}
+
+{% define data = {
+    itemReview: required,
+    currency: required,
+    index: 0,
+    entryKey: '',
+    confirmClass: '',
+    cancelClass: '',
+    hiddenClass: 'is-hidden',
+    shipmentAddressChoices: [],
+    shipmentMethodsUrl: '',
+    priceUrl: '',
+} %}
+
+{% set substituteOptions = data.itemReview.substituteOptions %}
+{% set autocompleteClass = 'js' ~ config.name ~ '__autocomplete-' ~ data.index %}
+{% set radioGroupName = 'substitute-option-' ~ data.index %}
+{% set offersWidgetId = 'review-substitute-offers-' ~ data.index %}
+{% set priceProviderClass = 'js' ~ config.name ~ '__price-provider' %}
+
+{% define attributes = {
+    'currency': data.currency,
+    'entry-key': data.entryKey,
+    'autocomplete-class': autocompleteClass,
+    'confirm-class': data.confirmClass,
+} %}
+
+{% block body %}
+    {% block head %}
+        <p class="text-muted">
+            {{ 'recurring_orders.review.substitute.modal.description' | trans({
+                '%product%': data.itemReview.recurringScheduleItem.productName,
+            }) }}
+        </p>
+    {% endblock %}
+
+    {% block options %}
+        {% for option in substituteOptions %}
+            {% set optionDisabledClass = not option.isAvailable ? ' is-disabled' %}
+            <label class="{{ config.name }}__option {{ config.jsName }}__option {{ optionDisabledClass }}">
+                {% include atom('radio') with {
+                    class: config.jsName ~ '__option-input',
+                    data: {
+                        inputClass: config.jsName ~ '__radio-option',
+                    },
+                    attributes: {
+                        name: radioGroupName,
+                        value: option.sku,
+                        'data-price': option.price,
+                        'data-name': option.productName,
+                        'data-qa': 'recurring-order-review-substitute-option',
+                        checked: loop.first,
+                        disabled: not option.isAvailable,
+                    }
+                } only %}
+                <div>
+                    {% block optionName %}
+                        <strong>{{ option.productName }}</strong>
+                        {% if option.sku %}
+                            <small class="text-muted">({{ option.sku }})</small>
+                        {% endif %}
+                    {% endblock %}
+                    {% if option.note or not option.isAvailable %}
+                        <br />
+                        <small class="text-muted">
+                            {% if option.note %}{{ option.note }}{% endif %}
+                            {% if not option.isAvailable %} &middot; {{ 'recurring_orders.review.substitute.unavailable' | trans }}{% endif %}
+                        </small>
+                    {% endif %}
+                </div>
+                <div class="{{ config.jsName }}__option-price {{ config.name }}__option-price">
+                    {{ option.price | money(true, data.currency) }}
+                </div>
+            </label>
+        {% endfor %}
+    {% endblock %}
+
+    {% block merchantSelect %}
+        <span class="{{ autocompleteClass }} {{ data.hiddenClass }}"></span>
+        <div class="{{ config.name }}__offer {{ config.jsName }}__offer" {{ qa('recurring-order-review-substitute-offer') }}>
+            {% widget 'MerchantProductOffersSelectWidget' with {
+                data: {
+                    id: offersWidgetId,
+                    submitButtonClassName: data.confirmClass,
+                    autocompleteFormClassName: autocompleteClass,
+                },
+            } only %}{% endwidget %}
+        </div>
+    {% endblock %}
+
+    {% block shipmentSelection %}
+        {% include molecule('review-shipment-selection', 'OrderExperienceManagement') with {
+            class: config.name ~ '__shipment-selection',
+            data: {
+                shipmentAddressChoices: data.shipmentAddressChoices,
+                shipmentMethodsUrl: data.shipmentMethodsUrl,
+            },
+        } only %}
+    {% endblock %}
+
+    {% block ajax %}
+        {% block priceAjax %}
+            {% include molecule('ajax-provider') with {
+                class: priceProviderClass,
+                attributes: {
+                    url: data.priceUrl,
+                    method: 'GET',
+                },
+            } only %}
+        {% endblock %}
+    {% endblock %}
+
+    {% block footer %}
+        <div class="grid grid--right spacing-top">
+            <button type="button" class="button button--hollow {{ data.cancelClass }}">
+                {{ 'global.cancel' | trans }}
+            </button>
+            <button type="button" class="button spacing-left {{ data.confirmClass }}" data-qa="recurring-order-review-substitute-confirm">
+                {{ 'recurring_orders.review.substitute.modal.confirm' | trans }}
+            </button>
+        </div>
+    {% endblock %}
+{% endblock %}

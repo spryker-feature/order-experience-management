@@ -18,5 +18,12 @@ interface RecurringScheduleMapperInterface
     public function mapQuoteToRecurringSchedule(
         QuoteTransfer $quoteTransfer,
         CheckoutResponseTransfer $checkoutResponseTransfer,
+        string $currentLocaleName,
+    ): RecurringScheduleTransfer;
+
+    public function mapRequestedRecurringScheduleToRecurringSchedule(
+        RecurringScheduleTransfer $requestedRecurringScheduleTransfer,
+        RecurringScheduleTransfer $existingRecurringScheduleTransfer,
+        RecurringScheduleTransfer $recurringScheduleTransfer,
     ): RecurringScheduleTransfer;
 }

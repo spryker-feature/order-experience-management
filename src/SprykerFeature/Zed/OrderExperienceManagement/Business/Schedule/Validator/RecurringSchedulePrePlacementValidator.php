@@ -12,7 +12,9 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validat
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use Spryker\Shared\Log\LoggerTrait;
+use Spryker\Zed\Calculation\Business\CalculationFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderQuoteBuilderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 use Throwable;
@@ -25,11 +27,13 @@ class RecurringSchedulePrePlacementValidator implements RecurringSchedulePrePlac
      * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\ScheduleValidatorPluginInterface> $scheduleValidatorPlugins
      */
     public function __construct(
-        protected readonly OrderExperienceManagementRepositoryInterface $subscriptionRepository,
-        protected readonly OrderExperienceManagementEntityManagerInterface $subscriptionEntityManager,
+        protected readonly OrderExperienceManagementRepositoryInterface $repository,
+        protected readonly OrderExperienceManagementEntityManagerInterface $entityManager,
         protected readonly RecurringOrderBuyerMailNotificationSenderInterface $recurringOrderBuyerMailNotificationSender,
         protected readonly array $scheduleValidatorPlugins,
         protected readonly RecurringScheduleValidationResultExpanderInterface $recurringScheduleValidationResultExpander,
+        protected readonly RecurringOrderQuoteBuilderInterface $quoteBuilder,
+        protected readonly CalculationFacadeInterface $calculationFacade,
     ) {
     }
 
@@ -37,9 +41,13 @@ class RecurringSchedulePrePlacementValidator implements RecurringSchedulePrePlac
     {
         $recurringScheduleValidationResultTransfer = (new RecurringScheduleValidationResultTransfer())->setIsValid(true);
 
+        $quoteTransfer = $this->quoteBuilder->buildPlaceableQuote($recurringScheduleTransfer);
+        $quoteTransfer = $this->calculationFacade->recalculateQuote($quoteTransfer, false);
+
         foreach ($this->scheduleValidatorPlugins as $scheduleValidatorPlugin) {
             $recurringScheduleValidationResultTransfer = $scheduleValidatorPlugin->validate(
                 $recurringScheduleTransfer,
+                $quoteTransfer,
                 $recurringScheduleValidationResultTransfer,
             );
         }
@@ -49,7 +57,7 @@ class RecurringSchedulePrePlacementValidator implements RecurringSchedulePrePlac
 
     public function isRecurringScheduleValid(int $idRecurringSchedule): bool
     {
-        $recurringScheduleTransfer = $this->subscriptionRepository->findRecurringScheduleById($idRecurringSchedule);
+        $recurringScheduleTransfer = $this->repository->findRecurringScheduleById($idRecurringSchedule);
 
         if ($recurringScheduleTransfer === null) {
             return false;

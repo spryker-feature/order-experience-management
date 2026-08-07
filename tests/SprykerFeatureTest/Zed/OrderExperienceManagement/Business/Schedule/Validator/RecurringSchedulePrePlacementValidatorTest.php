@@ -10,12 +10,15 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Schedule\Validator;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Spryker\Shared\Log\Config\LoggerConfigInterface;
+use Spryker\Zed\Calculation\Business\CalculationFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderQuoteBuilderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePrePlacementValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringScheduleValidationResultExpanderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\ScheduleValidatorPluginInterface;
@@ -88,11 +91,27 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
         $this->assertFalse($result);
     }
 
+    protected function createQuoteBuilderReturningQuote(): RecurringOrderQuoteBuilderInterface
+    {
+        $quoteBuilderMock = $this->createMock(RecurringOrderQuoteBuilderInterface::class);
+        $quoteBuilderMock->method('buildPlaceableQuote')->willReturn(new QuoteTransfer());
+
+        return $quoteBuilderMock;
+    }
+
+    protected function createCalculationFacadeReturningQuote(): CalculationFacadeInterface
+    {
+        $calculationFacadeMock = $this->createMock(CalculationFacadeInterface::class);
+        $calculationFacadeMock->method('recalculateQuote')->willReturnArgument(0);
+
+        return $calculationFacadeMock;
+    }
+
     protected function createInvalidatingPlugin(): ScheduleValidatorPluginInterface
     {
         $plugin = $this->createMock(ScheduleValidatorPluginInterface::class);
         $plugin->method('validate')->willReturnCallback(
-            static fn (RecurringScheduleTransfer $schedule, RecurringScheduleValidationResultTransfer $result): RecurringScheduleValidationResultTransfer => $result->setIsValid(false),
+            static fn (RecurringScheduleTransfer $schedule, QuoteTransfer $quoteTransfer, RecurringScheduleValidationResultTransfer $result): RecurringScheduleValidationResultTransfer => $result->setIsValid(false),
         );
 
         return $plugin;
@@ -112,6 +131,8 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
             $notificationSender ?? $this->createMock(RecurringOrderBuyerMailNotificationSenderInterface::class),
             $scheduleValidatorPlugins,
             $expanderMock,
+            $this->createQuoteBuilderReturningQuote(),
+            $this->createCalculationFacadeReturningQuote(),
         );
     }
 
@@ -129,6 +150,8 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
             $notificationSender ?? $this->createMock(RecurringOrderBuyerMailNotificationSenderInterface::class),
             $scheduleValidatorPlugins,
             $expanderMock,
+            $this->createQuoteBuilderReturningQuote(),
+            $this->createCalculationFacadeReturningQuote(),
             $loggerOverride,
         ) extends RecurringSchedulePrePlacementValidator {
             public function __construct(
@@ -137,6 +160,8 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
                 RecurringOrderBuyerMailNotificationSenderInterface $recurringOrderBuyerMailNotificationSender,
                 array $scheduleValidatorPlugins,
                 RecurringScheduleValidationResultExpanderInterface $recurringScheduleValidationResultExpander,
+                RecurringOrderQuoteBuilderInterface $quoteBuilder,
+                CalculationFacadeInterface $calculationFacade,
                 private readonly LoggerInterface $loggerOverride,
             ) {
                 parent::__construct(
@@ -145,6 +170,8 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
                     $recurringOrderBuyerMailNotificationSender,
                     $scheduleValidatorPlugins,
                     $recurringScheduleValidationResultExpander,
+                    $quoteBuilder,
+                    $calculationFacade,
                 );
             }
 
@@ -158,7 +185,7 @@ class RecurringSchedulePrePlacementValidatorTest extends Unit
     protected function createRepositoryReturningSchedule(): OrderExperienceManagementRepositoryInterface
     {
         $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleById')->willReturn(new RecurringScheduleTransfer());
+        $repositoryMock->method('findRecurringScheduleById')->willReturn((new RecurringScheduleTransfer())->setQuoteData('{}'));
 
         return $repositoryMock;
     }

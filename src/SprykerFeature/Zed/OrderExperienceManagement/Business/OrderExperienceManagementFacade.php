@@ -91,14 +91,9 @@ class OrderExperienceManagementFacade extends AbstractFacade implements OrderExp
     public function triggerManualEventForSchedule(
         RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
-        $isSuccessful = $this->getFactory()->createScheduleEventTrigger()->triggerEvent(
-            $recurringScheduleEventRequestTransfer->getUuidOrFail(),
-            $recurringScheduleEventRequestTransfer->getEventOrFail(),
-            $recurringScheduleEventRequestTransfer->getIdCustomerOrFail(),
-            $recurringScheduleEventRequestTransfer->getCustomer(),
-        );
-
-        return (new RecurringScheduleEventResponseTransfer())->setIsSuccessful($isSuccessful);
+        return $this->getFactory()
+            ->createScheduleEventTrigger()
+            ->triggerManualEvent($recurringScheduleEventRequestTransfer);
     }
 
     /**
@@ -123,8 +118,8 @@ class OrderExperienceManagementFacade extends AbstractFacade implements OrderExp
         RecurringScheduleCollectionRequestTransfer $requestTransfer,
     ): RecurringScheduleCollectionResponseTransfer {
         return $this->getFactory()
-            ->createScheduleItemUpdater()
-            ->updateItemQuantities($requestTransfer);
+            ->createScheduleUpdater()
+            ->updateRecurringScheduleCollection($requestTransfer);
     }
 
     /**

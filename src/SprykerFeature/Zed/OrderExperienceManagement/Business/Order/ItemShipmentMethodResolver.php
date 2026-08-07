@@ -11,10 +11,19 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Order;
 
 use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
+use Generated\Shared\Transfer\ShipmentTransfer;
 
 class ItemShipmentMethodResolver implements ItemShipmentMethodResolverInterface
 {
-    public function buildExpenseShipmentMethodMap(QuoteTransfer $quoteTransfer): array
+    protected const string MERCHANT_REFERENCE_NULL_KEY = 'null';
+
+    protected const string MERCHANT_REFERENCE_STRING_PREFIX = 'ref:';
+
+    public function __construct(protected BundleItemClassifierInterface $bundleItemClassifier)
+    {
+    }
+
+    public function buildShipmentMethodIdMapByMerchantReference(QuoteTransfer $quoteTransfer): array
     {
         $map = [];
 
@@ -51,5 +60,125 @@ class ItemShipmentMethodResolver implements ItemShipmentMethodResolverInterface
         }
 
         $shipmentTransfer->getMethod()->setIdShipmentMethod($shipmentMethodIdMap[$key]);
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\ItemTransfer>
+     */
+    public function applyFallbackShipments(array $itemTransfers, QuoteTransfer $quoteTransfer): array
+    {
+        $referenceShipmentsByMerchantReferenceKey = $this->indexReferenceShipments($itemTransfers, $quoteTransfer);
+
+        foreach ($itemTransfers as $itemTransfer) {
+            if ($itemTransfer->getShipment() !== null) {
+                continue;
+            }
+
+            $referenceShipmentTransfer = $referenceShipmentsByMerchantReferenceKey[$this->buildMerchantReferenceKey($itemTransfer->getMerchantReference())] ?? null;
+
+            if ($referenceShipmentTransfer === null) {
+                continue;
+            }
+
+            $itemTransfer->setShipment(
+                (new ShipmentTransfer())->fromArray($referenceShipmentTransfer->toArray(true, true), true),
+            );
+        }
+
+        return $itemTransfers;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<string, \Generated\Shared\Transfer\ShipmentTransfer>
+     */
+    protected function indexReferenceShipments(array $itemTransfers, QuoteTransfer $quoteTransfer): array
+    {
+        $expenseShipmentsByMerchantReferenceKey = [];
+
+        foreach ($quoteTransfer->getExpenses() as $expenseTransfer) {
+            $expenseShipmentTransfer = $expenseTransfer->getShipment();
+
+            if ($expenseShipmentTransfer === null) {
+                continue;
+            }
+
+            $expenseShipmentsByMerchantReferenceKey[$this->buildMerchantReferenceKey($expenseShipmentTransfer->getMerchantReference())] ??= $expenseShipmentTransfer;
+        }
+
+        $itemShipmentsByMerchantReferenceKey = [];
+
+        foreach ($itemTransfers as $itemTransfer) {
+            if ($itemTransfer->getShipment() === null) {
+                continue;
+            }
+
+            $itemShipmentsByMerchantReferenceKey[$this->buildMerchantReferenceKey($itemTransfer->getMerchantReference())] ??= $itemTransfer->getShipment();
+        }
+
+        return $itemShipmentsByMerchantReferenceKey + $expenseShipmentsByMerchantReferenceKey;
+    }
+
+    protected function buildMerchantReferenceKey(?string $merchantReference): string
+    {
+        if ($merchantReference === null) {
+            return static::MERCHANT_REFERENCE_NULL_KEY;
+        }
+
+        return static::MERCHANT_REFERENCE_STRING_PREFIX . $merchantReference;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\ItemTransfer>
+     */
+    public function alignBundleShipments(array $itemTransfers): array
+    {
+        $childShipmentByBundleIdentifier = $this->indexChildShipments($itemTransfers);
+
+        foreach ($itemTransfers as $itemTransfer) {
+            if (!$this->bundleItemClassifier->isBundleItem($itemTransfer)) {
+                continue;
+            }
+
+            $childShipmentTransfer = $childShipmentByBundleIdentifier[$itemTransfer->getBundleItemIdentifier()] ?? null;
+
+            if ($childShipmentTransfer === null) {
+                continue;
+            }
+
+            $itemTransfer->setShipment(
+                (new ShipmentTransfer())->fromArray($childShipmentTransfer->toArray(true, true), true),
+            );
+        }
+
+        return $itemTransfers;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return array<string, \Generated\Shared\Transfer\ShipmentTransfer>
+     */
+    protected function indexChildShipments(array $itemTransfers): array
+    {
+        $childShipmentByBundleIdentifier = [];
+
+        foreach ($itemTransfers as $itemTransfer) {
+            $relatedBundleItemIdentifier = $itemTransfer->getRelatedBundleItemIdentifier();
+            $shipmentTransfer = $itemTransfer->getShipment();
+
+            if ($relatedBundleItemIdentifier === null || $shipmentTransfer === null) {
+                continue;
+            }
+
+            $childShipmentByBundleIdentifier[$relatedBundleItemIdentifier] ??= $shipmentTransfer;
+        }
+
+        return $childShipmentByBundleIdentifier;
     }
 }

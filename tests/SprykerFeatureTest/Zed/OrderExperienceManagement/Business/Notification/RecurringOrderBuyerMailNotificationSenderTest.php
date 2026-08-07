@@ -17,6 +17,9 @@ use Generated\Shared\Transfer\LocaleTransfer;
 use Generated\Shared\Transfer\MailTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Spryker\Shared\Log\Config\LoggerConfigInterface;
 use Spryker\Zed\CompanyUser\Business\CompanyUserFacadeInterface;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
@@ -270,6 +273,38 @@ class RecurringOrderBuyerMailNotificationSenderTest extends Unit
         $this->assertSame('Admin User', $recipient->getName());
     }
 
+    public function testNotifyUpcomingOrderSwallowsExceptionAndLogsErrorWhenSendingFails(): void
+    {
+        // Arrange
+        $idRecurringSchedule = 5;
+
+        $buyerCustomerTransfer = (new CustomerTransfer())
+            ->setEmail('buyer@example.com')
+            ->setFirstName('John')
+            ->setLastName('Doe');
+
+        $recurringScheduleTransfer = (new RecurringScheduleTransfer())
+            ->setCustomerReference('DE--1');
+
+        $mailFacadeMock = $this->createMailFacadeMock();
+        $mailFacadeMock->method('handleMail')->willThrowException(new RuntimeException('SMTP connection refused'));
+
+        $loggerMock = $this->createMock(LoggerInterface::class);
+        $loggerMock->expects($this->once())
+            ->method('error')
+            ->with($this->stringContains((string)$idRecurringSchedule));
+
+        $sender = $this->createSenderWithLogger(
+            $loggerMock,
+            repository: $this->createRepositoryMockReturning($recurringScheduleTransfer),
+            customerFacade: $this->createCustomerFacadeMockReturningSuccess($buyerCustomerTransfer),
+            mailFacade: $mailFacadeMock,
+        );
+
+        // Act - must not rethrow; a failed notification must not break the state-machine transition.
+        $sender->notifyUpcomingOrder($idRecurringSchedule);
+    }
+
     protected function createSender(
         ?OrderExperienceManagementRepositoryInterface $repository = null,
         ?CustomerFacadeInterface $customerFacade = null,
@@ -284,6 +319,38 @@ class RecurringOrderBuyerMailNotificationSenderTest extends Unit
             new RecurringOrderNotificationMailMapper($config ?? $this->createConfigMock()),
             $mailFacade ?? $this->createMailFacadeMock(),
         );
+    }
+
+    protected function createSenderWithLogger(
+        LoggerInterface $loggerOverride,
+        ?OrderExperienceManagementRepositoryInterface $repository = null,
+        ?CustomerFacadeInterface $customerFacade = null,
+        ?MailFacadeInterface $mailFacade = null,
+    ): RecurringOrderBuyerMailNotificationSender {
+        return new class (
+            $repository ?? $this->createMock(OrderExperienceManagementRepositoryInterface::class),
+            new RecurringScheduleBuyerReader($customerFacade ?? $this->createMock(CustomerFacadeInterface::class)),
+            new NotificationRecipientResolver($this->createMock(CompanyUserFacadeInterface::class)),
+            new RecurringOrderNotificationMailMapper($this->createConfigMock()),
+            $mailFacade ?? $this->createMailFacadeMock(),
+            $loggerOverride,
+        ) extends RecurringOrderBuyerMailNotificationSender {
+            public function __construct(
+                OrderExperienceManagementRepositoryInterface $repository,
+                RecurringScheduleBuyerReader $buyerReader,
+                NotificationRecipientResolver $recipientResolver,
+                RecurringOrderNotificationMailMapper $mailMapper,
+                MailFacadeInterface $mailFacade,
+                private readonly LoggerInterface $loggerOverride,
+            ) {
+                parent::__construct($repository, $buyerReader, $recipientResolver, $mailMapper, $mailFacade);
+            }
+
+            public function getLogger(?LoggerConfigInterface $loggerConfig = null): LoggerInterface
+            {
+                return $this->loggerOverride;
+            }
+        };
     }
 
     protected function createConfigMock(): MockObject&OrderExperienceManagementConfig

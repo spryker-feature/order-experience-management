@@ -38,12 +38,12 @@ class OrderExperienceManagementStub implements OrderExperienceManagementStubInte
     }
 
     public function triggerManualEventForSchedule(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         /** @var \Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer $responseTransfer */
         $responseTransfer = $this->zedRequestClient->call(
             '/order-experience-management/gateway/trigger-manual-event-for-schedule',
-            $requestTransfer,
+            $recurringScheduleEventRequestTransfer,
         );
 
         return $responseTransfer;
@@ -83,12 +83,12 @@ class OrderExperienceManagementStub implements OrderExperienceManagementStubInte
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::resumeScheduleWithDateAction()
      */
     public function resumeScheduleWithDate(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         /** @var \Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer $responseTransfer */
         $responseTransfer = $this->zedRequestClient->call(
             '/order-experience-management/gateway/resume-schedule-with-date',
-            $requestTransfer,
+            $recurringScheduleEventRequestTransfer,
         );
 
         return $responseTransfer;
@@ -98,12 +98,12 @@ class OrderExperienceManagementStub implements OrderExperienceManagementStubInte
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::updateRecurringScheduleCollectionAction()
      */
     public function updateRecurringScheduleCollection(
-        RecurringScheduleCollectionRequestTransfer $requestTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
     ): RecurringScheduleCollectionResponseTransfer {
         /** @var \Generated\Shared\Transfer\RecurringScheduleCollectionResponseTransfer $responseTransfer */
         $responseTransfer = $this->zedRequestClient->call(
             '/order-experience-management/gateway/update-recurring-schedule-collection',
-            $requestTransfer,
+            $recurringScheduleCollectionRequestTransfer,
         );
 
         return $responseTransfer;
@@ -128,12 +128,12 @@ class OrderExperienceManagementStub implements OrderExperienceManagementStubInte
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::approveScheduleReviewAction()
      */
     public function approveScheduleReview(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         /** @var \Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer $responseTransfer */
         $responseTransfer = $this->zedRequestClient->call(
             '/order-experience-management/gateway/approve-schedule-review',
-            $requestTransfer,
+            $recurringScheduleEventRequestTransfer,
         );
 
         return $responseTransfer;

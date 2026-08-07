@@ -10,11 +10,12 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Expander;
 
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
+use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
-class RecurringScheduleItemExpander extends AbstractRecurringScheduleExpander implements RecurringScheduleItemExpanderInterface
+class RecurringScheduleItemExpander extends AbstractRecurringScheduleExpander implements RecurringScheduleExpanderInterface
 {
      /**
       * @see \Spryker\Shared\Price\PriceConfig::PRICE_MODE_NET
@@ -25,8 +26,14 @@ class RecurringScheduleItemExpander extends AbstractRecurringScheduleExpander im
     {
     }
 
-    public function expandWithItems(
+    public function isApplicable(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): bool
+    {
+        return (bool)$recurringScheduleCriteriaTransfer->getRecurringScheduleConditions()?->getIsWithItems();
+    }
+
+    public function expand(
         RecurringScheduleCollectionTransfer $recurringScheduleCollectionTransfer,
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {
         $scheduleIds = $this->extractScheduleIds($recurringScheduleCollectionTransfer);
 
@@ -100,6 +107,8 @@ class RecurringScheduleItemExpander extends AbstractRecurringScheduleExpander im
             ? (int)$recurringScheduleItemTransfer->getReferenceNetPrice()
             : (int)$recurringScheduleItemTransfer->getReferenceGrossPrice();
 
-        return (int)$recurringScheduleItemTransfer->getQuantity() * $unitPrice;
+        $quantity = $recurringScheduleItemTransfer->getNextDeliveryQuantity() ?? (int)$recurringScheduleItemTransfer->getQuantity();
+
+        return $quantity * $unitPrice;
     }
 }

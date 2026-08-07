@@ -14,13 +14,13 @@ use SprykerFeature\Service\OrderExperienceManagement\OrderExperienceManagementCo
 
 class RecurringOrderQuoteEligibilityChecker implements RecurringOrderQuoteEligibilityCheckerInterface
 {
-    public function __construct(protected readonly OrderExperienceManagementConfig $subscriptionConfig)
+    public function __construct(protected readonly OrderExperienceManagementConfig $config)
     {
     }
 
     protected function hasInvoicePaymentMethod(QuoteTransfer $quoteTransfer): bool
     {
-        $invoiceKeys = array_fill_keys($this->subscriptionConfig->getInvoicePaymentMethodKeys(), true);
+        $invoiceKeys = array_fill_keys($this->config->getInvoicePaymentMethodKeys(), true);
 
         foreach ($quoteTransfer->getPayments() as $paymentTransfer) {
             if (isset($invoiceKeys[$paymentTransfer->getPaymentSelection()]) || isset($invoiceKeys[$paymentTransfer->getPaymentMethod()])) {

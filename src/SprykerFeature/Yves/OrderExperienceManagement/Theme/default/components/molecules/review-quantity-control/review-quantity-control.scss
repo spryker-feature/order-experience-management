@@ -1,0 +1,33 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-review-quantity-control($name: '.review-quantity-control') {
+    #{$name} {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        @if meta.mixin-exists(order-experience-management-review-quantity-control-base-hook) {
+            @include order-experience-management-review-quantity-control-base-hook;
+        }
+
+        &__action-icon {
+            &--undo {
+                display: none;
+            }
+        }
+
+        &--removed {
+            #{$name}__action-icon {
+                &--remove {
+                    display: none;
+                }
+
+                &--undo {
+                    display: block;
+                }
+            }
+        }
+
+        @content;
+    }
+}

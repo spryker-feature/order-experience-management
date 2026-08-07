@@ -1,0 +1,122 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-add-product-picker',
+    tag: 'review-add-product-picker',
+}%}
+
+{% define data = {
+    shipmentAddressChoices: required,
+    shipmentMethodsUrl: required,
+    priceUrl: required,
+    searchUrl: required,
+    skuFieldName: required,
+    currency: required,
+}%}
+
+{% define attributes = {
+    'sku-field-name': data.skuFieldName,
+    'currency': data.currency,
+}%}
+
+{% block body %}
+    {% set pickerAutocompleteClassName = config.jsName ~ '__autocomplete-form' %}
+
+    {% block addProductForm %}
+        <div class="{{ config.name }}__product-info">
+            <div class="{{ config.name }}__product-col">
+                <span class="label">{{ 'recurring_orders.review.add_product.label' | trans }}</span>
+                <div class="{{ config.name }}__search" {{ qa(config.name ~ '-search') }}>
+                    {% widget 'ProductConcreteSearchWidget' args ['review-add-product-picker',data.skuFieldName,'','',] with {
+                        data: {
+                            autocompleteFormClassName: pickerAutocompleteClassName,
+                            suggestionsUrl: data.searchUrl,
+                        },
+                    } only %}{% endwidget %}
+
+                    {% block pricePreview %}
+                        <span
+                            class="{{ config.name }}__price {{ config.jsName }}__price"
+                            {{ qa(config.name ~ "-price") }}
+                            aria-label="{{ 'recurring_orders.review.add_product.price' | trans }}"
+                        ></span>
+                    {% endblock %}
+                </div>
+            </div>
+            {% block quantityCell %}
+                <div class="{{ config.name }}__quantity-col">
+                    {% block quantityLabel %}
+                        <label for="add-product-quantity-input" class="{{ config.name }}__label">{{ 'recurring_orders.review.add_product.quantity' | trans }}</label>
+                    {% endblock %}
+
+                    {% block quantityInput %}
+                        <input
+                            id="add-product-quantity-input"
+                            type="number"
+                            min="1"
+                            value="1"
+                            class="input input--expand {{ config.jsName }}__quantity"
+                            aria-label="{{ 'recurring_orders.review.add_product.quantity' | trans }}"
+                            {{ qa(config.name ~ '-quantity') }}
+                        />
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </div>
+    {% endblock %}
+
+    {% block merchantProductOffersSelect %}
+        <div class="{{ config.name }}__offer" {{ qa(config.name ~ '-offer') }}>
+            {% widget 'MerchantProductOffersSelectWidget' with {
+                data: {
+                    id: 'review-add-product-offers',
+                    submitButtonClassName: config.jsName ~ '__add',
+                    autocompleteFormClassName: pickerAutocompleteClassName,
+                    url: 'recurring-order/product-offer-select',
+                },
+            } only %}{% endwidget %}
+        </div>
+    {% endblock %}
+
+    {% block shipmentSelection %}
+        {% include molecule('review-shipment-selection', 'OrderExperienceManagement') with {
+            class: config.name ~ '__shipment-selection spacing-bottom',
+            data: {
+                shipmentAddressChoices: data.shipmentAddressChoices,
+                shipmentMethodsUrl: data.shipmentMethodsUrl,
+            },
+        } only %}
+    {% endblock %}
+
+    {% block actions %}
+        <div class="{{ config.name }}__actions grid grid--right spacing-top">
+            {% set actionAddButtonClassName = config.jsName ~ "__add button" %}
+            {% set actionClearButtonClassName = config.jsName ~ "__clear button button--hollow" %}
+            {% block actionClearButton %}
+                <button type="button" class="{{ actionClearButtonClassName }}" {{ qa(config.name ~ '-clear') }}>
+                    {{ 'recurring_orders.review.add_product.clear' | trans }}
+                </button>
+            {% endblock %}
+
+            {% block actionAddButton %}
+                <button type="button" class="{{ actionAddButtonClassName }} spacing-left" disabled {{ qa(config.name ~ '-submit') }}>
+                    {{ 'recurring_orders.review.add_product.add' | trans }}
+                </button>
+            {% endblock %}
+        </div>
+    {% endblock %}
+
+    {% set priceProviderClass = config.jsName ~ '__price-provider' %}
+
+    {% block ajax %}
+        {% block priceAjax %}
+            {% include molecule('ajax-provider') with {
+                class: priceProviderClass,
+                attributes: {
+                    url: data.priceUrl,
+                    method: 'GET',
+                },
+            } only %}
+        {% endblock %}
+    {% endblock %}
+{% endblock %}

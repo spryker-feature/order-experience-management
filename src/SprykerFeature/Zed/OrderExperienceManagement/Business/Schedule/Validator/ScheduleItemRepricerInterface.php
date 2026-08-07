@@ -14,10 +14,5 @@ use Generated\Shared\Transfer\QuoteTransfer;
 
 interface ScheduleItemRepricerInterface
 {
-    public function repriceItems(QuoteTransfer $quoteTransfer): CartChangeTransfer;
-
-    /**
-     * @return array<string, \Generated\Shared\Transfer\ItemTransfer> Re-priced bundle parents keyed by bundle identifier.
-     */
-    public function repriceBundleItems(QuoteTransfer $quoteTransfer): array;
+    public function repriceQuoteItems(QuoteTransfer $quoteTransfer): CartChangeTransfer;
 }

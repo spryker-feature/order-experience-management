@@ -10,8 +10,6 @@ declare(strict_types=1);
 namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderResumeForm;
-use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -48,20 +46,9 @@ class RecurringOrderResumeController extends AbstractRecurringOrderActionControl
             );
 
         if (!$recurringScheduleEventResponseTransfer->getIsSuccessful()) {
-            $this->addErrorMessage(static::MESSAGE_ACTION_ERROR);
+            $this->addErrorMessage(static::GLOSSARY_KEY_ACTION_ERROR);
         }
 
         return $this->createDetailRedirectResponse($form);
-    }
-
-    protected function addFormErrorMessages(FormInterface $form): void
-    {
-        foreach ($form->getErrors(true) as $formError) {
-            if (!$formError instanceof FormError) {
-                continue;
-            }
-
-            $this->addErrorMessage($formError->getMessage());
-        }
     }
 }

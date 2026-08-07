@@ -20,4 +20,8 @@ interface CheckoutValidationResultBuilderInterface
         RecurringScheduleTransfer $recurringScheduleTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer;
+
+    public function buildEmptyOrderValidationResult(
+        RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
+    ): RecurringScheduleValidationResultTransfer;
 }

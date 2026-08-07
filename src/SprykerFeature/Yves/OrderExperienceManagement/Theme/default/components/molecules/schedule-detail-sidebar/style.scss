@@ -1,0 +1,3 @@
+@include helper-import('molecule', 'schedule-detail-sidebar') {
+    @include order-experience-management-schedule-detail-sidebar();
+}

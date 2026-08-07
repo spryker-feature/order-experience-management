@@ -7,17 +7,21 @@
 
 namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 
+use DateTimeImmutable;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Spryker\Yves\Kernel\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Choice;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class RecurringOrderSelectorForm extends AbstractType
 {
@@ -27,7 +31,11 @@ class RecurringOrderSelectorForm extends AbstractType
 
     public const string FIELD_SCHEDULE_NAME = 'scheduleName';
 
+    public const string FIELD_START_DATE = 'startDate';
+
     public const string OPTION_CADENCE_TYPE_CHOICES = 'cadence_type_choices';
+
+    protected const string DATE_FORMAT = 'Y-m-d';
 
     public function getBlockPrefix(): string
     {
@@ -41,7 +49,8 @@ class RecurringOrderSelectorForm extends AbstractType
     {
         $this->addScheduleNameField($builder)
             ->addCadenceTypeField($builder, $options)
-            ->addCadenceValueField($builder);
+            ->addCadenceValueField($builder)
+            ->addStartDateField($builder);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -54,7 +63,7 @@ class RecurringOrderSelectorForm extends AbstractType
     /**
      * @param array<string, mixed> $options
      */
-    public function addCadenceTypeField(FormBuilderInterface $builder, array $options): static
+    protected function addCadenceTypeField(FormBuilderInterface $builder, array $options): static
     {
         $choices = $options[static::OPTION_CADENCE_TYPE_CHOICES];
 
@@ -72,7 +81,7 @@ class RecurringOrderSelectorForm extends AbstractType
         return $this;
     }
 
-    public function addCadenceValueField(FormBuilderInterface $builder): static
+    protected function addCadenceValueField(FormBuilderInterface $builder): static
     {
         $builder->add(static::FIELD_CADENCE_VALUE, IntegerType::class, [
             'label' => 'recurring_orders.checkout.cadence_value_label',
@@ -85,7 +94,7 @@ class RecurringOrderSelectorForm extends AbstractType
         return $this;
     }
 
-    public function addScheduleNameField(FormBuilderInterface $builder): static
+    protected function addScheduleNameField(FormBuilderInterface $builder): static
     {
         $builder->add(static::FIELD_SCHEDULE_NAME, TextType::class, [
             'label' => 'recurring_orders.checkout.schedule_name_label',
@@ -97,5 +106,44 @@ class RecurringOrderSelectorForm extends AbstractType
         ]);
 
         return $this;
+    }
+
+    protected function addStartDateField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_START_DATE, DateType::class, [
+            'widget' => 'single_text',
+            'input' => 'string',
+            'input_format' => static::DATE_FORMAT,
+            'required' => true,
+            'label' => 'recurring_orders.checkout.start_date_label',
+            'constraints' => [
+                new NotBlank(['message' => 'recurring_orders.checkout.validation.start_date_required']),
+                // The field binds to a string transfer property, so the native GreaterThanOrEqual
+                // constraint cannot compare it against "today" — validate the parsed date here instead.
+                new Callback([$this, 'validateStartDateNotInPast']),
+            ],
+        ]);
+
+        return $this;
+    }
+
+    public function validateStartDateNotInPast(?string $startDate, ExecutionContextInterface $context): void
+    {
+        // An empty value is already reported by NotBlank; nothing to compare here.
+        if ($startDate === null || $startDate === '') {
+            return;
+        }
+
+        $startDateTime = DateTimeImmutable::createFromFormat('!' . static::DATE_FORMAT, $startDate);
+
+        // An unparseable value is not this constraint's concern.
+        if ($startDateTime === false) {
+            return;
+        }
+
+        if ($startDateTime < new DateTimeImmutable('today')) {
+            $context->buildViolation('recurring_orders.checkout.validation.start_date_in_past')
+                ->addViolation();
+        }
     }
 }

@@ -10,10 +10,11 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Expander;
 
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
+use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
 
-class RecurringScheduleSkipPreviewExpander implements RecurringScheduleSkipPreviewExpanderInterface
+class RecurringScheduleSkipPreviewExpander implements RecurringScheduleExpanderInterface
 {
     protected const string DATE_FORMAT = 'Y-m-d';
 
@@ -21,8 +22,14 @@ class RecurringScheduleSkipPreviewExpander implements RecurringScheduleSkipPrevi
     {
     }
 
-    public function expandWithSkipPreview(
+    public function isApplicable(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): bool
+    {
+        return (bool)$recurringScheduleCriteriaTransfer->getRecurringScheduleConditions()?->getIsWithSkipPreview();
+    }
+
+    public function expand(
         RecurringScheduleCollectionTransfer $recurringScheduleCollectionTransfer,
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {
         foreach ($recurringScheduleCollectionTransfer->getRecurringSchedules() as $recurringScheduleTransfer) {
             $this->expandScheduleWithSkipPreview($recurringScheduleTransfer);

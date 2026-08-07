@@ -17,7 +17,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceMana
 class ScheduleSkipper implements ScheduleSkipperInterface
 {
     public function __construct(
-        protected OrderExperienceManagementRepositoryInterface $subscriptionRepository,
+        protected OrderExperienceManagementRepositoryInterface $repository,
         protected OrderExperienceManagementEntityManagerInterface $entityManager,
         protected ScheduleAdvancerInterface $scheduleAdvancer,
     ) {
@@ -25,7 +25,7 @@ class ScheduleSkipper implements ScheduleSkipperInterface
 
     public function skip(int $idRecurringSchedule): void
     {
-        $dueData = $this->subscriptionRepository->findRecurringScheduleDueData($idRecurringSchedule);
+        $dueData = $this->repository->findRecurringScheduleDueData($idRecurringSchedule);
 
         if ($dueData === null) {
             return;

@@ -13,16 +13,23 @@ use Generated\Shared\Transfer\CustomerCollectionTransfer;
 use Generated\Shared\Transfer\CustomerCriteriaFilterTransfer;
 use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
+use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
 
-class RecurringScheduleCustomerExpander implements RecurringScheduleCustomerExpanderInterface
+class RecurringScheduleCustomerExpander implements RecurringScheduleExpanderInterface
 {
     public function __construct(protected CustomerFacadeInterface $customerFacade)
     {
     }
 
-    public function expandWithCustomer(
+    public function isApplicable(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): bool
+    {
+        return (bool)$recurringScheduleCriteriaTransfer->getRecurringScheduleConditions()?->getIsWithCustomer();
+    }
+
+    public function expand(
         RecurringScheduleCollectionTransfer $recurringScheduleCollectionTransfer,
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {
         $customerIds = $this->extractCustomerIds($recurringScheduleCollectionTransfer);
 

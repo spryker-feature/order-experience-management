@@ -11,9 +11,6 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Communication\Plugin;
 
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
-use Psr\Log\LoggerInterface;
-use RuntimeException;
-use Spryker\Shared\Log\Config\LoggerConfigInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\NotifyBuyerCommandPlugin;
@@ -57,68 +54,30 @@ class NotifyBuyerCommandTest extends Unit
             ->method('notifyUpcomingOrder')
             ->with($idRecurringSchedule);
 
-        $businessFactoryMock = $this->getMockBuilder(OrderExperienceManagementBusinessFactory::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $businessFactoryMock
-            ->method('createRecurringOrderBuyerMailNotificationSender')
-            ->willReturn($notificationSenderMock);
-
-        $plugin = new class ($businessFactoryMock) extends NotifyBuyerCommandPlugin {
-            public function __construct(private readonly OrderExperienceManagementBusinessFactory $factoryOverride)
-            {
-            }
-
-            public function getBusinessFactory(): OrderExperienceManagementBusinessFactory
-            {
-                return $this->factoryOverride;
-            }
-        };
-
-        $stateMachineItemTransfer = (new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule);
+        $plugin = $this->createPlugin($notificationSenderMock);
 
         // Act
-        $plugin->run($stateMachineItemTransfer);
+        $plugin->run((new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule));
     }
 
-    public function testRunSwallowsExceptionAndLogsErrorWithoutRethrowing(): void
-    {
-        $idRecurringSchedule = 5;
-        $exception = new RuntimeException('SMTP connection refused');
-
-        $notificationSenderMock = $this->createMock(RecurringOrderBuyerMailNotificationSenderInterface::class);
-        $notificationSenderMock->method('notifyUpcomingOrder')->willThrowException($exception);
-
+    protected function createPlugin(
+        RecurringOrderBuyerMailNotificationSenderInterface $notificationSender,
+    ): NotifyBuyerCommandPlugin {
         $businessFactoryMock = $this->getMockBuilder(OrderExperienceManagementBusinessFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $businessFactoryMock->method('createRecurringOrderBuyerMailNotificationSender')
-            ->willReturn($notificationSenderMock);
+        $businessFactoryMock->method('createRecurringOrderBuyerMailNotificationSender')->willReturn($notificationSender);
 
-        $loggerMock = $this->createMock(LoggerInterface::class);
-        $loggerMock->expects($this->once())
-            ->method('error')
-            ->with($this->stringContains((string)$idRecurringSchedule));
-
-        $plugin = new class ($businessFactoryMock, $loggerMock) extends NotifyBuyerCommandPlugin {
+        return new class ($businessFactoryMock) extends NotifyBuyerCommandPlugin {
             public function __construct(
-                private readonly OrderExperienceManagementBusinessFactory $factoryOverride,
-                private readonly LoggerInterface $loggerOverride,
+                private readonly OrderExperienceManagementBusinessFactory $businessFactoryOverride,
             ) {
             }
 
             public function getBusinessFactory(): OrderExperienceManagementBusinessFactory
             {
-                return $this->factoryOverride;
-            }
-
-            public function getLogger(?LoggerConfigInterface $loggerConfig = null): LoggerInterface
-            {
-                return $this->loggerOverride;
+                return $this->businessFactoryOverride;
             }
         };
-
-        // run() must not throw — the SM must always advance out of notifying
-        $plugin->run((new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule));
     }
 }

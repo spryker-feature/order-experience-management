@@ -8,16 +8,21 @@
 namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 
 use Spryker\Yves\Kernel\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Type;
 
 /**
- * A single accepted item in the Review Required approval: the price the buyer accepted for a kept line,
- * carried together with its group key. The group key is transported as a value (not as the collection
- * field name) because group keys may contain characters (e.g. ".") that are illegal in form field names.
+ * A single kept line in the Review Required approval, carried together with its group key. Holds the price the
+ * buyer accepted for a flagged line (optional — unchanged lines carry no price) and, when the buyer edits it, the
+ * new quantity for the line. The scope (this order vs every future order) is a single request-level choice on the
+ * parent form, not per line. The group key is transported as a value (not as the collection field name) because
+ * group keys may contain characters (e.g. ".") illegal in form field names.
  */
 class RecurringOrderAcceptedItemForm extends AbstractType
 {
@@ -26,6 +31,10 @@ class RecurringOrderAcceptedItemForm extends AbstractType
     public const string FIELD_GROUP_KEY = 'groupKey';
 
     public const string FIELD_PRICE = 'price';
+
+    public const string FIELD_ACCEPTED_QUANTITY = 'acceptedQuantity';
+
+    public const string FIELD_IS_REMOVED = 'isRemoved';
 
     public function getBlockPrefix(): string
     {
@@ -40,12 +49,25 @@ class RecurringOrderAcceptedItemForm extends AbstractType
         ]);
 
         $builder->add(static::FIELD_PRICE, HiddenType::class, [
+            'required' => false,
             'label' => false,
             'constraints' => [
-                new NotBlank(),
                 new Type('numeric'),
                 new GreaterThanOrEqual(0),
             ],
+        ]);
+
+        $builder->add(static::FIELD_ACCEPTED_QUANTITY, IntegerType::class, [
+            'required' => false,
+            'label' => false,
+            'constraints' => [
+                new GreaterThan(0),
+            ],
+        ]);
+
+        $builder->add(static::FIELD_IS_REMOVED, CheckboxType::class, [
+            'required' => false,
+            'label' => false,
         ]);
     }
 }

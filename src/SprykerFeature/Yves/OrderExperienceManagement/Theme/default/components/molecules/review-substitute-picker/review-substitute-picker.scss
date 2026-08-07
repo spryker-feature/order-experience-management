@@ -1,0 +1,43 @@
+@use 'sass:meta';
+@use 'sass:map';
+
+@mixin order-experience-management-review-substitute-picker($name: '.review-substitute-picker') {
+    #{$name} {
+        display: block;
+
+        @if meta.mixin-exists(order-experience-management-review-substitute-picker-base-hook) {
+            @include order-experience-management-review-substitute-picker-base-hook;
+        }
+
+        &__option {
+            padding: map.get($setting-spacing, 'default');
+            margin-bottom: 0.5rem;
+            border: 1px solid $setting-color-lighter;
+            display: grid;
+            column-gap: 0.5rem;
+            grid-template-columns: auto 1fr auto;
+            grid-template-rows: repeat(2, auto);
+
+            &.is-disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+        }
+
+        &__option-price {
+            font-weight: bold;
+        }
+
+        &__offer {
+            margin-top: 0.5rem;
+            grid-column: span 3 / span 3;
+            grid-row-start: 2;
+
+            &:not(:has(form)) {
+                display: none;
+            }
+        }
+
+        @content;
+    }
+}

@@ -14,8 +14,11 @@ use Generated\Shared\Transfer\RecurringScheduleConditionsTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
+use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleItemQuery;
+use Spryker\Zed\CompanyRole\Communication\Plugin\PermissionStoragePlugin;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
+use SprykerFeatureTest\Zed\OrderExperienceManagement\Stub\FixedBlockingErrorScheduleValidatorPlugin;
 
 /**
  * Auto-generated group annotations
@@ -35,11 +38,23 @@ class GetRecurringScheduleReviewTest extends Unit
      */
     protected const string PRICE_MODE_GROSS = 'GROSS_MODE';
 
+    /**
+     * @uses \SprykerFeatureTest\Shared\OrderExperienceManagement\Helper\RecurringScheduleHelper::OVERRIDE_BUILD_QUOTE_DATA
+     */
+    protected const string OVERRIDE_BUILD_QUOTE_DATA = 'build_quote_data';
+
+    /**
+     * @uses \SprykerFeatureTest\Shared\OrderExperienceManagement\Helper\RecurringScheduleHelper::OVERRIDE_BUILD_ITEM_DATA
+     */
+    protected const string OVERRIDE_BUILD_ITEM_DATA = 'build_item_data';
+
     protected const string SKU_A = 'sku-a';
 
     protected const string SKU_B = 'sku-b';
 
     protected const string CONFIGURED_BUNDLE_GROUP_KEY = 'cb-group-1';
+
+    protected const string BLOCKING_ERROR_MESSAGE = 'recurring_orders.review.blocking_error';
 
     protected OrderExperienceManagementBusinessTester $tester;
 
@@ -177,20 +192,122 @@ class GetRecurringScheduleReviewTest extends Unit
         $this->assertSame(100, $recurringScheduleReviewResponseTransfer->getUpdatedTotal());
     }
 
+    public function testReturnsEmptyReviewWhenCustomerDoesNotOwnSchedule(): void
+    {
+        // Arrange
+        $this->tester->preparePermissionStorageDependency(new PermissionStoragePlugin());
+
+        $ownerCustomerTransfer = $this->tester->haveCustomer();
+        $otherCustomerTransfer = $this->tester->haveCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule((int)$ownerCustomerTransfer->getIdCustomer(), [
+            RecurringScheduleTransfer::PRICE_MODE => static::PRICE_MODE_GROSS,
+        ]);
+        $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::SKU => static::SKU_A,
+            RecurringScheduleItemTransfer::QUANTITY => 1,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+        ]);
+
+        // Review requested by a different customer — ownership scoping must exclude the schedule.
+        $criteriaTransfer = $this->createReviewCriteria($recurringScheduleTransfer->getUuidOrFail())
+            ->setCustomer($otherCustomerTransfer);
+
+        // Act
+        $recurringScheduleReviewResponseTransfer = $this->tester->getFacade()->getRecurringScheduleReview($criteriaTransfer);
+
+        // Assert
+        $this->assertNull($recurringScheduleReviewResponseTransfer->getRecurringSchedule());
+    }
+
+    public function testCollectsNonItemBlockingErrors(): void
+    {
+        // Arrange
+        $uuid = $this->haveScheduleWithItems([
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500],
+        ]);
+
+        $this->tester->setScheduleValidatorPlugins([
+            new FixedBlockingErrorScheduleValidatorPlugin(static::BLOCKING_ERROR_MESSAGE),
+        ]);
+
+        // Act
+        $recurringScheduleReviewResponseTransfer = $this->tester->getFacade()->getRecurringScheduleReview($this->createReviewCriteria($uuid));
+
+        // Assert
+        $this->assertCount(1, $recurringScheduleReviewResponseTransfer->getBlockingErrors());
+        $this->assertSame(
+            static::BLOCKING_ERROR_MESSAGE,
+            $recurringScheduleReviewResponseTransfer->getBlockingErrors()->offsetGet(0)->getMessageOrFail(),
+        );
+    }
+
+    public function testDoesNotPersistScheduleWhenBuildingReview(): void
+    {
+        // Arrange — a price-increase flag during review must NOT rewrite the stored reference price.
+        $uuid = $this->haveScheduleWithItems([
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 2, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500],
+        ]);
+
+        $this->tester->setScheduleValidatorPlugins([
+            $this->tester->createFixedScheduleValidatorPlugin(static::SKU_A, true, SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED, 800),
+        ]);
+
+        // Act
+        $this->tester->getFacade()->getRecurringScheduleReview($this->createReviewCriteria($uuid));
+
+        // Assert — the stored reference price is unchanged (re-validation is read-only).
+        $recurringScheduleItemEntity = SpyRecurringScheduleItemQuery::create()
+            ->filterBySku(static::SKU_A)
+            ->findOne();
+        $this->assertNotNull($recurringScheduleItemEntity);
+        $this->assertSame(500, $recurringScheduleItemEntity->getReferenceGrossPrice());
+    }
+
+    public function testSkipsReviewValidationWhenScheduleIsNotAwaitingReview(): void
+    {
+        // Arrange — an active schedule with a blocking validator wired: the guard must skip the validation pipeline.
+        $uuid = $this->haveScheduleWithItems(
+            [
+                [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500],
+            ],
+            SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        );
+
+        $this->tester->setScheduleValidatorPlugins([
+            new FixedBlockingErrorScheduleValidatorPlugin(static::BLOCKING_ERROR_MESSAGE),
+        ]);
+
+        // Act
+        $recurringScheduleReviewResponseTransfer = $this->tester->getFacade()->getRecurringScheduleReview($this->createReviewCriteria($uuid));
+
+        // Assert — the schedule is returned, but the blocking validator never ran.
+        $this->assertNotNull($recurringScheduleReviewResponseTransfer->getRecurringSchedule());
+        $this->assertCount(0, $recurringScheduleReviewResponseTransfer->getBlockingErrors());
+        $this->assertCount(0, $recurringScheduleReviewResponseTransfer->getFlaggedItems());
+    }
+
     /**
      * @param array<int, array<string, mixed>> $itemOverridesList
      */
-    protected function haveScheduleWithItems(array $itemOverridesList): string
-    {
+    protected function haveScheduleWithItems(
+        array $itemOverridesList,
+        string $status = SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
+    ): string {
         $customerTransfer = $this->tester->haveCustomer();
         $this->tester->pinMailFacadeDependency();
 
         $recurringScheduleTransfer = $this->tester->haveRecurringSchedule((int)$customerTransfer->getIdCustomer(), [
             RecurringScheduleTransfer::PRICE_MODE => static::PRICE_MODE_GROSS,
+            RecurringScheduleTransfer::STATUS => $status,
+            static::OVERRIDE_BUILD_QUOTE_DATA => true,
         ]);
 
         foreach ($itemOverridesList as $itemOverrides) {
-            $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), $itemOverrides);
+            $this->tester->haveRecurringScheduleItem(
+                $recurringScheduleTransfer->getIdRecurringScheduleOrFail(),
+                $itemOverrides + [static::OVERRIDE_BUILD_ITEM_DATA => true],
+            );
         }
 
         return $recurringScheduleTransfer->getUuidOrFail();
@@ -203,7 +320,7 @@ class GetRecurringScheduleReviewTest extends Unit
                 (new RecurringScheduleConditionsTransfer())
                     ->addUuid($uuid)
                     ->setIsWithItems(true)
-                    ->setGroupItemsByGroupKey(true),
+                    ->setIsGroupedByGroupKey(true),
             );
     }
 }

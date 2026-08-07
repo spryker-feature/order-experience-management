@@ -56,11 +56,11 @@ class OrderExperienceManagementClient extends AbstractClient implements OrderExp
      * @api
      */
     public function triggerManualEventForSchedule(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         return $this->getFactory()
             ->createOrderExperienceManagementStub()
-            ->triggerManualEventForSchedule($requestTransfer);
+            ->triggerManualEventForSchedule($recurringScheduleEventRequestTransfer);
     }
 
     /**
@@ -82,11 +82,11 @@ class OrderExperienceManagementClient extends AbstractClient implements OrderExp
      * @api
      */
     public function resumeScheduleWithDate(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         return $this->getFactory()
             ->createOrderExperienceManagementStub()
-            ->resumeScheduleWithDate($requestTransfer);
+            ->resumeScheduleWithDate($recurringScheduleEventRequestTransfer);
     }
 
     /**
@@ -95,11 +95,11 @@ class OrderExperienceManagementClient extends AbstractClient implements OrderExp
      * @api
      */
     public function updateRecurringScheduleCollection(
-        RecurringScheduleCollectionRequestTransfer $requestTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
     ): RecurringScheduleCollectionResponseTransfer {
         return $this->getFactory()
             ->createOrderExperienceManagementStub()
-            ->updateRecurringScheduleCollection($requestTransfer);
+            ->updateRecurringScheduleCollection($recurringScheduleCollectionRequestTransfer);
     }
 
     /**
@@ -121,10 +121,10 @@ class OrderExperienceManagementClient extends AbstractClient implements OrderExp
      * @api
      */
     public function approveScheduleReview(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer {
         return $this->getFactory()
             ->createOrderExperienceManagementStub()
-            ->approveScheduleReview($requestTransfer);
+            ->approveScheduleReview($recurringScheduleEventRequestTransfer);
     }
 }

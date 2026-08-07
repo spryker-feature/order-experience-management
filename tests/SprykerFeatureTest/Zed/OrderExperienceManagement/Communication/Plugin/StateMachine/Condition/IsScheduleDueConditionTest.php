@@ -10,12 +10,10 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition;
 
 use Codeception\Test\Unit;
-use DateTimeImmutable;
-use Generated\Shared\Transfer\RecurringScheduleDueDataTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Due\RecurringScheduleDueCheckerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition\IsScheduleDueConditionPlugin;
-use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
-use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
 
 /**
@@ -37,121 +35,56 @@ class IsScheduleDueConditionTest extends Unit
         $this->assertSame('RecurringOrders/IsScheduleDue', (new IsScheduleDueConditionPlugin())->getName());
     }
 
-    public function testCheckReturnsFalseWhenScheduleNotFound(): void
+    public function testCheckReturnsTrueWhenCheckerReturnsTrue(): void
     {
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(null);
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->method('isScheduleDue')->willReturn(true);
 
-        $condition = $this->createCondition($repositoryMock);
-
-        $this->assertFalse($condition->check((new StateMachineItemTransfer())->setIdentifier(99)));
+        $this->assertTrue($this->createCondition($checkerMock)->check(
+            (new StateMachineItemTransfer())->setIdentifier(1),
+        ));
     }
 
-    public function testCheckReturnsFalseWhenNotificationWindowHasNotOpened(): void
+    public function testCheckReturnsFalseWhenCheckerReturnsFalse(): void
     {
-        // Trigger is 3 days away; with a 48 h window notifyFrom = +1 day → still in the future.
-        $triggerDate = (new DateTimeImmutable('+3 days'))->format('Y-m-d H:i:s');
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->method('isScheduleDue')->willReturn(false);
 
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate($triggerDate)
-                ->setNotificationWindowHours(48),
-        );
-
-        $condition = $this->createCondition($repositoryMock);
-
-        $this->assertFalse($condition->check((new StateMachineItemTransfer())->setIdentifier(1)));
+        $this->assertFalse($this->createCondition($checkerMock)->check(
+            (new StateMachineItemTransfer())->setIdentifier(1),
+        ));
     }
 
-    public function testCheckReturnsTrueWhenNotificationWindowHasOpened(): void
+    public function testCheckPassesScheduleIdentifierToChecker(): void
     {
-        // Trigger is 1 day away; with a 48 h window notifyFrom = −1 day → already passed.
-        $triggerDate = (new DateTimeImmutable('+1 day'))->format('Y-m-d H:i:s');
+        $idRecurringSchedule = 42;
 
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate($triggerDate)
-                ->setNotificationWindowHours(48),
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->expects($this->once())
+            ->method('isScheduleDue')
+            ->with($idRecurringSchedule)
+            ->willReturn(true);
+
+        $this->createCondition($checkerMock)->check(
+            (new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule),
         );
-
-        $condition = $this->createCondition($repositoryMock);
-
-        $this->assertTrue($condition->check((new StateMachineItemTransfer())->setIdentifier(1)));
     }
 
-    public function testCheckUsesPerScheduleWindowHoursInsteadOfConfigDefault(): void
+    protected function createCondition(RecurringScheduleDueCheckerInterface $recurringScheduleDueChecker): IsScheduleDueConditionPlugin
     {
-        // Trigger is ~2 days + 1 h away.
-        // Config default (48 h) would give notifyFrom = +1 h → not yet due → false.
-        // Schedule-level override (72 h) gives notifyFrom = −23 h → already passed → true.
-        $triggerDate = (new DateTimeImmutable('+49 hours'))->format('Y-m-d H:i:s');
-
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate($triggerDate)
-                ->setNotificationWindowHours(72),
-        );
-
-        $configMock = $this->getMockBuilder(OrderExperienceManagementConfig::class)
+        $businessFactoryMock = $this->getMockBuilder(OrderExperienceManagementBusinessFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $configMock->expects($this->never())->method('getDefaultNotificationWindowHours');
+        $businessFactoryMock->method('createRecurringScheduleDueChecker')->willReturn($recurringScheduleDueChecker);
 
-        $condition = $this->createCondition($repositoryMock, $configMock);
-
-        $this->assertTrue($condition->check((new StateMachineItemTransfer())->setIdentifier(1)));
-    }
-
-    public function testCheckFallsBackToConfigDefaultWhenScheduleWindowHoursIsNull(): void
-    {
-        // Trigger is 1 day away; config default 48 h gives notifyFrom = −1 day → due.
-        $triggerDate = (new DateTimeImmutable('+1 day'))->format('Y-m-d H:i:s');
-
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate($triggerDate)
-                ->setNotificationWindowHours(null),
-        );
-
-        $configMock = $this->getMockBuilder(OrderExperienceManagementConfig::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $configMock->expects($this->once())
-            ->method('getDefaultNotificationWindowHours')
-            ->willReturn(48);
-
-        $condition = $this->createCondition($repositoryMock, $configMock);
-
-        $this->assertTrue($condition->check((new StateMachineItemTransfer())->setIdentifier(1)));
-    }
-
-    protected function createCondition(
-        OrderExperienceManagementRepositoryInterface $repository,
-        ?OrderExperienceManagementConfig $config = null,
-    ): IsScheduleDueConditionPlugin {
-        $configMock = $config ?? $this->getMockBuilder(OrderExperienceManagementConfig::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        return new class ($repository, $configMock) extends IsScheduleDueConditionPlugin {
-            public function __construct(
-                private readonly OrderExperienceManagementRepositoryInterface $repositoryOverride,
-                private readonly OrderExperienceManagementConfig $configOverride,
-            ) {
+        return new class ($businessFactoryMock) extends IsScheduleDueConditionPlugin {
+            public function __construct(private readonly OrderExperienceManagementBusinessFactory $businessFactoryOverride)
+            {
             }
 
-            public function getRepository(): OrderExperienceManagementRepositoryInterface
+            public function getBusinessFactory(): OrderExperienceManagementBusinessFactory
             {
-                return $this->repositoryOverride;
-            }
-
-            public function getConfig(): OrderExperienceManagementConfig
-            {
-                return $this->configOverride;
+                return $this->businessFactoryOverride;
             }
         };
     }

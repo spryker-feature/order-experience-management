@@ -8,7 +8,16 @@
     flaggedItems: [],
     reviewReasonLabelMap: {},
     reviewReasonBadgeMap: {},
+    priceChangeReviewReasons: [],
+    itemFlagLabelMap: {},
+    itemFlagBadgeMap: {},
     currencyIsoCode: required,
+    priceMode: required,
+    formByGroupKey: {},
+    addedItemKeys: [],
+    shipmentAddressChoices: [],
+    shipmentMethodsUrl: '',
+    priceUrl: '',
 } %}
 
 {% block component %}
@@ -25,17 +34,24 @@
 
     {% set contentClassName = 'box' %}
     {% block content %}
-        <div class="{{ contentClassName }}" data-qa="recurring-order-review-flagged-items">
+        <div class="{{ contentClassName }}" {{ qa('recurring-order-review-flagged-items') }}>
+            {% set priceModeNet = 'NET_MODE' %}
             {% for flaggedItem in data.flaggedItems %}
+                {% set referenceUnitPrice = data.priceMode == priceModeNet ? flaggedItem.recurringScheduleItem.referenceNetPrice : flaggedItem.recurringScheduleItem.referenceGrossPrice %}
+                {% set hasSubstituteOptions = flaggedItem.substituteOptions | length > 0 %}
+                {% set hasPriceChange = flaggedItem.reviewReasons | filter(reviewReason => reviewReason in data.priceChangeReviewReasons) | length > 0 %}
                 {% set gridClassName = 'grid grid--gap' %}
+                {% set infoColClassName = 'col col--expand' %}
 
                 {% block grid %}
                     <div class="{{ gridClassName }}">
                         {% block info %}
-                            <div class="col col--expand">
+                            <div class="{{ infoColClassName }}">
                                 <div>
                                     {% block itemName %}
-                                        <strong>{{ flaggedItem.recurringScheduleItem.productName }}</strong>
+                                        <strong>
+                                            {% if hasSubstituteOptions %}<s>{{ flaggedItem.recurringScheduleItem.productName }}</s>{% else %}{{ flaggedItem.recurringScheduleItem.productName }}{% endif %}
+                                        </strong>
                                         {% if flaggedItem.recurringScheduleItem.sku %}
                                             <small class="text-muted">({{ flaggedItem.recurringScheduleItem.sku }})</small>
                                         {% endif %}
@@ -50,21 +66,95 @@
                                                 },
                                             } only %}
                                         {% endfor %}
+
+                                        {% for flag in flaggedItem.recurringScheduleItem.flags %}
+                                            {% include molecule('status') with {
+                                                data: {
+                                                    label: (data.itemFlagLabelMap[flag] ?? flag) | trans,
+                                                    status: data.itemFlagBadgeMap[flag],
+                                                },
+                                            } only %}
+                                        {% endfor %}
+                                    {% endblock %}
+
+                                    {% block soldBy %}
+                                        {% widget 'SoldByMerchantWidget' args [flaggedItem.recurringScheduleItem] only %}{% endwidget %}
                                     {% endblock %}
                                 </div>
 
                                 {% block itemPriceInfo %}
                                     {% if (flaggedItem.previousPrice is not null) %}
-                                        <small>{{ flaggedItem.recurringScheduleItem.quantity }}x <s>{{ flaggedItem.previousPrice | money(true, data.currencyIsoCode) }}</s> {{ flaggedItem.currentPrice | money(true, data.currencyIsoCode) }}</small>
+                                        <small>{{ (flaggedItem.recurringScheduleItem.nextDeliveryQuantity ?: flaggedItem.recurringScheduleItem.quantity) }}x <s>{{ flaggedItem.previousPrice | money(true, data.currencyIsoCode) }}</s> {{ flaggedItem.currentPrice | money(true, data.currencyIsoCode) }}</small>
                                     {% endif %}
                                 {% endblock %}
                             </div>
                         {% endblock %}
+
+                        {% block substituteSelect %}
+                            {% if hasSubstituteOptions %}
+                                {% set hasAppliedSubstitute = ('sub_' ~ loop.index0) in data.addedItemKeys %}
+                                <div class="col">
+                                    <button type="button"
+                                        class="button button--hollow js-review-substitute__modal-trigger--{{ loop.index0 }}"
+                                        {{ qa('recurring-order-review-substitute-change') }}>
+                                        {{ (hasAppliedSubstitute ? 'recurring_orders.review.substitute.change' : 'recurring_orders.review.substitute.select') | trans }}
+                                    </button>
+                                </div>
+                            {% endif %}
+                        {% endblock %}
+
+                        {% block quantityControl %}
+                            {% set itemForm = data.formByGroupKey['gk_' ~ flaggedItem.recurringScheduleItem.groupKey] ?? null %}
+                            {% if itemForm %}
+                                <div class="col">
+                                    {% embed molecule('review-quantity-control', 'OrderExperienceManagement') with {
+                                        data: {
+                                            itemForm: itemForm,
+                                            currentQuantity: (flaggedItem.recurringScheduleItem.nextDeliveryQuantity ?: flaggedItem.recurringScheduleItem.quantity),
+                                            unitPrice: flaggedItem.currentPrice ?? referenceUnitPrice,
+                                            isRemovable: true,
+                                            isDiscontinued: 'discontinued' in flaggedItem.reviewReasons,
+                                            isRemovalLocked: flaggedItem.isPurchasable is same as(false),
+                                            substituteEntryKey: hasSubstituteOptions ? 'sub_' ~ loop.index0 : '',
+                                            hasPriceChange: hasPriceChange,
+                                        },
+                                        embed: {
+                                            isDiscontinued: 'discontinued' in flaggedItem.reviewReasons,
+                                        }
+                                    } only %}
+                                        {% block extraClass %}
+                                            js-review-total-recalculator__line
+
+                                            {% if data.isDiscontinued %}
+                                                is-hidden
+                                            {% endif %}
+                                        {% endblock %}
+                                    {% endembed %}
+                                </div>
+                            {% endif %}
+                        {% endblock %}
                     </div>
                 {% endblock %}
 
+                {% block substitute %}
+                    {% if flaggedItem.substituteOptions | length or ('sub_' ~ loop.index0) in data.addedItemKeys %}
+                        {% include molecule('review-substitute', 'OrderExperienceManagement') with {
+                            data: {
+                                itemReview: flaggedItem,
+                                currency: data.currencyIsoCode,
+                                index: loop.index0,
+                                shipmentAddressChoices: data.shipmentAddressChoices,
+                                shipmentMethodsUrl: data.shipmentMethodsUrl,
+                                priceUrl: data.priceUrl,
+                            },
+                        } only %}
+                    {% endif %}
+                {% endblock %}
+
                 {% block separator %}
-                    <hr class="separator" />
+                    {% if not loop.last %}
+                        <hr class="separator" />
+                    {% endif %}
                 {% endblock %}
             {% endfor %}
         </div>

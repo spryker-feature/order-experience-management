@@ -8,39 +8,36 @@
 namespace SprykerFeature\Yves\OrderExperienceManagement\Reader;
 
 use Generated\Shared\Transfer\RecurringScheduleConditionsTransfer;
-use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
-use SprykerFeature\Client\OrderExperienceManagement\OrderExperienceManagementClientInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class RecurringOrderAttentionBannerReader implements RecurringOrderAttentionBannerReaderInterface
 {
     public function __construct(
-        protected OrderExperienceManagementClientInterface $subscriptionClient,
-        protected OrderExperienceManagementConfig $subscriptionConfig,
+        protected OrderExperienceManagementConfig $config,
     ) {
     }
 
-    /**
-     * @return array<string, int>
-     */
-    public function getAttentionStatusCounts(int $idCustomer): array
+    public function buildStatusCountConditions(int $idCustomer): RecurringScheduleConditionsTransfer
     {
-        $attentionBannerStatuses = $this->subscriptionConfig->getAttentionBannerStatuses();
         $recurringScheduleConditionsTransfer = (new RecurringScheduleConditionsTransfer())
             ->addCustomerId($idCustomer);
 
-        foreach ($attentionBannerStatuses as $status) {
+        foreach ($this->config->getAttentionBannerStatuses() as $status) {
             $recurringScheduleConditionsTransfer->addStatus($status);
         }
 
-        $recurringScheduleCriteriaTransfer = (new RecurringScheduleCriteriaTransfer())
-            ->setRecurringScheduleConditions($recurringScheduleConditionsTransfer);
+        return $recurringScheduleConditionsTransfer;
+    }
 
-        $statusCountCollectionTransfer = $this->subscriptionClient->getRecurringScheduleStatusCountCollection($recurringScheduleCriteriaTransfer);
-        $counts = array_fill_keys($attentionBannerStatuses, 0);
+    /**
+     * {@inheritDoc}
+     */
+    public function getAttentionStatusCounts(iterable $recurringScheduleStatusCountTransfers): array
+    {
+        $counts = array_fill_keys($this->config->getAttentionBannerStatuses(), 0);
 
-        foreach ($statusCountCollectionTransfer->getStatusCounts() as $statusCountTransfer) {
-            $counts[$statusCountTransfer->getStatusOrFail()] = $statusCountTransfer->getCountOrFail();
+        foreach ($recurringScheduleStatusCountTransfers as $recurringScheduleStatusCountTransfer) {
+            $counts[$recurringScheduleStatusCountTransfer->getStatusOrFail()] = $recurringScheduleStatusCountTransfer->getCountOrFail();
         }
 
         return $counts;

@@ -1,0 +1,51 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-scope-selector',
+    tag: 'review-scope-selector',
+} %}
+
+{% define data = {
+    choices: required,
+    inputSelector: required,
+    nextTriggerDate: required,
+} %}
+
+{% define attributes = {
+    'input-selector': data.inputSelector,
+} %}
+
+{% block body %}
+    {% set radioGroupName = config.name ~ '-option' %}
+    {% set radioInputClassName = config.jsName ~ '__radio' %}
+
+    {% for label, value in data.choices %}
+        {% block scopeOption %}
+            <div class="{{ config.name }}__option">
+                {% embed atom('radio') with {
+                    data: {
+                        label: label | trans,
+                        inputClass: radioInputClassName,
+                    },
+                    attributes: {
+                        name: radioGroupName,
+                        value: value,
+                        checked: loop.first,
+                        'data-qa': 'recurring-order-review-scope-' ~ value,
+                    },
+                    embed: {
+                        radioGroupName: radioGroupName,
+                        value: value,
+                        nextTriggerDate: data.nextTriggerDate | date('F j'),
+                        configName: config.name,
+                    },
+                } only %}
+                    {%- block label -%}
+                        {{ data.label }}
+                        <span class="{{ embed.configName }}__note">{{ "recurring_orders.#{embed.radioGroupName}.#{embed.value}.note" | trans({'%date%': embed.nextTriggerDate}) }}</span>
+                    {%- endblock -%}
+                {% endembed %}
+            </div>
+        {% endblock %}
+    {% endfor %}
+{% endblock %}

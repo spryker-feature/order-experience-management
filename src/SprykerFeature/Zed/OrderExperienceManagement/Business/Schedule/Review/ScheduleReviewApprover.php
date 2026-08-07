@@ -16,94 +16,63 @@ use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleReviewResponseTransfer;
+use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\ScheduleReviewConfirmationException;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\Addition\AddedItemResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Quote\StandingScheduleQuoteOverrideApplierInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\ScheduleApprovalValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\ScheduleEventTriggerInterface;
 
 class ScheduleReviewApprover implements ScheduleReviewApproverInterface
 {
-    protected const string ERROR_MESSAGE_APPROVE_FAILED = 'recurring_orders.review.approve_failed';
+    use TransactionTrait;
 
-    protected const string ERROR_MESSAGE_ALL_ITEMS_REMOVED = 'recurring_orders.review.all_items_removed';
-
-    protected const string ERROR_MESSAGE_PRICES_CHANGED = 'recurring_orders.review.prices_changed';
+    protected const string GLOSSARY_KEY_APPROVE_FAILED = 'recurring_orders.review.approve_failed';
 
     public function __construct(
         protected readonly ScheduleReviewBuilderInterface $scheduleReviewBuilder,
         protected readonly ScheduleReviewChangeApplierInterface $scheduleReviewChangeApplier,
         protected readonly ScheduleEventTriggerInterface $scheduleEventTrigger,
+        protected readonly ScheduleApprovalValidatorInterface $scheduleApprovalValidator,
+        protected readonly AddedItemResolverInterface $addedItemResolver,
+        protected readonly StandingScheduleQuoteOverrideApplierInterface $standingScheduleQuoteOverrideApplier,
     ) {
     }
 
     public function approve(RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer): RecurringScheduleEventResponseTransfer
     {
-        $uuid = $recurringScheduleEventRequestTransfer->getUuidOrFail();
-        $idCustomer = $recurringScheduleEventRequestTransfer->getIdCustomerOrFail();
-        $customerTransfer = $recurringScheduleEventRequestTransfer->getCustomer();
-        $acceptedItemReviewTransfers = $recurringScheduleEventRequestTransfer->getAcceptedItems()->getArrayCopy();
-
         $recurringScheduleReviewResponseTransfer = $this->scheduleReviewBuilder->buildApprovalReview(
-            $this->buildCriteria($uuid, $idCustomer, $customerTransfer),
-            $acceptedItemReviewTransfers,
+            $this->buildCriteria($recurringScheduleEventRequestTransfer),
+            $recurringScheduleEventRequestTransfer->getAcceptedItems()->getArrayCopy(),
+            $recurringScheduleEventRequestTransfer->getQuote(),
         );
 
-        $recurringScheduleTransfer = $recurringScheduleReviewResponseTransfer->getRecurringSchedule();
+        $recurringScheduleReviewResponseTransfer = $this->resolveAddedItems(
+            $recurringScheduleEventRequestTransfer,
+            $recurringScheduleReviewResponseTransfer,
+        );
 
-        if ($recurringScheduleTransfer === null || $recurringScheduleTransfer->getStatus() !== SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED) {
-            return $this->createErrorResponse(static::ERROR_MESSAGE_APPROVE_FAILED);
+        $errorTransfer = $this->scheduleApprovalValidator->validate(
+            $recurringScheduleEventRequestTransfer,
+            $recurringScheduleReviewResponseTransfer,
+        );
+
+        if ($errorTransfer !== null) {
+            return $this->createErrorResponse($errorTransfer->getMessageOrFail(), $errorTransfer->getParameters());
         }
 
-        if ($this->hasPriceDriftBeyondAccepted($recurringScheduleReviewResponseTransfer)) {
-            return $this->createErrorResponse(static::ERROR_MESSAGE_PRICES_CHANGED);
-        }
-
-        if (!$this->hasItemsRemainingAfterApproval($recurringScheduleReviewResponseTransfer)) {
-            return $this->createErrorResponse(static::ERROR_MESSAGE_ALL_ITEMS_REMOVED);
-        }
-
-        $this->scheduleReviewChangeApplier->applyApprovedChanges($recurringScheduleReviewResponseTransfer, $acceptedItemReviewTransfers);
-
-        $isConfirmed = $this->scheduleEventTrigger->triggerEvent($uuid, SharedOrderExperienceManagementConfig::SM_EVENT_CONFIRM, $idCustomer, $customerTransfer);
-
-        if (!$isConfirmed) {
-            return $this->createErrorResponse(static::ERROR_MESSAGE_APPROVE_FAILED);
-        }
-
-        return (new RecurringScheduleEventResponseTransfer())->setIsSuccessful(true);
+        return $this->applyApprovedChangesAndConfirm($recurringScheduleEventRequestTransfer, $recurringScheduleReviewResponseTransfer);
     }
 
-    protected function hasPriceDriftBeyondAccepted(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer): bool
+    protected function buildCriteria(RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer): RecurringScheduleCriteriaTransfer
     {
-        foreach ($recurringScheduleReviewResponseTransfer->getFlaggedItems() as $recurringScheduleItemReviewTransfer) {
-            if (in_array(SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED, $recurringScheduleItemReviewTransfer->getReviewReasons(), true)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function hasItemsRemainingAfterApproval(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer): bool
-    {
-        if ($recurringScheduleReviewResponseTransfer->getUnchangedItems()->count() > 0) {
-            return true;
-        }
-
-        foreach ($recurringScheduleReviewResponseTransfer->getFlaggedItems() as $recurringScheduleItemReviewTransfer) {
-            if ($recurringScheduleItemReviewTransfer->getIsPurchasable() !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function buildCriteria(string $uuid, int $idCustomer, ?CustomerTransfer $customerTransfer): RecurringScheduleCriteriaTransfer
-    {
-        $customerTransfer ??= (new CustomerTransfer())->setIdCustomer($idCustomer);
+        $customerTransfer = $recurringScheduleEventRequestTransfer->getCustomer()
+            ?? (new CustomerTransfer())->setIdCustomer($recurringScheduleEventRequestTransfer->getIdCustomerOrFail());
 
         $recurringScheduleConditionsTransfer = (new RecurringScheduleConditionsTransfer())
-            ->addUuid($uuid)
-            ->setGroupItemsByGroupKey(true)
+            ->addUuid($recurringScheduleEventRequestTransfer->getUuidOrFail())
+            ->setIsGroupedByGroupKey(true)
             ->setIsWithItems(true);
 
         return (new RecurringScheduleCriteriaTransfer())
@@ -111,10 +80,83 @@ class ScheduleReviewApprover implements ScheduleReviewApproverInterface
             ->setCustomer($customerTransfer);
     }
 
-    protected function createErrorResponse(string $message): RecurringScheduleEventResponseTransfer
+    protected function resolveAddedItems(
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
+        RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
+    ): RecurringScheduleReviewResponseTransfer {
+        $recurringScheduleTransfer = $recurringScheduleReviewResponseTransfer->getRecurringSchedule();
+        $recurringScheduleItemAdditionTransfers = $recurringScheduleEventRequestTransfer->getAddedItems()->getArrayCopy();
+
+        if ($recurringScheduleTransfer === null || $recurringScheduleItemAdditionTransfers === []) {
+            return $recurringScheduleReviewResponseTransfer;
+        }
+
+        return $recurringScheduleReviewResponseTransfer->setResolvedAddedItems(
+            $this->addedItemResolver->resolveAddedItems($recurringScheduleItemAdditionTransfers, $recurringScheduleTransfer),
+        );
+    }
+
+    protected function applyApprovedChangesAndConfirm(
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
+        RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
+    ): RecurringScheduleEventResponseTransfer {
+        try {
+            $this->getTransactionHandler()->handleTransaction(function () use (
+                $recurringScheduleEventRequestTransfer,
+                $recurringScheduleReviewResponseTransfer,
+            ): void {
+                $this->executeApplyApprovedChangesAndConfirmTransaction(
+                    $recurringScheduleEventRequestTransfer,
+                    $recurringScheduleReviewResponseTransfer,
+                );
+            });
+        } catch (ScheduleReviewConfirmationException) {
+            return $this->createErrorResponse(static::GLOSSARY_KEY_APPROVE_FAILED);
+        }
+
+        return $this->createSuccessResponse();
+    }
+
+    /**
+     * @throws \SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\ScheduleReviewConfirmationException
+     */
+    protected function executeApplyApprovedChangesAndConfirmTransaction(
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
+        RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
+    ): void {
+        $this->scheduleReviewChangeApplier->applyApprovedChanges(
+            $recurringScheduleReviewResponseTransfer,
+            $recurringScheduleEventRequestTransfer->getAcceptedItems()->getArrayCopy(),
+            $recurringScheduleEventRequestTransfer->getScope(),
+        );
+
+        $this->standingScheduleQuoteOverrideApplier->applyStandingQuoteOverride(
+            $recurringScheduleReviewResponseTransfer->getRecurringScheduleOrFail(),
+            $recurringScheduleEventRequestTransfer,
+        );
+
+        if (
+            !$this->scheduleEventTrigger->triggerEventForRecurringSchedule(
+                $recurringScheduleReviewResponseTransfer->getRecurringScheduleOrFail(),
+                SharedOrderExperienceManagementConfig::SM_EVENT_CONFIRM,
+            )
+        ) {
+            throw new ScheduleReviewConfirmationException();
+        }
+    }
+
+    protected function createSuccessResponse(): RecurringScheduleEventResponseTransfer
+    {
+        return (new RecurringScheduleEventResponseTransfer())->setIsSuccessful(true);
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    protected function createErrorResponse(string $message, array $parameters = []): RecurringScheduleEventResponseTransfer
     {
         return (new RecurringScheduleEventResponseTransfer())
             ->setIsSuccessful(false)
-            ->addError((new ErrorTransfer())->setMessage($message));
+            ->addError((new ErrorTransfer())->setMessage($message)->setParameters($parameters));
     }
 }

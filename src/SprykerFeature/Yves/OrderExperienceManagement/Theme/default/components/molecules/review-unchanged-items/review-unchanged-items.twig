@@ -7,6 +7,9 @@
 {% define data = {
     unchangedItems: [],
     currencyIsoCode: required,
+    priceMode: required,
+    itemFlagLabelMap: {},
+    itemFlagBadgeMap: {},
 } %}
 
 {% block component %}
@@ -24,10 +27,13 @@
         {% set contentClassName = 'box' %}
         {% block content %}
             <div class="{{ contentClassName }}">
+                {% set priceModeNet = 'NET_MODE' %}
                 {% for item in data.unchangedItems %}
-                    {% set gridClassName = 'grid grid--gap' %}
+                    {% set unitPrice = data.priceMode == priceModeNet ? item.referenceNetPrice : item.referenceGrossPrice %}
+                    {% set currentQuantity = item.nextDeliveryQuantity ?: item.quantity %}
+                    {% set gridClassName = 'grid grid--gap grid--middle js-review-total-recalculator__line' %}
                     {% block grid %}
-                        <div class="{{ gridClassName }}">
+                        <div class="{{ gridClassName }}" data-unit-price="{{ unitPrice }}" data-quantity="{{ currentQuantity }}" data-line-total="{{ currentQuantity * unitPrice }}">
                             {% block info %}
                                 <div class="col col--expand">
                                     <div>
@@ -36,21 +42,36 @@
                                         {% if item.sku %}
                                             <small class="text-muted">({{ item.sku }})</small>
                                         {% endif %}
+                                        {% for flag in item.flags %}
+                                            {% include molecule('status') with {
+                                                data: {
+                                                    label: (data.itemFlagLabelMap[flag] ?? flag) | trans,
+                                                    status: data.itemFlagBadgeMap[flag],
+                                                },
+                                            } only %}
+                                        {% endfor %}
+                                    {% endblock %}
+
+                                    {% block soldBy %}
+                                        {% widget 'SoldByMerchantWidget' args [item] only %}{% endwidget %}
                                     {% endblock %}
                                     </div>
                                 </div>
                             {% endblock %}
 
+                            {% set itemPriceInfoClassName = "col spacing-x" %}
                             {% block itemPriceInfo %}
-                                <div class="col">
-                                    <small>{{ item.quantity }}x {{ item.referenceGrossPrice | money(true, data.currencyIsoCode) }}</small>
+                                <div class="{{ itemPriceInfoClassName }}">
+                                    <small>{{ currentQuantity }}x {{ unitPrice | money(true, data.currencyIsoCode) }}</small>
                                 </div>
                             {% endblock %}
                         </div>
                     {% endblock %}
 
                     {% block separator %}
-                        <hr class="separator" />
+                        {% if not loop.last %}
+                            <hr class="separator" />
+                        {% endif %}
                     {% endblock %}
                 {% endfor %}
             </div>

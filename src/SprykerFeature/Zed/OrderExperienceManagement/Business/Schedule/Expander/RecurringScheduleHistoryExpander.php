@@ -11,33 +11,29 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Expande
 
 use Generated\Shared\Transfer\PaginationTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
-use Generated\Shared\Transfer\RecurringScheduleErrorTransfer;
-use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
+use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
-use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\History\RecurringScheduleHistoryFailureReasonEnricherInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
-class RecurringScheduleHistoryExpander extends AbstractRecurringScheduleExpander implements RecurringScheduleHistoryExpanderInterface
+class RecurringScheduleHistoryExpander extends AbstractRecurringScheduleExpander implements RecurringScheduleExpanderInterface
 {
-    protected const string DETAIL_KEY_MESSAGE = 'message';
-
-    protected const string DETAIL_KEY_PARAMETERS = 'parameters';
-
-    protected const string MESSAGE_PRODUCT_UNAVAILABLE = 'product.unavailable';
-
-    protected const string PARAMETER_SKU = '%sku%';
-
     public function __construct(
         protected OrderExperienceManagementRepositoryInterface $repository,
-        protected UtilEncodingServiceInterface $utilEncodingService,
+        protected RecurringScheduleHistoryFailureReasonEnricherInterface $recurringScheduleHistoryFailureReasonEnricher,
     ) {
     }
 
-    public function expandWithHistory(
+    public function isApplicable(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): bool
+    {
+        return (bool)$recurringScheduleCriteriaTransfer->getRecurringScheduleConditions()?->getIsWithHistory();
+    }
+
+    public function expand(
         RecurringScheduleCollectionTransfer $recurringScheduleCollectionTransfer,
-        ?PaginationTransfer $historyPaginationTransfer = null,
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {
+        $historyPaginationTransfer = $recurringScheduleCriteriaTransfer->getHistoryPagination();
         $scheduleIds = $this->extractScheduleIds($recurringScheduleCollectionTransfer);
 
         if ($scheduleIds === []) {
@@ -100,72 +96,8 @@ class RecurringScheduleHistoryExpander extends AbstractRecurringScheduleExpander
         array $recurringScheduleHistoryTransfers,
     ): void {
         foreach ($recurringScheduleHistoryTransfers as $recurringScheduleHistoryTransfer) {
-            $this->enrichFailureReason($recurringScheduleHistoryTransfer);
+            $recurringScheduleHistoryTransfer = $this->recurringScheduleHistoryFailureReasonEnricher->enrich($recurringScheduleHistoryTransfer);
             $recurringScheduleTransfer->addHistoryItem($recurringScheduleHistoryTransfer);
         }
-    }
-
-    protected function enrichFailureReason(RecurringScheduleHistoryTransfer $recurringScheduleHistoryTransfer): void
-    {
-        if ($recurringScheduleHistoryTransfer->getEventType() !== SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED) {
-            return;
-        }
-
-        $detail = $this->utilEncodingService->decodeJson($recurringScheduleHistoryTransfer->getDetail() ?? '[]', true);
-
-        if (!is_array($detail) || $detail === []) {
-            return;
-        }
-
-        $failureReason = $this->extractUnavailableSkus($detail);
-        $recurringScheduleHistoryTransfer->setFailureReason($failureReason);
-
-        $this->enrichErrors($recurringScheduleHistoryTransfer, $detail);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $errors
-     */
-    protected function enrichErrors(RecurringScheduleHistoryTransfer $recurringScheduleHistoryTransfer, array $errors): void
-    {
-        foreach ($errors as $error) {
-            $message = $error[static::DETAIL_KEY_MESSAGE] ?? null;
-
-            if ($message === null) {
-                continue;
-            }
-
-            $recurringScheduleHistoryTransfer->addError(
-                (new RecurringScheduleErrorTransfer())
-                    ->setMessage($message)
-                    ->setParameters($error[static::DETAIL_KEY_PARAMETERS] ?? []),
-            );
-        }
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $errors
-     */
-    protected function extractUnavailableSkus(array $errors): ?string
-    {
-        $skus = [];
-
-        foreach ($errors as $error) {
-            if (($error[static::DETAIL_KEY_MESSAGE] ?? null) !== static::MESSAGE_PRODUCT_UNAVAILABLE) {
-                continue;
-            }
-
-            $sku = $error[static::DETAIL_KEY_PARAMETERS][static::PARAMETER_SKU] ?? null;
-
-            if ($sku !== null) {
-                $skus[] = (string)$sku;
-            }
-        }
-
-        if ($skus !== []) {
-            return implode(', ', array_unique($skus));
-        }
-
-        return ($errors[0][static::DETAIL_KEY_MESSAGE] ?? null) ?: null;
     }
 }

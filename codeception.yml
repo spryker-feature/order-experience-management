@@ -1,6 +1,8 @@
 namespace: SprykerFeatureTest
 include:
     - tests/SprykerFeatureTest/Zed/OrderExperienceManagement
+    - tests/SprykerFeatureTest/Yves/OrderExperienceManagement
+    - tests/SprykerFeatureTest/Shared/OrderExperienceManagement
     - tests/SprykerFeatureTest/Service/OrderExperienceManagement
 
 paths:

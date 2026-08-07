@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\ScheduleValidator;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
@@ -23,19 +24,19 @@ class CheckoutPlaceabilityScheduleValidatorPlugin extends AbstractPlugin impleme
 {
     /**
      * {@inheritDoc}
-     * - Reconstructs the quote from the schedule's stored `quoteData` JSON.
-     * - Calls `CheckoutFacade::isPlaceableOrder()` to run all checkout pre-condition checks.
+     * - Calls `CheckoutFacade::isPlaceableOrder()` with the provided placeable quote to run all checkout pre-condition checks.
      * - Expands the provided validation result with per-item reviews and blocking errors when pre-conditions fail (e.g. discontinued SKU).
-     * - Returns the result transfer unchanged when all pre-conditions pass or `quoteData` is absent.
+     * - Returns the result transfer unchanged when all pre-conditions pass.
      *
      * @api
      */
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
         return $this->getBusinessFactory()
             ->createCheckoutPlaceabilityValidator()
-            ->validate($recurringScheduleTransfer, $recurringScheduleValidationResultTransfer);
+            ->validate($recurringScheduleTransfer, $quoteTransfer, $recurringScheduleValidationResultTransfer);
     }
 }

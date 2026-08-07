@@ -19,4 +19,6 @@ interface CadenceResolverInterface
     public function resolveNextTriggerDateFromBase(string $cadenceType, ?int $cadenceValue, DateTimeImmutable $baseDate): DateTimeImmutable;
 
     public function isSupported(string $cadenceType): bool;
+
+    public function isValueRequired(string $cadenceType): bool;
 }

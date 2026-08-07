@@ -1,0 +1,19 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-review-substitute($name: '.review-substitute') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-review-substitute-base-hook) {
+            @include order-experience-management-review-substitute-base-hook;
+        }
+
+        &__summary {
+            margin-top: 1rem;
+        }
+
+        &__sold-by-wrapper:has(#{$name}__sold-by-value:empty) {
+            display: none;
+        }
+
+        @content;
+    }
+}

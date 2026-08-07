@@ -12,7 +12,7 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review;
 use Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleReviewResponseTransfer;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class ScheduleReviewSummaryCalculator implements ScheduleReviewSummaryCalculatorInterface
 {
@@ -21,15 +21,19 @@ class ScheduleReviewSummaryCalculator implements ScheduleReviewSummaryCalculator
      */
     protected const string PRICE_MODE_NET = 'NET_MODE';
 
+    public function __construct(protected OrderExperienceManagementConfig $config)
+    {
+    }
+
     public function calculate(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer): RecurringScheduleReviewResponseTransfer
     {
         return $recurringScheduleReviewResponseTransfer
             ->setOriginalTotal($this->calculateOriginalTotal($recurringScheduleReviewResponseTransfer))
             ->setUpdatedTotal($this->calculateUpdatedTotal($recurringScheduleReviewResponseTransfer))
             ->setRemovedItemCount($this->countUnpurchasableItems($recurringScheduleReviewResponseTransfer))
-            ->setPriceChangeCount($this->countByReason($recurringScheduleReviewResponseTransfer, SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED))
-            ->setSubstitutedCount($this->countByReason($recurringScheduleReviewResponseTransfer, SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_SUBSTITUTED))
-            ->setUnavailableCount($this->countByReason($recurringScheduleReviewResponseTransfer, SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE));
+            ->setPriceChangeCount($this->countByReasons($recurringScheduleReviewResponseTransfer, $this->config->getPriceChangeReviewReasons()))
+            ->setSubstitutedCount($this->countByReasons($recurringScheduleReviewResponseTransfer, $this->config->getSubstitutableReviewReasons()))
+            ->setUnavailableCount($this->countByReasons($recurringScheduleReviewResponseTransfer, $this->config->getUnavailableReviewReasons()));
     }
 
     protected function calculateOriginalTotal(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer): int
@@ -89,12 +93,15 @@ class ScheduleReviewSummaryCalculator implements ScheduleReviewSummaryCalculator
         return (int)$recurringScheduleItemTransfer->getQuantity() * $currentPrice;
     }
 
-    protected function countByReason(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer, string $reviewReason): int
+    /**
+     * @param array<string> $reviewReasons
+     */
+    protected function countByReasons(RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer, array $reviewReasons): int
     {
         $count = 0;
 
         foreach ($recurringScheduleReviewResponseTransfer->getFlaggedItems() as $recurringScheduleItemReviewTransfer) {
-            if (in_array($reviewReason, $recurringScheduleItemReviewTransfer->getReviewReasons(), true)) {
+            if (array_intersect($reviewReasons, $recurringScheduleItemReviewTransfer->getReviewReasons()) !== []) {
                 $count++;
             }
         }

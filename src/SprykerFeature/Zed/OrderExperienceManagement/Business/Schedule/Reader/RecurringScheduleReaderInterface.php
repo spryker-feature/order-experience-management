@@ -9,15 +9,27 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader;
 
+use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleStatusCountCollectionTransfer;
+use Generated\Shared\Transfer\RecurringScheduleTransfer;
 
 interface RecurringScheduleReaderInterface
 {
     public function getRecurringScheduleCollection(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer
     ): RecurringScheduleCollectionTransfer;
+
+    public function findRecurringScheduleByCriteria(
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer
+    ): ?RecurringScheduleTransfer;
+
+    public function findRecurringScheduleByUuid(
+        string $uuid,
+        int $idCustomer,
+        ?CustomerTransfer $customerTransfer = null
+    ): ?RecurringScheduleTransfer;
 
     public function getRecurringScheduleStatusCountCollection(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer

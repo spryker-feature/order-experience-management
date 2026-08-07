@@ -25,7 +25,7 @@ interface OrderExperienceManagementStubInterface
     ): RecurringOrderQuoteUpdateResponseTransfer;
 
     public function triggerManualEventForSchedule(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 
     public function getRecurringScheduleCollection(
@@ -37,11 +37,11 @@ interface OrderExperienceManagementStubInterface
     ): RecurringScheduleStatusCountCollectionTransfer;
 
     public function resumeScheduleWithDate(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 
     public function updateRecurringScheduleCollection(
-        RecurringScheduleCollectionRequestTransfer $requestTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
     ): RecurringScheduleCollectionResponseTransfer;
 
     public function getRecurringScheduleReview(
@@ -49,6 +49,6 @@ interface OrderExperienceManagementStubInterface
     ): RecurringScheduleReviewResponseTransfer;
 
     public function approveScheduleReview(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 }

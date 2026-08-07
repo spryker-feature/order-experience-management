@@ -19,6 +19,10 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     protected const int DEFAULT_RECURRING_SCHEDULE_HISTORY_ITEMS_PER_PAGE = 10;
 
+    protected const int DEFAULT_BUSINESS_UNIT_CHOICES_LIMIT = 100;
+
+    protected const bool DEFAULT_UNAVAILABLE_PRODUCTS_EXCLUDED_FROM_ADD_PRODUCT_SEARCH = true;
+
     /**
      * Specification:
      * - Returns the list of supported cadence types for recurring order scheduling.
@@ -49,6 +53,18 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     }
 
     /**
+     * Specification:
+     * - Returns the maximum number of company business units loaded into the recurring order search scope dropdown.
+     * - Projects with more business units should override this or switch to an async autocomplete widget.
+     *
+     * @api
+     */
+    public function getBusinessUnitChoicesLimit(): int
+    {
+        return static::DEFAULT_BUSINESS_UNIT_CHOICES_LIMIT;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @api
@@ -58,6 +74,19 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getInvoicePaymentMethodKeys(): array
     {
         return $this->getSharedConfig()->getInvoicePaymentMethodKeys();
+    }
+
+    /**
+     * Specification:
+     * - Returns the delivery-like shipment type keys supported for products added on the Review Required page.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getSupportedAddedItemShipmentTypeKeys(): array
+    {
+        return $this->getSharedConfig()->getSupportedAddedItemShipmentTypeKeys();
     }
 
     /**
@@ -136,6 +165,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_DISCONTINUED => 'recurring_orders.review.reason.discontinued',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_SUBSTITUTED => 'recurring_orders.review.reason.substituted',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE => 'recurring_orders.review.reason.unavailable',
+            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_OUT_OF_STOCK => 'recurring_orders.review.reason.out_of_stock',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_CONFIGURABLE_BUNDLE_UNAVAILABLE => 'recurring_orders.review.reason.configurable_bundle_unavailable',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_NOT_APPROVED => 'recurring_orders.review.reason.not_approved',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_UNAVAILABLE => 'recurring_orders.review.reason.price_unavailable',
@@ -158,9 +188,54 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_DISCONTINUED => 'alert',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_SUBSTITUTED => 'info',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE => 'alert',
+            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_OUT_OF_STOCK => 'alert',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_CONFIGURABLE_BUNDLE_UNAVAILABLE => 'alert',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_NOT_APPROVED => 'alert',
             SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_UNAVAILABLE => 'alert',
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the per-item review reason groups counted as price changes on the Review Required page.
+     * - Used to mark the lines whose price change the buyer accepts by confirming the order.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getPriceChangeReviewReasons(): array
+    {
+        return $this->getSharedConfig()->getPriceChangeReviewReasons();
+    }
+
+    /**
+     * Specification:
+     * - Returns a map of per-item flag → glossary key used as the item flag label on the order-items and Review Required pages.
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getItemFlagLabelMap(): array
+    {
+        return [
+            SharedOrderExperienceManagementConfig::ITEM_FLAG_ONE_TIME => 'recurring_orders.detail.order_items.one_time_label',
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns a map of per-item flag → CSS badge modifier class used as the item flag badge on the order-items and Review Required pages.
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getItemFlagBadgeMap(): array
+    {
+        return [
+            SharedOrderExperienceManagementConfig::ITEM_FLAG_ONE_TIME => 'warning',
         ];
     }
 
@@ -235,5 +310,69 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             'recurring_orders.status.failed' => SharedOrderExperienceManagementConfig::STATUS_FAILED,
             'recurring_orders.status.cancelled' => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
         ];
+    }
+
+    /**
+     * Specification:
+     * - Returns translation-key → scope-value map for the Review Required approval scope selector
+     * - Apply changes to this order only vs. every future order.
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getReviewScopeChoices(): array
+    {
+        return [
+            'recurring_orders.review.scope.every_future' => SharedOrderExperienceManagementConfig::SCOPE_STANDING,
+            'recurring_orders.review.scope.this_order' => SharedOrderExperienceManagementConfig::SCOPE_OCCURRENCE,
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the review reason groups for which substitute options are offered on the Review Required page.
+     * - Only items flagged as discontinued or no-longer-available receive a "Choose a substitute" action.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getSubstitutableReviewReasons(): array
+    {
+        return $this->getSharedConfig()->getSubstitutableReviewReasons();
+    }
+
+    /**
+     * Specification:
+     * - Controls the "add a product" picker on the recurring-order Review Required page.
+     * - When enabled: concrete products with no store-aware availability are hidden from the search bar, and
+     *   merchant offers with no availability are hidden from the offer selector.
+     *
+     * @api
+     */
+    public function isUnavailableProductsExcludedFromAddProductSearch(): bool
+    {
+        return static::DEFAULT_UNAVAILABLE_PRODUCTS_EXCLUDED_FROM_ADD_PRODUCT_SEARCH;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isMeasurementUnitProductAdditionRestricted(): bool
+    {
+        return $this->getSharedConfig()->isMeasurementUnitProductAdditionRestricted();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isPackagingUnitProductAdditionRestricted(): bool
+    {
+        return $this->getSharedConfig()->isPackagingUnitProductAdditionRestricted();
     }
 }

@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition;
 
-use DateTimeImmutable;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
@@ -19,9 +18,7 @@ use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
  *
  * @api
  *
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface getRepository()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface getFacade()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
+ * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory getBusinessFactory()
  */
 class IsScheduleDueConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
@@ -32,17 +29,9 @@ class IsScheduleDueConditionPlugin extends AbstractPlugin implements ConditionPl
      */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
-        $dueData = $this->getRepository()->findRecurringScheduleDueData($stateMachineItemTransfer->getIdentifierOrFail());
-
-        if ($dueData === null) {
-            return false;
-        }
-
-        $windowHours = $dueData->getNotificationWindowHours() ?? $this->getConfig()->getDefaultNotificationWindowHours();
-        $triggerDate = new DateTimeImmutable($dueData->getNextTriggerDateOrFail());
-        $notifyFrom = $triggerDate->modify(sprintf('-%d hours', $windowHours));
-
-        return $notifyFrom <= new DateTimeImmutable('now');
+        return $this->getBusinessFactory()
+            ->createRecurringScheduleDueChecker()
+            ->isScheduleDue($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
     /**

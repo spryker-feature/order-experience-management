@@ -10,9 +10,11 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Facade;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\PaginationTransfer;
 use Generated\Shared\Transfer\RecurringScheduleConditionsTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
+use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\SortTransfer;
@@ -43,6 +45,33 @@ class GetRecurringScheduleCollectionTest extends Unit
         parent::setUp();
 
         $this->tester->ensureRecurringScheduleTablesAreEmpty();
+    }
+
+    public function testLoadsCustomerFullNameWhenIsWithCustomer(): void
+    {
+        // Arrange
+        $customerTransfer = $this->tester->haveCustomer([
+            CustomerTransfer::FIRST_NAME => 'Ada',
+            CustomerTransfer::LAST_NAME => 'Lovelace',
+        ]);
+        $this->tester->haveRecurringSchedule((int)$customerTransfer->getIdCustomer());
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId((int)$customerTransfer->getIdCustomer())
+                    ->setIsWithCustomer(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(1, $collectionTransfer->getRecurringSchedules());
+        $this->assertSame(
+            'Ada Lovelace',
+            $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getCreatedByName(),
+        );
     }
 
     public function testReturnsCollectionFilteredByCustomerId(): void
@@ -455,7 +484,7 @@ class GetRecurringScheduleCollectionTest extends Unit
                 (new RecurringScheduleConditionsTransfer())
                     ->addCustomerId($idCustomer)
                     ->setIsWithItems(true)
-                    ->setGroupItemsByGroupKey(true),
+                    ->setIsGroupedByGroupKey(true),
             );
 
         // Act
@@ -479,7 +508,7 @@ class GetRecurringScheduleCollectionTest extends Unit
         $this->assertSame(1500, $scheduleTransfer->getEstimatedTotal());
     }
 
-    public function testDoesNotGroupItemsWhenGroupItemsByGroupKeyIsNotSet(): void
+    public function testDoesNotGroupItemsWhenIsGroupedByGroupKeyIsNotSet(): void
     {
         // Arrange
         $customer = $this->tester->haveCustomer();
@@ -513,5 +542,177 @@ class GetRecurringScheduleCollectionTest extends Unit
 
         // Assert
         $this->assertCount(2, $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getItems());
+    }
+
+    public function testFiltersByCadenceTypes(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY]);
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY]);
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->addCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(2, $collectionTransfer->getRecurringSchedules());
+        foreach ($collectionTransfer->getRecurringSchedules() as $scheduleTransfer) {
+            $this->assertSame(SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY, $scheduleTransfer->getCadenceType());
+        }
+    }
+
+    public function testFiltersByNextTriggerDateRange(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::NAME => 'before', RecurringScheduleTransfer::NEXT_TRIGGER_DATE => '2026-07-01']);
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::NAME => 'inside', RecurringScheduleTransfer::NEXT_TRIGGER_DATE => '2026-07-15']);
+        $this->tester->haveRecurringSchedule($idCustomer, [RecurringScheduleTransfer::NAME => 'after', RecurringScheduleTransfer::NEXT_TRIGGER_DATE => '2026-07-31']);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setNextTriggerDateFrom('2026-07-10')
+                    ->setNextTriggerDateTo('2026-07-20'),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(1, $collectionTransfer->getRecurringSchedules());
+        $this->assertSame('inside', $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getName());
+    }
+
+    public function testFiltersByEstimatedTotalRangeUsingGrossPriceMode(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $cheapScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::NAME => 'cheap',
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+        ]);
+        $this->tester->haveRecurringScheduleItem($cheapScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 1,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 300,
+        ]);
+
+        $expensiveScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::NAME => 'expensive',
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+        ]);
+        $this->tester->haveRecurringScheduleItem($expensiveScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 2,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setEstimatedTotalMin(500)
+                    ->setEstimatedTotalMax(2000),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(1, $collectionTransfer->getRecurringSchedules());
+        $this->assertSame('expensive', $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getName());
+    }
+
+    public function testFiltersByEstimatedTotalUsingNetPriceMode(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::PRICE_MODE => 'NET_MODE',
+        ]);
+        $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 1,
+            RecurringScheduleItemTransfer::REFERENCE_NET_PRICE => 100,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 9999,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setEstimatedTotalMax(500),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(1, $collectionTransfer->getRecurringSchedules());
+    }
+
+    public function testLoadsLastExecutionDateFromPlacedHistoryWhenIsWithLastExecution(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer);
+        $this->tester->haveRecurringScheduleHistory($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleHistoryTransfer::EVENT_TYPE => SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PLACED,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setIsWithLastExecution(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertNotNull($collectionTransfer->getRecurringSchedules()->offsetGet(0)->getLastExecutionDate());
+    }
+
+    public function testDoesNotLoadLastExecutionDateWhenNoPlacedHistoryExists(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer);
+        $this->tester->haveRecurringScheduleHistory($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleHistoryTransfer::EVENT_TYPE => SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setIsWithLastExecution(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertNull($collectionTransfer->getRecurringSchedules()->offsetGet(0)->getLastExecutionDate());
     }
 }

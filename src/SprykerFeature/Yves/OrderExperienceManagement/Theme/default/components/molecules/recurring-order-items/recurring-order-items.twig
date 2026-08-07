@@ -6,6 +6,8 @@
 
 {% define data = {
     schedule: [],
+    itemFlagLabelMap: [],
+    itemFlagBadgeMap: [],
 }%}
 
 {% block component %}
@@ -28,16 +30,36 @@
             { id: 'total', title: 'recurring_orders.detail.order_items.column.total' },
         ] %}
 
-        {% set itemRows = data.schedule.items | map(item => {
-            product: (item.productName ?: item.sku)
-                ~ (item.productName ? '<br><small class="text-muted">(' ~ item.sku ~ ')</small>' : '')
-                ~ (item.configurableBundleName
-                    ? '<br><small class="text-muted">' ~ ('recurring_orders.item.configurable_bundle_label' | trans({'%name%': item.configurableBundleName | trans | e})) ~ '</small>'
-                    : ''),
-            quantity: '<span class="' ~ config.jsName ~ '__qty-display">' ~ item.quantity ~ '</span>'
-                ~ '<input type="number" class="' ~ config.jsName ~ '__qty-input is-hidden" data-item-id="' ~ item.idRecurringScheduleItem ~ '" value="' ~ item.quantity ~ '" min="1">',
-            total: item.itemTotal | money(true, data.schedule.currencyIsoCode),
-        }) %}
+        {% set itemRows = [] %}
+        {% for item in data.schedule.items %}
+            {% set soldBy %}{% widget 'SoldByMerchantWidget' args [item] only %}{% endwidget %}{% endset %}
+            {% set itemQuantity = item.nextDeliveryQuantity ?? item.quantity %}
+
+            {% set productCell %}
+                {{- item.productName ?: item.sku -}}
+                {%- if item.productName %}<br><small class="text-muted">({{ item.sku }})</small>{% endif -%}
+                {%- if item.configurableBundleName %}
+                    <br><small class="text-muted">{{ 'recurring_orders.item.configurable_bundle_label' | trans({'%name%': item.configurableBundleName | trans | e}) }}</small>
+                {%- endif -%}
+                {%- for flag in item.flags %}
+                    <br><span class="status status--{{ data.itemFlagBadgeMap[flag] ?? '' }}">{{ (data.itemFlagLabelMap[flag] ?? flag) | trans }}</span>
+                {%- endfor -%}
+                {{- soldBy -}}
+            {% endset %}
+
+            {% set quantityCell %}
+                <span class="{{ config.jsName }}__qty-display" data-qa="recurring-order-detail-item-quantity">{{ itemQuantity }}</span>
+                <input type="number" class="{{ config.jsName }}__qty-input is-hidden" data-item-id="{{ item.idRecurringScheduleItem }}" value="{{ itemQuantity }}" min="1">
+            {% endset %}
+
+            {% set totalCell = item.itemTotal | money(true, data.schedule.currencyIsoCode) %}
+
+            {% set itemRows = itemRows | merge([{
+                product: productCell,
+                quantity: quantityCell,
+                total: totalCell,
+            }]) %}
+        {% endfor %}
 
         {% include molecule('advanced-table') with {
             data: {

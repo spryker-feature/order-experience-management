@@ -23,7 +23,10 @@ class RecurringScheduleItemMapper
         if ($recurringScheduleItemTransfer->getIdRecurringSchedule() !== null) {
             $recurringScheduleItemEntity->setFkRecurringSchedule($recurringScheduleItemTransfer->getIdRecurringScheduleOrFail());
         }
-        $recurringScheduleItemEntity->setFkShipmentMethod($recurringScheduleItemTransfer->getIdShipmentMethod());
+
+        if ($recurringScheduleItemTransfer->getIdShipmentMethod() !== null) {
+            $recurringScheduleItemEntity->setFkShipmentMethod($recurringScheduleItemTransfer->getIdShipmentMethod());
+        }
 
         return $recurringScheduleItemEntity;
     }

@@ -1,0 +1,21 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-review-add-product($name: '.review-add-product') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-review-add-product-base-hook) {
+            @include order-experience-management-review-add-product-base-hook;
+        }
+
+        &__line {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        &__line-name {
+            flex-grow: 1;
+        }
+
+        @content;
+    }
+}

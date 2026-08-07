@@ -45,7 +45,14 @@
                     {% endblock %}
                     
                     {% block newValue %}
-                        <span data-qa="recurring-order-review-footer-total">{{ data.review.updatedTotal | money(true, data.currencyIsoCode) }}</span>
+                        <span data-qa="recurring-order-review-footer-total">
+                            {% include molecule('review-summary-banner-price', 'OrderExperienceManagement') with {
+                                data: {
+                                    total: data.review.updatedTotal | money(true, data.currencyIsoCode),
+                                    currency: data.currencyIsoCode,
+                                },
+                            } only %}
+                        </span>
                     {% endblock %}
                 {% endblock %}
             </div>

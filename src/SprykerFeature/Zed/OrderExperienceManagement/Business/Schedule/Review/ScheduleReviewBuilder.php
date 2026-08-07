@@ -9,10 +9,16 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review;
 
+use ArrayObject;
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleReviewResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\AcceptedItemReviewMapperInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\Addition\Shipment\ScheduleShippingAddressChoiceReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Quote\RecurringScheduleQuoteDataMergerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePrePlacementValidatorInterface;
 
 class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
@@ -28,49 +34,106 @@ class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
         protected readonly ScheduleReviewMapperInterface $scheduleReviewMapper,
         protected readonly ConfiguredBundleUnavailabilityExpanderInterface $configuredBundleUnavailabilityExpander,
         protected readonly ScheduleReviewSummaryCalculatorInterface $scheduleReviewSummaryCalculator,
+        protected readonly AcceptedItemReviewMapperInterface $acceptedItemReviewMapper,
+        protected readonly RecurringScheduleQuoteDataMergerInterface $recurringScheduleQuoteDataMerger,
+        protected readonly ScheduleShippingAddressChoiceReaderInterface $scheduleShippingAddressChoiceReader,
     ) {
     }
 
     public function buildReview(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): RecurringScheduleReviewResponseTransfer
     {
-        $recurringScheduleTransfer = $this->findSchedule($recurringScheduleCriteriaTransfer);
+        $recurringScheduleTransfer = $this->recurringScheduleReader->findRecurringScheduleByCriteria($recurringScheduleCriteriaTransfer);
 
         if ($recurringScheduleTransfer === null) {
             return new RecurringScheduleReviewResponseTransfer();
         }
 
-        return $this->buildResponseForSchedule($recurringScheduleTransfer);
+        if (!$this->isAwaitingReview($recurringScheduleTransfer)) {
+            return $this->createScheduleOnlyResponse($recurringScheduleTransfer);
+        }
+
+        return $this->buildResponseForSchedule(
+            $recurringScheduleTransfer,
+            $this->scheduleShippingAddressChoiceReader->getChoices($recurringScheduleTransfer),
+        );
     }
 
-     /**
-      * @param \Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer
-      * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
-      */
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
+     */
     public function buildApprovalReview(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
         array $acceptedItemReviewTransfers,
+        ?QuoteTransfer $quoteOverrideTransfer = null,
     ): RecurringScheduleReviewResponseTransfer {
-        $recurringScheduleTransfer = $this->findSchedule($recurringScheduleCriteriaTransfer);
+        $recurringScheduleTransfer = $this->recurringScheduleReader->findRecurringScheduleByCriteria($recurringScheduleCriteriaTransfer);
 
         if ($recurringScheduleTransfer === null) {
             return new RecurringScheduleReviewResponseTransfer();
         }
 
-        $this->reBaselineAcceptedItems($recurringScheduleTransfer, $acceptedItemReviewTransfers);
+        if (!$this->isAwaitingReview($recurringScheduleTransfer)) {
+            return $this->createScheduleOnlyResponse($recurringScheduleTransfer);
+        }
 
-        return $this->buildResponseForSchedule($recurringScheduleTransfer);
+        $shippingAddressChoiceTransfers = $this->scheduleShippingAddressChoiceReader->getChoices($recurringScheduleTransfer);
+
+        $recurringScheduleTransfer = $this->applyRemovals($recurringScheduleTransfer, $acceptedItemReviewTransfers);
+        $recurringScheduleTransfer = $this->reBaselineAcceptedItems($recurringScheduleTransfer, $acceptedItemReviewTransfers);
+        $recurringScheduleTransfer = $this->reBaselineAcceptedQuantities($recurringScheduleTransfer, $acceptedItemReviewTransfers);
+
+        $recurringScheduleTransfer = $this->recurringScheduleQuoteDataMerger->applyQuoteOverride(
+            $recurringScheduleTransfer,
+            $quoteOverrideTransfer,
+        );
+
+        return $this->buildResponseForSchedule($recurringScheduleTransfer, $shippingAddressChoiceTransfers);
     }
 
-    protected function findSchedule(RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer): ?RecurringScheduleTransfer
-    {
-        $recurringScheduleCollectionTransfer = $this->recurringScheduleReader
-            ->getRecurringScheduleCollection($recurringScheduleCriteriaTransfer);
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
+     */
+    protected function applyRemovals(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        array $acceptedItemReviewTransfers,
+    ): RecurringScheduleTransfer {
+        $removedGroupKeys = $this->acceptedItemReviewMapper->mapRemovedGroupKeys($acceptedItemReviewTransfers);
 
-        return $recurringScheduleCollectionTransfer->getRecurringSchedules()->getIterator()->current();
+        if ($removedGroupKeys === []) {
+            return $recurringScheduleTransfer;
+        }
+
+        $removedGroupKeyMap = array_flip($removedGroupKeys);
+        $remainingItems = new ArrayObject();
+
+        foreach ($recurringScheduleTransfer->getItems() as $recurringScheduleItemTransfer) {
+            if (isset($removedGroupKeyMap[$recurringScheduleItemTransfer->getGroupKey()])) {
+                continue;
+            }
+
+            $remainingItems->append($recurringScheduleItemTransfer);
+        }
+
+        return $recurringScheduleTransfer->setItems($remainingItems);
     }
 
-    protected function buildResponseForSchedule(RecurringScheduleTransfer $recurringScheduleTransfer): RecurringScheduleReviewResponseTransfer
+    protected function isAwaitingReview(RecurringScheduleTransfer $recurringScheduleTransfer): bool
     {
+        return $recurringScheduleTransfer->getStatus() === SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED;
+    }
+
+    protected function createScheduleOnlyResponse(RecurringScheduleTransfer $recurringScheduleTransfer): RecurringScheduleReviewResponseTransfer
+    {
+        return (new RecurringScheduleReviewResponseTransfer())->setRecurringSchedule($recurringScheduleTransfer);
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleShippingAddressChoiceTransfer> $shippingAddressChoiceTransfers
+     */
+    protected function buildResponseForSchedule(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        array $shippingAddressChoiceTransfers,
+    ): RecurringScheduleReviewResponseTransfer {
         $recurringScheduleValidationResultTransfer = $this->recurringSchedulePrePlacementValidator
             ->validateRecurringSchedule($recurringScheduleTransfer);
 
@@ -79,9 +142,8 @@ class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
             $recurringScheduleValidationResultTransfer,
         );
 
-        // Propagate unavailability across configurable-bundle members so totals reflect the whole bundle
-        // being dropped before the summary is calculated.
         $recurringScheduleReviewResponseTransfer = $this->configuredBundleUnavailabilityExpander->expand($recurringScheduleReviewResponseTransfer);
+        $recurringScheduleReviewResponseTransfer->setShippingAddressChoices(new ArrayObject($shippingAddressChoiceTransfers));
 
         return $this->scheduleReviewSummaryCalculator->calculate($recurringScheduleReviewResponseTransfer);
     }
@@ -92,11 +154,11 @@ class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
     protected function reBaselineAcceptedItems(
         RecurringScheduleTransfer $recurringScheduleTransfer,
         array $acceptedItemReviewTransfers,
-    ): void {
-        $acceptedPricesByGroupKey = $this->mapAcceptedPricesByGroupKey($acceptedItemReviewTransfers);
+    ): RecurringScheduleTransfer {
+        $acceptedPricesByGroupKey = $this->acceptedItemReviewMapper->mapAcceptedPricesByGroupKey($acceptedItemReviewTransfers);
 
         if ($acceptedPricesByGroupKey === []) {
-            return;
+            return $recurringScheduleTransfer;
         }
 
         $isNetMode = $recurringScheduleTransfer->getPriceMode() === static::PRICE_MODE_NET;
@@ -112,28 +174,33 @@ class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
                 ? $recurringScheduleItemTransfer->setReferenceNetPrice($acceptedPrice)
                 : $recurringScheduleItemTransfer->setReferenceGrossPrice($acceptedPrice);
         }
+
+        return $recurringScheduleTransfer;
     }
 
     /**
      * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
-     *
-     * @return array<string, int>
      */
-    protected function mapAcceptedPricesByGroupKey(array $acceptedItemReviewTransfers): array
-    {
-        $acceptedPricesByGroupKey = [];
+    protected function reBaselineAcceptedQuantities(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        array $acceptedItemReviewTransfers,
+    ): RecurringScheduleTransfer {
+        $acceptedQuantitiesByGroupKey = $this->acceptedItemReviewMapper->mapAcceptedQuantitiesByGroupKey($acceptedItemReviewTransfers);
 
-        foreach ($acceptedItemReviewTransfers as $recurringScheduleItemReviewTransfer) {
-            $groupKey = $recurringScheduleItemReviewTransfer->getRecurringScheduleItemOrFail()->getGroupKey();
-            $acceptedPrice = $recurringScheduleItemReviewTransfer->getCurrentPrice();
+        if ($acceptedQuantitiesByGroupKey === []) {
+            return $recurringScheduleTransfer;
+        }
 
-            if ($groupKey === null || $acceptedPrice === null) {
+        foreach ($recurringScheduleTransfer->getItems() as $recurringScheduleItemTransfer) {
+            $acceptedQuantity = $acceptedQuantitiesByGroupKey[$recurringScheduleItemTransfer->getGroupKey()] ?? null;
+
+            if ($acceptedQuantity === null) {
                 continue;
             }
 
-            $acceptedPricesByGroupKey[$groupKey] = $acceptedPrice;
+            $recurringScheduleItemTransfer->setQuantity($acceptedQuantity);
         }
 
-        return $acceptedPricesByGroupKey;
+        return $recurringScheduleTransfer;
     }
 }

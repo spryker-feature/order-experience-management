@@ -13,6 +13,7 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\CheckoutErrorTransfer;
 use Generated\Shared\Transfer\CheckoutResponseTransfer;
 use Generated\Shared\Transfer\ItemTransfer;
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
@@ -65,16 +66,30 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
 
     protected const string MESSAGE_GENERIC_FAILURE = 'checkout.error.generic';
 
+    protected const string MESSAGE_HARD_MAXIMUM_THRESHOLD = 'sales-order-threshold.hard-maximum-threshold.de.eur.message';
+
+    /**
+     * @uses \Spryker\Zed\SalesOrderThreshold\Business\HardThresholdCheck\HardThresholdChecker::THRESHOLD_GLOSSARY_PARAMETER
+     */
+    protected const string THRESHOLD_GLOSSARY_PARAMETER = '{{threshold}}';
+
+    protected const string THRESHOLD_FORMATTED = '€1,000.00';
+
+    /**
+     * @uses \SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\CheckoutValidationResultBuilder::ERROR_MESSAGE_ALL_ITEMS_SKIPPED
+     */
+    protected const string MESSAGE_ALL_ITEMS_SKIPPED = 'recurring_orders.review.all_items_removed';
+
     public function testReturnsResultUnchangedWhenNoCheckoutErrors(): void
     {
         // Arrange
         $recurringScheduleTransfer = $this->createScheduleTransfer([
             $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST),
         ]);
-        $plugin = $this->createPlugin(new CheckoutResponseTransfer());
+        $plugin = $this->createPlugin((new CheckoutResponseTransfer())->setIsSuccess(true));
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertTrue($resultTransfer->getIsValid());
@@ -82,7 +97,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $this->assertCount(0, $resultTransfer->getBlockingErrors());
     }
 
-    public function testFlagsItemWithUnavailableReviewReasonForAvailabilityError(): void
+    public function testFlagsItemWithOutOfStockReviewReasonForAvailabilityError(): void
     {
         // Arrange
         $recurringScheduleTransfer = $this->createScheduleTransfer([
@@ -94,7 +109,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -104,7 +119,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $itemReviewTransfer = $resultTransfer->getItemReviews()->offsetGet(0);
         $this->assertSame(static::SKU_FIRST, $itemReviewTransfer->getRecurringScheduleItemOrFail()->getSku());
         $this->assertSame(
-            [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE],
+            [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_OUT_OF_STOCK],
             $itemReviewTransfer->getReviewReasons(),
         );
     }
@@ -121,7 +136,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -144,7 +159,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -167,7 +182,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -190,7 +205,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -199,6 +214,33 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $this->assertSame(
             static::MESSAGE_GENERIC_FAILURE,
             $resultTransfer->getBlockingErrors()->offsetGet(0)->getMessage(),
+        );
+    }
+
+    public function testCarriesCheckoutErrorParametersToBlockingError(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST),
+        ]);
+        $checkoutResponseTransfer = $this->createCheckoutResponse([
+            $this->createCheckoutError(null, null)
+                ->setMessage(static::MESSAGE_HARD_MAXIMUM_THRESHOLD)
+                ->setParameters([static::THRESHOLD_GLOSSARY_PARAMETER => static::THRESHOLD_FORMATTED]),
+        ]);
+        $plugin = $this->createPlugin($checkoutResponseTransfer);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertCount(1, $resultTransfer->getBlockingErrors());
+
+        $blockingErrorTransfer = $resultTransfer->getBlockingErrors()->offsetGet(0);
+        $this->assertSame(static::MESSAGE_HARD_MAXIMUM_THRESHOLD, $blockingErrorTransfer->getMessage());
+        $this->assertSame(
+            [static::THRESHOLD_GLOSSARY_PARAMETER => static::THRESHOLD_FORMATTED],
+            $blockingErrorTransfer->getParameters(),
         );
     }
 
@@ -214,7 +256,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -234,7 +276,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -257,7 +299,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin($checkoutResponseTransfer);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -270,7 +312,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         }
 
         $this->assertSame(
-            [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE],
+            [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_OUT_OF_STOCK],
             $reviewReasonsBySku[static::SKU_FIRST],
         );
         $this->assertSame(
@@ -279,12 +321,36 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         );
     }
 
-    public function testReturnsResultUnchangedWhenQuoteDataIsNull(): void
+    public function testExcludesItemSkippedForCycleButStillValidatesRemainingItems(): void
     {
         // Arrange
-        $recurringScheduleTransfer = (new RecurringScheduleTransfer())->addItem(
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
             $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST),
-        );
+            $this->createScheduleItem(static::SKU_SECOND, static::GROUP_KEY_SECOND)->setNextDeliveryQuantity(0),
+        ]);
+
+        $checkoutFacadeMock = $this->createMock(CheckoutFacadeInterface::class);
+        $checkoutFacadeMock->expects($this->once())
+            ->method('isPlaceableOrder')
+            ->willReturn((new CheckoutResponseTransfer())->setIsSuccess(true));
+
+        $plugin = $this->createPluginFromMocks($checkoutFacadeMock);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertTrue($resultTransfer->getIsValid());
+        $this->assertCount(0, $resultTransfer->getItemReviews());
+        $this->assertCount(0, $resultTransfer->getBlockingErrors());
+    }
+
+    public function testAddsBlockingErrorWhenEveryItemIsSkippedForCycle(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST)->setNextDeliveryQuantity(0),
+        ]);
 
         $checkoutFacadeMock = $this->createMock(CheckoutFacadeInterface::class);
         $checkoutFacadeMock->expects($this->never())->method('isPlaceableOrder');
@@ -292,12 +358,16 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPluginFromMocks($checkoutFacadeMock);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
-        $this->assertTrue($resultTransfer->getIsValid());
+        $this->assertFalse($resultTransfer->getIsValid());
         $this->assertCount(0, $resultTransfer->getItemReviews());
-        $this->assertCount(0, $resultTransfer->getBlockingErrors());
+        $this->assertCount(1, $resultTransfer->getBlockingErrors());
+        $this->assertSame(
+            static::MESSAGE_ALL_ITEMS_SKIPPED,
+            $resultTransfer->getBlockingErrors()->offsetGet(0)->getMessage(),
+        );
     }
 
     protected function createScheduleItem(string $sku, string $groupKey): RecurringScheduleItemTransfer
@@ -339,7 +409,7 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
      */
     protected function createCheckoutResponse(array $checkoutErrorTransfers): CheckoutResponseTransfer
     {
-        $checkoutResponseTransfer = new CheckoutResponseTransfer();
+        $checkoutResponseTransfer = (new CheckoutResponseTransfer())->setIsSuccess(false);
 
         foreach ($checkoutErrorTransfers as $checkoutErrorTransfer) {
             $checkoutResponseTransfer->addError($checkoutErrorTransfer);
@@ -351,6 +421,13 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
     protected function createValidResult(): RecurringScheduleValidationResultTransfer
     {
         return (new RecurringScheduleValidationResultTransfer())->setIsValid(true);
+    }
+
+    protected function buildPlaceableQuote(RecurringScheduleTransfer $recurringScheduleTransfer): QuoteTransfer
+    {
+        return (new OrderExperienceManagementBusinessFactory())
+            ->createRecurringOrderQuoteBuilder()
+            ->buildPlaceableQuote($recurringScheduleTransfer);
     }
 
     protected function createPlugin(CheckoutResponseTransfer $checkoutResponseTransfer): CheckoutPlaceabilityScheduleValidatorPlugin

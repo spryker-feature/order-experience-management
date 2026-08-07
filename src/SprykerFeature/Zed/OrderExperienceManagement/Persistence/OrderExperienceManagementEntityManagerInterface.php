@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Persistence;
 
+use Generated\Shared\Transfer\RecurringScheduleForecastSnapshotTransfer;
 use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
@@ -17,7 +18,26 @@ interface OrderExperienceManagementEntityManagerInterface
 {
     public function createRecurringSchedule(RecurringScheduleTransfer $recurringScheduleTransfer): RecurringScheduleTransfer;
 
+    public function saveRecurringScheduleForecast(
+        RecurringScheduleForecastSnapshotTransfer $recurringScheduleForecastSnapshotTransfer
+    ): RecurringScheduleForecastSnapshotTransfer;
+
     public function createRecurringScheduleItem(RecurringScheduleItemTransfer $recurringScheduleItemTransfer): RecurringScheduleItemTransfer;
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemTransfer> $recurringScheduleItemTransfers
+     */
+    public function createRecurringScheduleItemCollection(array $recurringScheduleItemTransfers): void;
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemTransfer> $recurringScheduleItemTransfers Each transfer carries idRecurringScheduleItem plus only the properties to be written.
+     */
+    public function updateRecurringScheduleItemCollection(array $recurringScheduleItemTransfers): void;
+
+    /**
+     * @param array<int> $recurringScheduleItemIds
+     */
+    public function deleteRecurringScheduleItemsByIds(array $recurringScheduleItemIds): void;
 
     public function updateRecurringScheduleStateMachineState(int $idRecurringSchedule, int $idStateMachineItemState, ?string $status): void;
 
@@ -33,12 +53,21 @@ interface OrderExperienceManagementEntityManagerInterface
 
     public function deleteRecurringScheduleItemsByConfiguredBundleGroupKey(int $idRecurringSchedule, string $configuredBundleGroupKey): void;
 
-    public function updateReferencePricesByGroupKey(
-        int $idRecurringSchedule,
-        string $groupKey,
-        ?int $referenceNetPrice,
-        ?int $referenceGrossPrice,
-    ): void;
+    public function deleteRecurringScheduleItemsWithZeroQuantity(int $idRecurringSchedule): void;
+
+    public function updateRecurringScheduleItemNextDeliveryQuantity(int $idRecurringScheduleItem, ?int $nextDeliveryQuantity): void;
+
+    public function updateNextDeliveryQuantityToZeroByGroupKey(int $idRecurringSchedule, string $groupKey): void;
+
+    public function updateNextDeliveryQuantityToZeroByBundleItemIdentifier(int $idRecurringSchedule, string $bundleItemIdentifier): void;
+
+    public function updateNextDeliveryQuantityToZeroByConfiguredBundleGroupKey(int $idRecurringSchedule, string $configuredBundleGroupKey): void;
+
+    public function updateNextDeliveryQuantitiesToNull(int $idRecurringSchedule): void;
 
     public function updateScheduleNextTriggerDate(int $idRecurringSchedule, string $nextTriggerDate): void;
+
+    public function updateRecurringScheduleQuoteData(int $idRecurringSchedule, string $quoteData): void;
+
+    public function updateRecurringSchedule(RecurringScheduleTransfer $recurringScheduleTransfer): RecurringScheduleTransfer;
 }

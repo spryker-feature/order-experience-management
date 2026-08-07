@@ -9,31 +9,31 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderQuoteBuilderInterface;
 
 class CheckoutPlaceabilityValidator implements CheckoutPlaceabilityValidatorInterface
 {
     public function __construct(
         protected readonly CheckoutFacadeInterface $checkoutFacade,
-        protected readonly RecurringOrderQuoteBuilderInterface $quoteBuilder,
         protected readonly CheckoutValidationResultBuilderInterface $checkoutValidationResultBuilder,
     ) {
     }
 
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
-        if ($recurringScheduleTransfer->getQuoteData() === null) {
-            return $recurringScheduleValidationResultTransfer;
+        if ($quoteTransfer->getItems()->count() === 0 && $quoteTransfer->getBundleItems()->count() === 0) {
+            return $this->checkoutValidationResultBuilder->buildEmptyOrderValidationResult(
+                $recurringScheduleValidationResultTransfer,
+            );
         }
 
-        $checkoutResponseTransfer = $this->checkoutFacade->isPlaceableOrder(
-            $this->quoteBuilder->buildPlaceableQuote($recurringScheduleTransfer),
-        );
+        $checkoutResponseTransfer = $this->checkoutFacade->isPlaceableOrder($quoteTransfer);
 
         if ($checkoutResponseTransfer->getErrors()->count() === 0) {
             return $recurringScheduleValidationResultTransfer;

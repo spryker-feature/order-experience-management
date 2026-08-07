@@ -14,12 +14,17 @@ use Generated\Shared\Transfer\RecurringScheduleErrorTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Indexer\RecurringScheduleItemIndexerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class CheckoutValidationResultBuilder implements CheckoutValidationResultBuilderInterface
 {
+    protected const string GLOSSARY_KEY_ALL_ITEMS_SKIPPED = 'recurring_orders.review.all_items_removed';
+
     public function __construct(
-        protected readonly OrderExperienceManagementConfig $subscriptionConfig,
+        protected readonly OrderExperienceManagementConfig $config,
+        protected readonly RecurringScheduleItemIndexerInterface $recurringScheduleItemIndexer,
     ) {
     }
 
@@ -28,8 +33,8 @@ class CheckoutValidationResultBuilder implements CheckoutValidationResultBuilder
         RecurringScheduleTransfer $recurringScheduleTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
-        $itemsByGroupKey = $this->indexItemsByGroupKey($recurringScheduleTransfer);
-        $recurringScheduleValidationResultTransfer->setIsValid(false);
+        $itemsByGroupKey = $this->recurringScheduleItemIndexer->indexByGroupKey($recurringScheduleTransfer);
+        $recurringScheduleValidationResultTransfer->setIsValid($checkoutResponseTransfer->getIsSuccess());
 
         foreach ($checkoutResponseTransfer->getErrors() as $checkoutErrorTransfer) {
             $groupKey = $checkoutErrorTransfer->getGroupKey();
@@ -37,7 +42,10 @@ class CheckoutValidationResultBuilder implements CheckoutValidationResultBuilder
 
             if ($groupKey === null || !isset($itemsByGroupKey[$groupKey]) || !$errorType) {
                 $recurringScheduleValidationResultTransfer->addBlockingError(
-                    (new RecurringScheduleErrorTransfer())->setMessage($checkoutErrorTransfer->getMessage()),
+                    (new RecurringScheduleErrorTransfer())
+                        ->setMessage($checkoutErrorTransfer->getMessage())
+                        ->setParameters($checkoutErrorTransfer->getParameters())
+                        ->setIsSuccess($checkoutResponseTransfer->getIsSuccess()),
                 );
 
                 continue;
@@ -53,34 +61,27 @@ class CheckoutValidationResultBuilder implements CheckoutValidationResultBuilder
         return $recurringScheduleValidationResultTransfer;
     }
 
+    public function buildEmptyOrderValidationResult(
+        RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
+    ): RecurringScheduleValidationResultTransfer {
+        return $recurringScheduleValidationResultTransfer
+            ->setIsValid(false)
+            ->addBlockingError(
+                (new RecurringScheduleErrorTransfer())
+                    ->setMessage(static::GLOSSARY_KEY_ALL_ITEMS_SKIPPED)
+                    ->setCode(SharedOrderExperienceManagementConfig::REVIEW_ERROR_CODE_EMPTY_ORDER)
+                    ->setIsSuccess(false),
+            );
+    }
+
     protected function resolveReviewReasonGroup(string $errorType): string
     {
-        foreach ($this->subscriptionConfig->getReviewReasonGroupMap() as $reviewReasonGroup => $errorTypes) {
+        foreach ($this->config->getReviewReasonGroupMap() as $reviewReasonGroup => $errorTypes) {
             if (in_array($errorType, $errorTypes, true)) {
                 return $reviewReasonGroup;
             }
         }
 
-        return $this->subscriptionConfig->getDefaultReviewReasonGroup();
-    }
-
-    /**
-     * @return array<string, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
-     */
-    protected function indexItemsByGroupKey(RecurringScheduleTransfer $recurringScheduleTransfer): array
-    {
-        $itemsByGroupKey = [];
-
-        foreach ($recurringScheduleTransfer->getItems() as $recurringScheduleItemTransfer) {
-            $groupKey = $recurringScheduleItemTransfer->getGroupKey();
-
-            if ($groupKey === null) {
-                continue;
-            }
-
-            $itemsByGroupKey[$groupKey] = $recurringScheduleItemTransfer;
-        }
-
-        return $itemsByGroupKey;
+        return $this->config->getDefaultReviewReasonGroup();
     }
 }

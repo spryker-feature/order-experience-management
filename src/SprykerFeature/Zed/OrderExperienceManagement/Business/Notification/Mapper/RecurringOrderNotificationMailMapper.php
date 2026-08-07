@@ -43,7 +43,7 @@ class RecurringOrderNotificationMailMapper implements RecurringOrderNotification
 
     protected const string PLACEHOLDER_EXECUTION_DATE = '%execution_date%';
 
-    public function __construct(protected readonly OrderExperienceManagementConfig $subscriptionConfig)
+    public function __construct(protected readonly OrderExperienceManagementConfig $config)
     {
     }
 
@@ -106,7 +106,7 @@ class RecurringOrderNotificationMailMapper implements RecurringOrderNotification
         }
 
         $recurringScheduleTransfer->setRecurringOrderDetailUrl(sprintf(
-            $this->subscriptionConfig->getBaseUrlYves() . $this->subscriptionConfig->getRecurringOrderDetailUrlPath(),
+            $this->config->getBaseUrlYves() . $this->config->getRecurringOrderDetailUrlPath(),
             $uuid,
         ));
     }
@@ -120,7 +120,7 @@ class RecurringOrderNotificationMailMapper implements RecurringOrderNotification
         }
 
         $recurringScheduleTransfer->setRecurringOrderDetailUrl(sprintf(
-            $this->subscriptionConfig->getBaseUrlYves() . $this->subscriptionConfig->getRecurringOrderReviewUrlPath(),
+            $this->config->getBaseUrlYves() . $this->config->getRecurringOrderReviewUrlPath(),
             $uuid,
         ));
     }

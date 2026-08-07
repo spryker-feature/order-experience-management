@@ -30,6 +30,14 @@
     {% set listClassName = 'list' %}
     {% set listItemClassName = 'list__item' %}
 
+    {% block firstOrderNotice %}
+        {% if data.recurringOrderSettings.firstOrderDate is not empty %}
+            <p class="{{ config.name }}__first-order-notice">
+                {{ 'recurring_orders.checkout.first_order_notice' | trans({ '%date%': data.recurringOrderSettings.firstOrderDate | formatDate }) }}
+            </p>
+        {% endif %}
+    {% endblock %}
+
     {% block list %}
         <ul class="{{ listClassName }}">
             {% for item in items | filter(item => item.enabled) %}

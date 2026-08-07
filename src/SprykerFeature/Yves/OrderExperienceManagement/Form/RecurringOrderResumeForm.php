@@ -7,20 +7,16 @@
 
 namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 
-use Spryker\Yves\Kernel\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
-class RecurringOrderResumeForm extends AbstractType
+class RecurringOrderResumeForm extends AbstractRecurringOrderUuidForm
 {
     public const string FORM_NAME = 'recurringOrderResumeForm';
 
     public const string FIELD_NEXT_EXECUTION_DATE = 'nextExecutionDate';
-
-    public const string FIELD_UUID = 'uuid';
 
     protected const string COMPARISON_VALUE_TODAY = 'today';
 
@@ -34,13 +30,6 @@ class RecurringOrderResumeForm extends AbstractType
         $this
             ->addUuidField($builder)
             ->addNextExecutionDateField($builder);
-    }
-
-    protected function addUuidField(FormBuilderInterface $builder): static
-    {
-        $builder->add(static::FIELD_UUID, HiddenType::class);
-
-        return $this;
     }
 
     protected function addNextExecutionDateField(FormBuilderInterface $builder): static

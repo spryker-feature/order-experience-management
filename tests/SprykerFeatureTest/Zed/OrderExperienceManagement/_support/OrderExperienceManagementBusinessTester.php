@@ -75,6 +75,22 @@ class OrderExperienceManagementBusinessTester extends Actor
 
     public function enableStateMachineConfirmation(int $idRecurringSchedule): void
     {
+        $this->seedStateMachineReviewState($idRecurringSchedule);
+        $this->stubStateMachineFacadeTriggerEvent(1);
+    }
+
+    /**
+     * Seeds the review state but makes the confirm event affect no transition, so approval reaches the
+     * confirm step and fails there — without cascading into the real place-order state machine.
+     */
+    public function failStateMachineConfirmation(int $idRecurringSchedule): void
+    {
+        $this->seedStateMachineReviewState($idRecurringSchedule);
+        $this->stubStateMachineFacadeTriggerEvent(0);
+    }
+
+    protected function seedStateMachineReviewState(int $idRecurringSchedule): void
+    {
         $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
             ->filterByStateMachineName(OrderExperienceManagementConfig::STATE_MACHINE_NAME)
             ->filterByName(OrderExperienceManagementConfig::PROCESS_NAME)
@@ -91,10 +107,13 @@ class OrderExperienceManagementBusinessTester extends Actor
             ->setFkStateMachineItemState($stateMachineItemStateEntity->getIdStateMachineItemState())
             ->setIdentifier($idRecurringSchedule)
             ->save();
+    }
 
+    protected function stubStateMachineFacadeTriggerEvent(int $affectedTransitionCount): void
+    {
         $this->setDependency(
             OrderExperienceManagementDependencyProvider::FACADE_STATE_MACHINE,
-            Stub::makeEmpty(StateMachineFacadeInterface::class, ['triggerEvent' => 1]),
+            Stub::makeEmpty(StateMachineFacadeInterface::class, ['triggerEvent' => $affectedTransitionCount]),
         );
     }
 }

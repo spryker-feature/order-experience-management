@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Shared\OrderExperienceManagement\Helper;
 
 use Codeception\Module;
+use DateTimeImmutable;
 use Generated\Shared\DataBuilder\AddressBuilder;
+use Generated\Shared\DataBuilder\CompanyUnitAddressBuilder;
 use Generated\Shared\DataBuilder\ConfigurableBundleTemplateBuilder;
 use Generated\Shared\DataBuilder\ConfigurableBundleTemplateSlotBuilder;
 use Generated\Shared\DataBuilder\ItemBuilder;
@@ -19,6 +21,8 @@ use Generated\Shared\DataBuilder\RecurringScheduleHistoryBuilder;
 use Generated\Shared\DataBuilder\RecurringScheduleItemBuilder;
 use Generated\Shared\DataBuilder\ShipmentBuilder;
 use Generated\Shared\Transfer\AddressTransfer;
+use Generated\Shared\Transfer\CompanyBusinessUnitCollectionTransfer;
+use Generated\Shared\Transfer\CompanyBusinessUnitTransfer;
 use Generated\Shared\Transfer\CompanyRoleCollectionTransfer;
 use Generated\Shared\Transfer\CompanyRoleTransfer;
 use Generated\Shared\Transfer\CompanyTransfer;
@@ -34,6 +38,7 @@ use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\PaymentTransfer;
 use Generated\Shared\Transfer\PermissionCollectionTransfer;
 use Generated\Shared\Transfer\ProductConfigurationInstanceTransfer;
+use Generated\Shared\Transfer\ProductDiscontinueRequestTransfer;
 use Generated\Shared\Transfer\ProductMeasurementSalesUnitTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
@@ -43,12 +48,22 @@ use Generated\Shared\Transfer\StoreTransfer;
 use Generated\Shared\Transfer\TotalsTransfer;
 use Orm\Zed\ConfigurableBundle\Persistence\SpyConfigurableBundleTemplateQuery;
 use Orm\Zed\ConfigurableBundle\Persistence\SpyConfigurableBundleTemplateSlotQuery;
+use Orm\Zed\Country\Persistence\SpyCountryQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringSchedule;
+use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleForecast;
+use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleForecastQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleHistory;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleHistoryQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleItem;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleItemQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
+use Orm\Zed\Product\Persistence\SpyProductQuery;
+use Orm\Zed\Sales\Persistence\SpySalesOrder;
+use Orm\Zed\Sales\Persistence\SpySalesOrderAddress;
+use Orm\Zed\Sales\Persistence\SpySalesOrderAddressQuery;
+use Orm\Zed\Sales\Persistence\SpySalesOrderQuery;
+use Orm\Zed\Sales\Persistence\SpySalesOrderTotals;
+use Orm\Zed\Sales\Persistence\SpySalesOrderTotalsQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateHistory;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineProcessQuery;
@@ -159,6 +174,40 @@ class RecurringScheduleHelper extends Module
     }
 
     /**
+     * Marks a concrete product as discontinued so review validation flags it with the discontinued reason
+     * and the review page renders the substitute picker for that line.
+     */
+    public function haveProductDiscontinued(int $idProductConcrete): void
+    {
+        $productDiscontinueRequestTransfer = (new ProductDiscontinueRequestTransfer())
+            ->setIdProduct($idProductConcrete);
+
+        $this->getLocator()->productDiscontinued()->facade()->markProductAsDiscontinued($productDiscontinueRequestTransfer);
+    }
+
+    /**
+     * Creates a company unit address linked to the business unit through the address-to-business-unit relation
+     * (the pivot the storefront delivery-address dropdown reads). Kept non-default to skip the business-unit
+     * default-address re-save, which would otherwise null out the unit's company on update.
+     */
+    public function haveCompanyBusinessUnitAddress(int $idCompanyBusinessUnit, int $idCountry): void
+    {
+        $companyUnitAddressTransfer = (new CompanyUnitAddressBuilder([
+            'fkCompanyBusinessUnit' => $idCompanyBusinessUnit,
+            'fkCountry' => $idCountry,
+            'isDefaultBilling' => false,
+            'isDefaultShipping' => false,
+        ]))->build();
+
+        $companyBusinessUnitCollectionTransfer = (new CompanyBusinessUnitCollectionTransfer())
+            ->addCompanyBusinessUnit((new CompanyBusinessUnitTransfer())->setIdCompanyBusinessUnit($idCompanyBusinessUnit));
+
+        $companyUnitAddressTransfer->setCompanyBusinessUnits($companyBusinessUnitCollectionTransfer);
+
+        $this->getLocator()->companyUnitAddress()->facade()->create($companyUnitAddressTransfer);
+    }
+
+    /**
      * @param array<string, mixed> $seed
      */
     public function haveConfigurableBundleTemplateWithTranslation(array $seed = []): ConfigurableBundleTemplateTransfer
@@ -258,6 +307,76 @@ class RecurringScheduleHelper extends Module
         SpyRecurringScheduleQuery::create()->deleteAll();
     }
 
+    public function ensureRecurringScheduleForecastTableIsEmpty(): void
+    {
+        SpyRecurringScheduleForecastQuery::create()->deleteAll();
+    }
+
+    public function haveRecurringScheduleForecast(
+        string $forecastKey,
+        string $result,
+        ?string $label = null,
+        ?string $calculatedAt = null,
+    ): void {
+        (new SpyRecurringScheduleForecast())
+            ->setForecastKey($forecastKey)
+            ->setResult($result)
+            ->setLabel($label)
+            ->setCalculatedAt($calculatedAt ?? (new DateTimeImmutable())->format('Y-m-d H:i:s'))
+            ->save();
+
+        $this->getDataCleanupHelper()->_addCleanup(function () use ($forecastKey): void {
+            SpyRecurringScheduleForecastQuery::create()->filterByForecastKey($forecastKey)->delete();
+        });
+    }
+
+    /**
+     * Creates a minimal sales order with the given currency and subtotal. `$totalsRevisionCount` writes that
+     * many spy_sales_order_totals rows, mirroring how Sales appends a new revision on every recalculation —
+     * pass more than one to prove a consumer reads only the newest revision.
+     *
+     * @return int The id of the created sales order.
+     */
+    public function haveSalesOrderWithTotals(string $currencyIsoCode, int $subtotal, int $totalsRevisionCount = 1): int
+    {
+        $countryEntity = SpyCountryQuery::create()->orderByIdCountry()->findOne();
+
+        $salesOrderAddressEntity = (new SpySalesOrderAddress())
+            ->setFkCountry($countryEntity->getIdCountry())
+            ->setCity('Berlin')
+            ->setFirstName('Recurring')
+            ->setLastName('Order')
+            ->setZipCode('10115');
+        $salesOrderAddressEntity->save();
+
+        $salesOrderEntity = (new SpySalesOrder())
+            ->setFkSalesOrderAddressBilling($salesOrderAddressEntity->getIdSalesOrderAddress())
+            ->setOrderReference(uniqid('recurring-order-', true))
+            ->setCurrencyIsoCode($currencyIsoCode)
+            ->setPriceMode('GROSS_MODE');
+        $salesOrderEntity->save();
+
+        $idSalesOrder = $salesOrderEntity->getIdSalesOrder();
+
+        for ($i = 0; $i < $totalsRevisionCount; $i++) {
+            (new SpySalesOrderTotals())
+                ->setFkSalesOrder($idSalesOrder)
+                ->setSubtotal($subtotal)
+                ->setGrandTotal($subtotal)
+                ->save();
+        }
+
+        $this->getDataCleanupHelper()->_addCleanup(function () use ($idSalesOrder, $salesOrderAddressEntity): void {
+            SpySalesOrderTotalsQuery::create()->filterByFkSalesOrder($idSalesOrder)->delete();
+            SpySalesOrderQuery::create()->filterByIdSalesOrder($idSalesOrder)->delete();
+            SpySalesOrderAddressQuery::create()
+                ->filterByIdSalesOrderAddress($salesOrderAddressEntity->getIdSalesOrderAddress())
+                ->delete();
+        });
+
+        return $idSalesOrder;
+    }
+
     protected function initializeStateMachineState(int $idRecurringSchedule, string $status): void
     {
         $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
@@ -281,16 +400,25 @@ class RecurringScheduleHelper extends Module
     protected function resolveQuoteData(RecurringScheduleTransfer $recurringScheduleTransfer, bool $buildMinimalQuoteData = false): string
     {
         $quoteData = $recurringScheduleTransfer->getQuoteData();
+        $hasSeededQuoteData = $quoteData !== null && $quoteData !== '{}';
 
-        if ($quoteData !== null && $quoteData !== '{}') {
-            return $quoteData;
+        if (!$buildMinimalQuoteData) {
+            return $hasSeededQuoteData ? $quoteData : '{}';
         }
 
-        if ($buildMinimalQuoteData) {
-            return $this->buildMinimalQuoteData($recurringScheduleTransfer);
+        $minimalQuoteData = $this->buildMinimalQuoteData($recurringScheduleTransfer);
+
+        if (!$hasSeededQuoteData) {
+            return $minimalQuoteData;
         }
 
-        return '{}';
+        return json_encode(
+            array_replace(
+                json_decode($minimalQuoteData, true, 512, JSON_THROW_ON_ERROR),
+                json_decode($quoteData, true, 512, JSON_THROW_ON_ERROR),
+            ),
+            JSON_THROW_ON_ERROR,
+        );
     }
 
     protected function resolveItemData(
@@ -310,12 +438,16 @@ class RecurringScheduleHelper extends Module
 
         $sku = $recurringScheduleItemTransfer->getSkuOrFail();
 
+        $productConcreteEntity = SpyProductQuery::create()->findOneBySku($sku);
+
         /** @var \SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper $shipmentMethodDataHelper */
         $shipmentMethodDataHelper = $this->getModule('\SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper');
         $shipmentMethodTransfer = $shipmentMethodDataHelper->haveShipmentMethod();
 
         $builder = (new ItemBuilder([
             ItemTransfer::SKU => $sku,
+            ItemTransfer::ID => $productConcreteEntity?->getIdProduct() ?? 0,
+            ItemTransfer::ID_PRODUCT_ABSTRACT => $productConcreteEntity?->getFkProductAbstract() ?? 0,
             ItemTransfer::GROUP_KEY => $recurringScheduleItemTransfer->getGroupKey() ?? $sku,
             ItemTransfer::QUANTITY => $recurringScheduleItemTransfer->getQuantityOrFail(),
             ItemTransfer::UNIT_GROSS_PRICE => $recurringScheduleItemTransfer->getReferenceGrossPrice() ?? 0,
@@ -369,6 +501,8 @@ class RecurringScheduleHelper extends Module
     ): string {
         $sku = $recurringScheduleItemTransfer->getSkuOrFail();
 
+        $productConcreteEntity = SpyProductQuery::create()->findOneBySku($sku);
+
         /** @var \SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper $shipmentMethodDataHelper */
         $shipmentMethodDataHelper = $this->getModule('\SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper');
         $shipmentMethodTransfer = $shipmentMethodDataHelper->haveShipmentMethod();
@@ -378,6 +512,8 @@ class RecurringScheduleHelper extends Module
 
         $itemTransfer = (new ItemBuilder([
             ItemTransfer::SKU => $sku,
+            ItemTransfer::ID => $productConcreteEntity?->getIdProduct(),
+            ItemTransfer::ID_PRODUCT_ABSTRACT => $productConcreteEntity?->getFkProductAbstract(),
             ItemTransfer::GROUP_KEY => $recurringScheduleItemTransfer->getGroupKey() ?? $sku,
             ItemTransfer::QUANTITY => $recurringScheduleItemTransfer->getQuantityOrFail(),
             ItemTransfer::UNIT_GROSS_PRICE => $recurringScheduleItemTransfer->getReferenceGrossPrice() ?? 0,
@@ -407,9 +543,11 @@ class RecurringScheduleHelper extends Module
             ->setPaymentProvider('DummyPayment')
             ->setPaymentSelection('dummyPaymentInvoice');
 
+        $estimatedTotal = $recurringScheduleTransfer->getEstimatedTotal() ?? 0;
+
         $totalsTransfer = (new TotalsTransfer())
-            ->setGrandTotal(0)
-            ->setSubtotal(0);
+            ->setGrandTotal($estimatedTotal)
+            ->setSubtotal($estimatedTotal);
 
         $currencyTransfer = (new CurrencyTransfer())
             ->setCode($recurringScheduleTransfer->getCurrencyIsoCodeOrFail());
@@ -496,6 +634,11 @@ class RecurringScheduleHelper extends Module
             ->setFkSalesOrder($recurringScheduleHistoryTransfer->getIdSalesOrder())
             ->setEventType($recurringScheduleHistoryTransfer->getEventTypeOrFail())
             ->setDetail($recurringScheduleHistoryTransfer->getDetail());
+
+        // Timestampable only fills created_at when it was not set explicitly, so an override wins.
+        if ($recurringScheduleHistoryTransfer->getCreatedAt() !== null) {
+            $recurringScheduleHistoryEntity->setCreatedAt($recurringScheduleHistoryTransfer->getCreatedAt());
+        }
 
         $recurringScheduleHistoryEntity->save();
 

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Stub;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
@@ -26,6 +27,7 @@ class FixedScheduleValidatorPlugin implements ScheduleValidatorPluginInterface
 
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
         foreach ($recurringScheduleTransfer->getItems() as $recurringScheduleItemTransfer) {

@@ -9,31 +9,27 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift;
 
+use Generated\Shared\Transfer\CartChangeTransfer;
+use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\ScheduleItemRepricerInterface;
 
 class ItemPriceDriftChecker extends AbstractPriceDriftChecker
 {
-    public function __construct(
-        protected readonly ScheduleItemRepricerInterface $scheduleItemRepricer,
-    ) {
-    }
-
     public function check(
         RecurringScheduleTransfer $recurringScheduleTransfer,
         QuoteTransfer $originalQuoteTransfer,
+        CartChangeTransfer $repricedCartChangeTransfer,
         string $priceMode,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
-        $repricedCartChangeTransfer = $this->scheduleItemRepricer->repriceItems($originalQuoteTransfer);
-        $scheduleItemsByGroupKey = $this->indexScheduleItemsByGroupKey($recurringScheduleTransfer);
+        $scheduleItemsByGroupKey = $this->recurringScheduleItemIndexer->indexByGroupKey($recurringScheduleTransfer);
 
         foreach ($repricedCartChangeTransfer->getItems() as $repricedItemTransfer) {
             $groupKey = $repricedItemTransfer->getGroupKey();
 
-            if ($repricedItemTransfer->getRelatedBundleItemIdentifier() !== null || $groupKey === null) {
+            if ($this->isBundleRelated($repricedItemTransfer) || $groupKey === null) {
                 continue;
             }
 
@@ -54,23 +50,8 @@ class ItemPriceDriftChecker extends AbstractPriceDriftChecker
         return $recurringScheduleValidationResultTransfer;
     }
 
-    /**
-     * @return array<string, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
-     */
-    protected function indexScheduleItemsByGroupKey(RecurringScheduleTransfer $recurringScheduleTransfer): array
+    protected function isBundleRelated(ItemTransfer $itemTransfer): bool
     {
-        $scheduleItemsByGroupKey = [];
-
-        foreach ($recurringScheduleTransfer->getItems() as $scheduleItemTransfer) {
-            $groupKey = $scheduleItemTransfer->getGroupKey();
-
-            if ($groupKey === null) {
-                continue;
-            }
-
-            $scheduleItemsByGroupKey[$groupKey] = $scheduleItemTransfer;
-        }
-
-        return $scheduleItemsByGroupKey;
+        return $itemTransfer->getBundleItemIdentifier() !== null || $itemTransfer->getRelatedBundleItemIdentifier() !== null;
     }
 }

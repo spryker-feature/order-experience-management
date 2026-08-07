@@ -11,6 +11,7 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
 
 use DateTimeImmutable;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\UnsupportedCadenceTypeException;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
 
@@ -55,6 +56,11 @@ class CadenceResolver implements CadenceResolverInterface
     public function isSupported(string $cadenceType): bool
     {
         return $this->findCadenceTypePlugin($cadenceType) !== null;
+    }
+
+    public function isValueRequired(string $cadenceType): bool
+    {
+        return $cadenceType === SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS;
     }
 
     protected function findCadenceTypePlugin(string $cadenceType): ?CadenceTypePluginInterface

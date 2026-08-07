@@ -8,6 +8,8 @@
     schedule: required,
     quote: required,
     statusClassMap: [],
+    itemFlagLabelMap: [],
+    itemFlagBadgeMap: [],
     statusIconMap: [],
     errorBannerStatuses: [],
     statusActive: '',
@@ -23,6 +25,8 @@
     cancelForm: required,
     resumeForm: required,
     retryForm: required,
+    editForm: required,
+    cadenceTypeEveryNWeeks: '',
     title: '',
     activePage: '',
 }%}
@@ -33,6 +37,7 @@
 {% set cancelModalTriggerClassName = 'js-cancel-schedule-button' %}
 {% set pauseModalTriggerClassName = 'js-pause-schedule-button' %}
 {% set resumeModalTriggerClassName = 'js-resume-schedule-button' %}
+{% set editModalTriggerClassName = 'js-edit-schedule-button' %}
 
 {% block body %}
     {% block recurringScheduleHeader %}
@@ -45,7 +50,9 @@
 
             {% block scheduleHeading %}
                 <div class="{{ scheduleHeadingInfoColumnClassName }}">
-                    <h2 class="{{ scheduleTitleClassName }}" data-qa="recurring-order-name">{{ data.schedule.name }}</h2>
+                    <div class="grid grid--middle">
+                        <h2 class="{{ scheduleTitleClassName }}" data-qa="recurring-order-name">{{ data.schedule.name }}</h2>
+                    </div>
                 </div>
             {% endblock %}
 
@@ -89,7 +96,7 @@
                     {% set failedItem = data.schedule.history | filter(h => h.eventType == data.historyEventTypeFailed and h.errors is not empty) | first %}
                     {% if failedItem %}
                         {{ 'recurring_orders.detail.error.failed.title' | trans }}
-                        <ul class="list">
+                        <ul class="list--bullet">
                             {% for error in failedItem.errors %}
                                 <li class="list__item">{{ error.message | trans(error.parameters ?? {}) }}</li>
                             {% endfor %}
@@ -153,6 +160,8 @@
                         {% include molecule('recurring-order-items', 'OrderExperienceManagement') with {
                             data: {
                                 schedule: data.schedule,
+                                itemFlagLabelMap: data.itemFlagLabelMap,
+                                itemFlagBadgeMap: data.itemFlagBadgeMap,
                             },
                         } only %}
                     {% endblock %}
@@ -166,6 +175,8 @@
                             schedule: data.schedule,
                             statusClassMap: data.statusClassMap,
                             quote: data.quote,
+                            editModalTriggerClassName: editModalTriggerClassName,
+                            withBudgetSummary: true,
                         },
                     } only %}
                 </div>
@@ -192,11 +203,15 @@
                 cancelForm: data.cancelForm,
                 pauseForm: data.pauseForm,
                 resumeForm: data.resumeForm,
+                editForm: data.editForm,
+                cadenceTypeEveryNWeeks: data.cadenceTypeEveryNWeeks,
                 resumeUrl: url('recurring-order/resume', {uuid: data.schedule.uuid}),
+                editUrl: url('recurring-order/edit', {uuid: data.schedule.uuid}),
                 skipModalTriggerClassName: skipModalTriggerClassName,
                 cancelModalTriggerClassName: cancelModalTriggerClassName,
                 pauseModalTriggerClassName: pauseModalTriggerClassName,
                 resumeModalTriggerClassName: resumeModalTriggerClassName,
+                editModalTriggerClassName: editModalTriggerClassName,
             },
         } only %}
     {% endblock %}

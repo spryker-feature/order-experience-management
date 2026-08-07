@@ -10,3 +10,52 @@ Schedule,Zeitplan
 "Schedule grace period is required","Die Benachrichtigungsvorlaufzeit ist erforderlich."
 "Must be at least 1 hour","Muss mindestens 1 Stunde betragen."
 "Cannot exceed 720 hours (30 days)","Darf 720 Stunden (30 Tage) nicht überschreiten."
+"Recurring Order Schedules","Wiederkehrende Bestellpläne"
+"List of Recurring Order Schedules","Liste der wiederkehrenden Bestellpläne"
+"Recurring Order Schedule","Wiederkehrender Bestellplan"
+"Schedule Details",Plandetails
+"Scheduled Items","Geplante Artikel"
+"Apply filters","Filter anwenden"
+"Reset filters","Filter zurücksetzen"
+Name,Name
+Company,Unternehmen
+"Business Unit",Geschäftseinheit
+Owner,Eigentümer
+Status,Status
+Frequency,Häufigkeit
+"Cycle Total",Zyklussumme
+"Next Trigger Date","Nächstes Auslösedatum"
+"Last Execution","Letzte Ausführung"
+Actions,Aktionen
+View,Ansehen
+"Original Order","Ursprüngliche Bestellung"
+"Product Name",Produktname
+"Bundle: %name%","Bündel: %name%"
+SKU,SKU
+Merchant,Händler
+Quantity,Menge
+"No scheduled items.","Keine geplanten Artikel."
+"Select Statuses","Status auswählen"
+"Select Frequency","Häufigkeit auswählen"
+"Cycle total from","Zyklussumme von"
+"Cycle total to","Zyklussumme bis"
+"Next trigger date from","Nächstes Auslösedatum von"
+"Next trigger date to","Nächstes Auslösedatum bis"
+"Recurring order schedule was not found.","Der wiederkehrende Bestellplan wurde nicht gefunden."
+Active,Aktiv
+Paused,Pausiert
+"Review required","Prüfung erforderlich"
+Cancelled,Abgebrochen
+Weekly,Wöchentlich
+Bi-weekly,Zweiwöchentlich
+Monthly,Monatlich
+"Every N weeks","Alle N Wochen"
+Failed,Fehlgeschlagen
+Price,Preis
+"Total Committed Recurring Volume","Gesamtes zugesagtes wiederkehrendes Volumen"
+"Current month run-rate: %orders% orders already placed plus %count% active schedules still due. Global — not affected by filters.","Laufrate für den aktuellen Monat: %orders% bereits aufgegebene Bestellungen plus %count% noch fällige aktive Zeitpläne. Global – nicht von Filtern betroffen."
+"Already placed: %executed% · Still planned: %planned%","Bereits bestellt: %executed% · Noch geplant: %planned%"
+"Current month","Aktueller Monat"
+"No recurring order activity this month.","Keine wiederkehrenden Bestellaktivitäten in diesem Monat."
+Total,Summe
+"Sum total",Gesamtsumme

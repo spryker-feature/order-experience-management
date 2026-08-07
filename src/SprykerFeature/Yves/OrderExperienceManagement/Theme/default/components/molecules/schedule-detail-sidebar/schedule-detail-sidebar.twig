@@ -8,6 +8,8 @@
     schedule: required,
     statusClassMap: required,
     quote: data.quote,
+    editModalTriggerClassName: '',
+    withBudgetSummary: false,
 } %}
 
 {% block extraClass %} box {% endblock %}
@@ -15,7 +17,26 @@
 {% block body %}
     {% set titleClassName = config.name ~ '__title'%}
     {% block title %}
-        <h4 class="{{ titleClassName }}">{{ 'recurring_orders.detail.sidebar.title' | trans }}</h4>
+        <div class="{{ config.name }}__heading">
+            <h4 class="{{ titleClassName }} col col--expand">{{ 'recurring_orders.detail.sidebar.title' | trans }}</h4>
+            {% set editButtonClassName = "button button--hollow" %}
+            {% set editModalTriggerClassName = 'js-edit-schedule-button' %}
+            {% block editButton %}
+                {% if data.editModalTriggerClassName %}
+                    <button type="button" class="{{ data.editModalTriggerClassName }} {{ editButtonClassName}}"
+                            aria-label="{{ 'recurring_orders.detail.edit.title' | trans }}"
+                            {{ qa('recurring-order-edit-schedule-button') }}>
+                        {% block editButtonIcon %}
+                            {% include atom('icon') with {
+                                data: {
+                                    name: 'edit',
+                                },
+                            } only %}
+                        {% endblock %}
+                    </button>
+                {% endif %}
+            {% endblock %}
+        </div>
     {% endblock %}
 
     {% set definitionListClassName = config.name ~ '__fields' %}
@@ -75,7 +96,7 @@
             {% endblock %}
 
             {% block additionalInfo %}
-                {% widget 'CostCenterDetailWidget' args [data.quote] with {
+                {% widget 'CostCenterDetailWidget' args [data.quote, data.withBudgetSummary] with {
                     data: {
                         definitionListKeyClassName: definitionListKeyClassName,
                         definitionListValueClassName: definitionListValueClassName,
@@ -89,6 +110,7 @@
                             data: {
                                 costCenterName: data.costCenterName,
                                 budgetName: data.budgetName,
+                                budgetSummary: data.budgetSummary,
                             },
                             embed: {
                                 configName: embed.configName,
@@ -101,6 +123,8 @@
 
                                     {{ parent() }}
                                 {% endblock %}
+
+                                {{ block('budgetSummary') }}
                             {% endblock %}
                         {% endembed %}
                     {% endblock %}

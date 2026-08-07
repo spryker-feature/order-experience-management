@@ -13,13 +13,5 @@ use Generated\Shared\Transfer\QuoteTransfer;
 
 interface RecurringOrderQuoteEligibilityCheckerInterface
 {
-    /**
-     * Specification:
-     * - Returns false when the quote originated from an RFQ (quoteRequestVersionReference is set).
-     * - Returns false when the quote has no invoice-based payment method.
-     * - Returns true when the quote is eligible to become a recurring order.
-     *
-     * @api
-     */
     public function isEligibleForRecurringOrder(QuoteTransfer $quoteTransfer): bool;
 }

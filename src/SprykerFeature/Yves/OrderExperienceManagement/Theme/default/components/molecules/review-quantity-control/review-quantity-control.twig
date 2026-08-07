@@ -1,0 +1,107 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-quantity-control',
+    tag: 'review-quantity-control',
+} %}
+
+{% define data = {
+    itemForm: required,
+    currentQuantity: null,
+    unitPrice: 0,
+    isRemovable: false,
+    isDiscontinued: false,
+    isRemovalLocked: false,
+    substituteEntryKey: '',
+    hasPriceChange: false,
+} %}
+
+{% set acceptedQuantity = data.itemForm.acceptedQuantity.vars.value %}
+{% set quantity = data.isDiscontinued ? 0 : (acceptedQuantity is not empty ? acceptedQuantity : data.currentQuantity) %}
+
+{% define attributes = {
+    'data-qa': 'recurring-order-review-line',
+    'data-unit-price': data.unitPrice,
+    'data-quantity': quantity,
+    'data-substitute-entry-key': data.substituteEntryKey,
+    'data-has-price-change': data.hasPriceChange ? 1 : '',
+} %}
+
+{% block body %}
+    {% block quantity %}
+        {% include molecule('quantity-input') with {
+            data: {
+                label: '',
+                hasUpdateButton: false,
+                inputAttributes: {
+                    min: 1,
+                    value: quantity,
+                    class: config.name ~ '__input ' ~ config.jsName ~ '__input js-review-total-recalculator__line-quantity',
+                    'data-qa': 'recurring-order-review-line-quantity',
+                }
+            },
+        } only %}
+    {% endblock %}
+
+    {% block remove %}
+        {% if data.isRemovable %}
+            <div class="{{ config.name }}__remove">
+                {{ form_widget(data.itemForm.isRemoved, {
+                    componentClass: 'is-hidden',
+                    attr: {
+                        class: config.name ~ '__remove-input ' ~ config.jsName ~ '__remove-input js-review-total-recalculator__line-remove',
+                        'data-qa': 'recurring-order-review-line-remove',
+                }}) }}
+
+                {% if not data.isRemovalLocked %}
+                    {% set removeButtonClassName = config.jsName ~ "__remove-toggle button button--hollow" %}
+                    {% block removeButton %}
+                        <button type="button"
+                            class="{{ removeButtonClassName }}"
+                            aria-pressed="false"
+                            {{ qa('recurring-order-review-line-remove-toggle') }}
+                            data-remove-label="{{ 'recurring_orders.review.remove.label' | trans }}"
+                            data-undo-label="{{ 'recurring_orders.review.remove.undo' | trans }}"
+                            title="{{ 'recurring_orders.review.remove.label' | trans }}"
+                        >
+                            {% set removeIconClassName = config.name ~ '__action-icon ' ~ config.name ~ '__action-icon--remove' %}
+                            {% set undoIconClassName = config.name ~ '__action-icon ' ~ config.name ~ '__action-icon--undo' %}
+                            {% block icons %}
+                                {% block removeIcon %}
+                                    {% include atom('icon') with {
+                                        class: removeIconClassName,
+                                        data: {
+                                            name: 'remove',
+                                        },
+                                    } only %}
+                                {% endblock %}
+
+                                {% block undoIcon %}
+                                    {% include atom('icon') with {
+                                        class: undoIconClassName,
+                                        data: {
+                                            name: 'add',
+                                        },
+                                    } only %}
+                                {% endblock %}
+                            {% endblock %}
+                        </button>
+                    {% endblock %}
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endblock %}
+
+    {% block hiddenFields %}
+        {{ form_widget(data.itemForm.groupKey) }}
+        {{ form_widget(data.itemForm.price) }}
+
+        {{ form_widget(data.itemForm.acceptedQuantity, {
+            attr: {
+                min: 1,
+                class: 'is-hidden ' ~ config.jsName ~ '__accepted-quantity-input',
+                'data-qa': 'recurring-order-review-line-accepted-quantity',
+            },
+        }) }}
+    {% endblock %}
+{% endblock %}

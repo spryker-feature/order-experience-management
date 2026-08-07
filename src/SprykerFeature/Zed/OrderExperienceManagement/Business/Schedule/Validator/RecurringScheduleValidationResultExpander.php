@@ -15,13 +15,13 @@ use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig
 class RecurringScheduleValidationResultExpander implements RecurringScheduleValidationResultExpanderInterface
 {
     public function __construct(
-        protected readonly OrderExperienceManagementConfig $subscriptionConfig,
+        protected readonly OrderExperienceManagementConfig $config,
     ) {
     }
 
     public function expand(RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer): RecurringScheduleValidationResultTransfer
     {
-        $nonPurchasableReviewReasonGroups = $this->subscriptionConfig->getNonPurchasableReviewReasonGroups();
+        $nonPurchasableReviewReasonGroups = $this->config->getNonPurchasableReviewReasonGroups();
 
         foreach ($recurringScheduleValidationResultTransfer->getItemReviews() as $itemReviewTransfer) {
             foreach ($itemReviewTransfer->getReviewReasons() as $reviewReason) {

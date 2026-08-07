@@ -31,7 +31,7 @@ interface OrderExperienceManagementClientInterface
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.statuses` to filter by schedule status.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.names` to search by schedule name (LIKE).
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithItems` to load schedule items and compute estimated total.
-     * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.groupItemsByGroupKey` to group loaded items by their groupKey, summing quantities for items that share the same key; items with a null groupKey are never grouped.
+     * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isGroupedByGroupKey` to group loaded items by their groupKey, summing quantities for items that share the same key; items with a null groupKey are never grouped.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithHistory` to load execution history with order references and failure reasons.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithCustomer` to load the customer full name.
      * - When `RecurringScheduleCriteriaTransfer.customer` is set, derives ownership filters via `PermissionAwareTrait` on the Zed side (company → companyId, business unit → companyBusinessUnitId, fallback → customerId).
@@ -41,6 +41,8 @@ interface OrderExperienceManagementClientInterface
      * - Uses `RecurringScheduleCriteriaTransfer.pagination.{limit, offset}` to paginate results with limit and offset.
      * - Uses `RecurringScheduleCriteriaTransfer.pagination.{page, maxPerPage}` to paginate results with page and maxPerPage.
      * - Uses `RecurringScheduleCriteriaTransfer.historyPagination.{page, maxPerPage}` to paginate the per-schedule execution history; metadata is written back to `RecurringSchedule.historyPagination`.
+     * - Uses `RecurringScheduleCriteriaTransfer.statusCountConditions` to additionally return per-status schedule counts in `RecurringScheduleCollectionTransfer.statusCounts`, saving a dedicated Zed call; the counts query is skipped entirely when the property is null.
+     * - Applies `statusCountConditions` as an independent filter set: it does not inherit `recurringScheduleConditions`, is neither paginated nor sorted, ignores `estimatedTotalMin`/`estimatedTotalMax`, and MUST NOT set the `isWith*` relation-load flags — `isWithCompany` in particular would add an INNER JOIN on `spy_company` plus a non-aggregated column to the `GROUP BY status` query.
      * - Returns `RecurringScheduleCollectionTransfer` filled with found recurring schedules.
      *
      * @api
@@ -83,7 +85,7 @@ interface OrderExperienceManagementClientInterface
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::triggerManualEventForScheduleAction()
      */
     public function triggerManualEventForSchedule(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 
     /**
@@ -110,7 +112,7 @@ interface OrderExperienceManagementClientInterface
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::resumeScheduleWithDateAction()
      */
     public function resumeScheduleWithDate(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 
     /**
@@ -127,13 +129,14 @@ interface OrderExperienceManagementClientInterface
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::updateRecurringScheduleCollectionAction()
      */
     public function updateRecurringScheduleCollection(
-        RecurringScheduleCollectionRequestTransfer $requestTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
     ): RecurringScheduleCollectionResponseTransfer;
 
     /**
      * Specification:
      * - Makes a Zed call to build the Review Required view model for a single schedule, scoped by `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.uuids` and `RecurringScheduleCriteriaTransfer.customer` (ownership).
      * - Re-validates the schedule against the current catalogue and prices at read time without persisting anything.
+     * - Runs the re-validation only while the schedule awaits review; any other status returns the schedule without review data.
      * - Groups the schedule items into flagged and unchanged sets with the detected per-item reasons, and collects any non-item blocking errors.
      * - Provides the original and updated order totals and the per-reason summary counters shown on the page.
      * - Returns an empty review (`null` recurringSchedule) when no schedule matches the criteria.
@@ -160,6 +163,6 @@ interface OrderExperienceManagementClientInterface
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\GatewayController::approveScheduleReviewAction()
      */
     public function approveScheduleReview(
-        RecurringScheduleEventRequestTransfer $requestTransfer,
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
     ): RecurringScheduleEventResponseTransfer;
 }

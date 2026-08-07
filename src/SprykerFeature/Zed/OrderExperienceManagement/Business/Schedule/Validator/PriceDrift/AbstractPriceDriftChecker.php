@@ -14,6 +14,7 @@ use Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Indexer\RecurringScheduleItemIndexerInterface;
 
 abstract class AbstractPriceDriftChecker implements PriceDriftCheckerInterface
 {
@@ -21,6 +22,11 @@ abstract class AbstractPriceDriftChecker implements PriceDriftCheckerInterface
      * @see \Spryker\Shared\Price\PriceConfig::PRICE_MODE_NET
      */
     protected const string PRICE_MODE_NET = 'NET_MODE';
+
+    public function __construct(
+        protected readonly RecurringScheduleItemIndexerInterface $recurringScheduleItemIndexer,
+    ) {
+    }
 
     protected function resolveItemPriceByMode(ItemTransfer $itemTransfer, string $priceMode): ?int
     {

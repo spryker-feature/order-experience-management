@@ -1,0 +1,17 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-schedule-detail-sidebar($name: '.schedule-detail-sidebar') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-schedule-detail-sidebar-base-hook) {
+            @include order-experience-management-schedule-detail-sidebar-base-hook;
+        }
+
+        &__heading {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        @content;
+    }
+}

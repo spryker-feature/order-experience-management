@@ -8,7 +8,6 @@
 namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
 use Generated\Shared\Transfer\PaginationTransfer;
-use Spryker\Yves\Kernel\Controller\AbstractController;
 use Spryker\Yves\Kernel\View\View;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementFactory getFactory()
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
  */
-class RecurringOrderListController extends AbstractController
+class RecurringOrderListController extends AbstractRecurringOrderController
 {
     protected const string REQUEST_PARAM_PAGE = 'page';
 
@@ -26,13 +25,13 @@ class RecurringOrderListController extends AbstractController
      *
      * @var string
      */
-    protected const ROUTE_NAME_LOGIN = 'login';
+    protected const string ROUTE_NAME_LOGIN = 'login';
 
     public function indexAction(Request $request): View|RedirectResponse
     {
-        $customerTransfer = $this->getFactory()->getCustomerClient()->getCustomer();
+        $customerTransfer = $this->resolveAuthenticatedCustomer();
 
-        if ($customerTransfer === null || $customerTransfer->getIdCustomer() === null) {
+        if ($customerTransfer === null) {
             return $this->redirectResponseInternal(static::ROUTE_NAME_LOGIN);
         }
 
@@ -44,13 +43,19 @@ class RecurringOrderListController extends AbstractController
 
         $recurringScheduleCriteriaTransfer->setPagination($this->buildPaginationTransfer($request));
 
+        $attentionBannerReader = $this->getFactory()->createRecurringOrderAttentionBannerReader();
+
+        $recurringScheduleCriteriaTransfer->setStatusCountConditions(
+            $attentionBannerReader->buildStatusCountConditions($customerTransfer->getIdCustomerOrFail()),
+        );
+
         $recurringScheduleCollectionTransfer = $this->getFactory()
             ->createRecurringScheduleReader()
             ->getScheduleCollection($recurringScheduleCriteriaTransfer);
 
-        $attentionStatusCounts = $this->getFactory()
-            ->createRecurringOrderAttentionBannerReader()
-            ->getAttentionStatusCounts($customerTransfer->getIdCustomerOrFail());
+        $attentionStatusCounts = $attentionBannerReader->getAttentionStatusCounts(
+            $recurringScheduleCollectionTransfer->getStatusCounts(),
+        );
 
         return $this->view(
             [

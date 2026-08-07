@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift;
 
+use Generated\Shared\Transfer\CartChangeTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
@@ -18,6 +19,7 @@ interface PriceDriftCheckerInterface
     public function check(
         RecurringScheduleTransfer $recurringScheduleTransfer,
         QuoteTransfer $originalQuoteTransfer,
+        CartChangeTransfer $repricedCartChangeTransfer,
         string $priceMode,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer;

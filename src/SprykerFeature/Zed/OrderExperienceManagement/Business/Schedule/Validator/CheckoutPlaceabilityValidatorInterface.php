@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 
@@ -16,6 +17,7 @@ interface CheckoutPlaceabilityValidatorInterface
 {
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer;
 }

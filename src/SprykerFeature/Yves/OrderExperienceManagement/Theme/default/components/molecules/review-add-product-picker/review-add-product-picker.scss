@@ -1,0 +1,38 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-review-add-product-picker($name: '.review-add-product-picker') {
+    #{$name} {
+        display: block;
+
+        @if meta.mixin-exists(order-experience-management-review-add-product-picker-base-hook) {
+            @include order-experience-management-review-add-product-picker-base-hook;
+        }
+
+        &__product-info,
+        &__offer,
+        &__product-col,
+        &__quantity-col {
+            margin-bottom: 0.5rem;
+        }
+
+        &__search {
+            position: relative;
+        }
+
+        .autocomplete-form__text-input {
+            padding-right: 7rem;
+        }
+
+        &__price {
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            color: $setting-color-darker;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        @content;
+    }
+}

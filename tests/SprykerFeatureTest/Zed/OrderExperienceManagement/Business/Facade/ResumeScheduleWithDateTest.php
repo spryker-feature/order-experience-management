@@ -14,6 +14,7 @@ use Generated\Shared\Transfer\PermissionCollectionTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
+use Spryker\Zed\CompanyBusinessUnitSalesConnector\Communication\Plugin\Permission\SeeBusinessUnitOrdersPermissionPlugin;
 use Spryker\Zed\CompanyMailConnector\Business\CompanyMailConnectorBusinessFactory;
 use Spryker\Zed\CompanyMailConnector\CompanyMailConnectorDependencyProvider;
 use Spryker\Zed\CompanyMailConnector\Dependency\Facade\CompanyMailConnectorToMailFacadeInterface;
@@ -140,6 +141,64 @@ class ResumeScheduleWithDateTest extends Unit
         );
     }
 
+    public function testResumesColleagueScheduleWhenCompanyUserHasSeeBusinessUnitOrdersPermission(): void
+    {
+        // Arrange
+        $this->tester->setDependency(
+            CompanyMailConnectorDependencyProvider::FACADE_MAIL,
+            $this->createMock(CompanyMailConnectorToMailFacadeInterface::class),
+            CompanyMailConnectorBusinessFactory::class,
+        );
+        $this->tester->preparePermissionStorageDependency(new PermissionStoragePlugin());
+        $this->mockScheduleEventTrigger(true);
+
+        $companyTransfer = $this->tester->haveCompany();
+        $permissionTransfer = $this->tester->havePermission(new SeeBusinessUnitOrdersPermissionPlugin());
+
+        $companyUserTransfer = $this->tester->haveCompanyUserWithPermissions(
+            $companyTransfer,
+            (new PermissionCollectionTransfer())->addPermission($permissionTransfer),
+        );
+
+        $sameBusinessUnitCompanyUserTransfer = $this->tester->haveCompanyUserWithPermissions(
+            $companyTransfer,
+            new PermissionCollectionTransfer(),
+        );
+        $sameBusinessUnitCompanyUserTransfer->setFkCompanyBusinessUnit($companyUserTransfer->getFkCompanyBusinessUnit());
+
+        // Paused schedule owned by a colleague in the same business unit.
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule(
+            (int)$sameBusinessUnitCompanyUserTransfer->getCustomer()->getIdCustomer(),
+            [
+                RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_PAUSED,
+                RecurringScheduleTransfer::ID_COMPANY_USER => $sameBusinessUnitCompanyUserTransfer->getIdCompanyUser(),
+            ],
+        );
+
+        $customerTransfer = $companyUserTransfer->getCustomerOrFail()
+            ->setCompanyUserTransfer($companyUserTransfer);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setIdCustomer($customerTransfer->getIdCustomerOrFail())
+            ->setCustomer($customerTransfer)
+            ->setNextExecutionDate(static::NEXT_EXECUTION_DATE);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->resumeScheduleWithDate($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $scheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByIdRecurringSchedule($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
+
+        $this->assertSame(
+            static::NEXT_EXECUTION_DATE,
+            $scheduleEntity->getNextTriggerDate()->format(static::DATE_FORMAT),
+        );
+    }
+
     public function testReturnsFalseWhenScheduleNotFound(): void
     {
         // Arrange
@@ -226,7 +285,7 @@ class ResumeScheduleWithDateTest extends Unit
     protected function mockScheduleEventTrigger(bool $isApplied): void
     {
         $scheduleEventTriggerMock = $this->createMock(ScheduleEventTriggerInterface::class);
-        $scheduleEventTriggerMock->method('triggerEvent')->willReturn($isApplied);
+        $scheduleEventTriggerMock->method('triggerEventForRecurringSchedule')->willReturn($isApplied);
 
         $this->tester->mockFactoryMethod(static::FACTORY_METHOD_SCHEDULE_EVENT_TRIGGER, $scheduleEventTriggerMock);
     }

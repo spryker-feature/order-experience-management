@@ -89,7 +89,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [1500, 1500]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -114,7 +114,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [1000, 1000]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertTrue($resultTransfer->getIsValid());
@@ -131,7 +131,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -153,7 +153,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_MERCHANT => [2500, 2500]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -185,7 +185,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         ]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -217,7 +217,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_PACKAGING => [800, 800]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -244,7 +244,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_MEASUREMENT => [650, 650]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -269,7 +269,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::BUNDLE_ITEM_IDENTIFIER => [6000, 6000]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -295,7 +295,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertTrue($resultTransfer->getIsValid());
@@ -314,7 +314,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_BUNDLE_CHILD => [2000, 2000]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertTrue($resultTransfer->getIsValid());
@@ -332,7 +332,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [1200, 1400]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -345,26 +345,6 @@ class PriceScheduleValidatorPluginTest extends Unit
             [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED],
             $itemReviewTransfer->getReviewReasons(),
         );
-    }
-
-    public function testReturnsResultUnchangedWhenQuoteDataIsNull(): void
-    {
-        // Arrange
-        $recurringScheduleTransfer = (new RecurringScheduleTransfer())->addItem(
-            $this->createGroupedScheduleItem(static::SKU_COMMON, static::GROUP_KEY_COMMON, 1000, 1000),
-        );
-
-        $priceCartConnectorFacadeMock = $this->createMock(PriceCartConnectorFacadeInterface::class);
-        $priceCartConnectorFacadeMock->expects($this->never())->method('addPriceToItems');
-
-        $plugin = $this->createPluginFromMocks($priceCartConnectorFacadeMock, $this->createProductPackagingUnitFacadeMock());
-
-        // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
-
-        // Assert
-        $this->assertTrue($resultTransfer->getIsValid());
-        $this->assertCount(0, $resultTransfer->getItemReviews());
     }
 
     public function testFlagsPackagingUnitItemWhenAmountPriceIncreased(): void
@@ -381,7 +361,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         );
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -411,7 +391,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         );
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -431,7 +411,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [800, 800]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertTrue($resultTransfer->getIsValid());
@@ -447,7 +427,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [0, 0]]);
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -487,7 +467,7 @@ class PriceScheduleValidatorPluginTest extends Unit
         );
 
         // Act
-        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->createValidResult());
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
 
         // Assert
         $this->assertFalse($resultTransfer->getIsValid());
@@ -507,6 +487,68 @@ class PriceScheduleValidatorPluginTest extends Unit
             [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED],
             $reviewReasonsBySku[static::SKU_PACKAGING] ?? null,
         );
+    }
+
+    public function testRepricesVolumePricedItemUsingActualQuantityWithoutDoubleCounting(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createGroupedScheduleItem(static::SKU_COMMON, static::GROUP_KEY_COMMON, 1000, 1000, [], 6),
+        ]);
+
+        $plugin = $this->createPluginWithVolumePricing([
+            static::SKU_COMMON => [
+                [1, 1500, 1500],
+                [7, 1200, 1200],
+            ],
+        ]);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertFalse($resultTransfer->getIsValid());
+        $this->assertCount(1, $resultTransfer->getItemReviews());
+
+        $itemReviewTransfer = $resultTransfer->getItemReviews()->offsetGet(0);
+        $this->assertSame(static::SKU_COMMON, $itemReviewTransfer->getRecurringScheduleItemOrFail()->getSku());
+        $this->assertSame(1000, $itemReviewTransfer->getPreviousPrice());
+        $this->assertSame(1500, $itemReviewTransfer->getCurrentPrice());
+        $this->assertSame(
+            [SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_PRICE_INCREASED],
+            $itemReviewTransfer->getReviewReasons(),
+        );
+    }
+
+    public function testPassesContextQuoteWithoutItemsToPriceCalculation(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createGroupedScheduleItem(static::SKU_COMMON, static::GROUP_KEY_COMMON, 1000, 1000, [], 6),
+        ]);
+
+        $repricedItemCount = null;
+        $repricedItemQuantity = null;
+        $contextItemCount = null;
+        $priceCartConnectorFacadeMock = $this->createMock(PriceCartConnectorFacadeInterface::class);
+        $priceCartConnectorFacadeMock->method('addPriceToItems')->willReturnCallback(
+            function (CartChangeTransfer $cartChangeTransfer) use (&$repricedItemCount, &$repricedItemQuantity, &$contextItemCount): CartChangeTransfer {
+                $repricedItemCount = $cartChangeTransfer->getItems()->count();
+                $repricedItemQuantity = $cartChangeTransfer->getItems()->offsetGet(0)?->getQuantity();
+                $contextItemCount = $cartChangeTransfer->getQuoteOrFail()->getItems()->count();
+
+                return $cartChangeTransfer;
+            },
+        );
+        $plugin = $this->createPluginFromMocks($priceCartConnectorFacadeMock, $this->createProductPackagingUnitFacadeMock());
+
+        // Act
+        $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertSame(1, $repricedItemCount);
+        $this->assertSame(6, $repricedItemQuantity);
+        $this->assertSame(0, $contextItemCount);
     }
 
     /**
@@ -580,6 +622,13 @@ class PriceScheduleValidatorPluginTest extends Unit
         return (new RecurringScheduleValidationResultTransfer())->setIsValid(true);
     }
 
+    protected function buildPlaceableQuote(RecurringScheduleTransfer $recurringScheduleTransfer): QuoteTransfer
+    {
+        return (new OrderExperienceManagementBusinessFactory())
+            ->createRecurringOrderQuoteBuilder()
+            ->buildPlaceableQuote($recurringScheduleTransfer);
+    }
+
     /**
      * @param array<string, array<int, int>> $priceMapByKey
      */
@@ -601,6 +650,84 @@ class PriceScheduleValidatorPluginTest extends Unit
             $this->createPriceCartConnectorFacadeMock($priceMapByKey),
             $this->createProductPackagingUnitFacadeMock($amountPriceMapByKey),
         );
+    }
+
+    /**
+     * @param array<string, array<int, array<int, int>>> $volumeTiersBySku Keyed by SKU; each tier is [minQuantity, unitGrossPrice, unitNetPrice].
+     */
+    protected function createPluginWithVolumePricing(array $volumeTiersBySku): PriceScheduleValidatorPlugin
+    {
+        $priceCartConnectorFacadeMock = $this->createMock(PriceCartConnectorFacadeInterface::class);
+        $priceCartConnectorFacadeMock->method('addPriceToItems')->willReturnCallback(
+            $this->createVolumePriceApplyingCallback($volumeTiersBySku),
+        );
+
+        return $this->createPluginFromMocks($priceCartConnectorFacadeMock, $this->createProductPackagingUnitFacadeMock());
+    }
+
+    /**
+     * Mimics PriceCartConnector volume pricing: the unit price tier is resolved from the total quantity of a SKU
+     * counted across the items being priced AND the context quote. A non-empty context quote would therefore
+     * double-count the quantity and select the wrong tier.
+     *
+     * @param array<string, array<int, array<int, int>>> $volumeTiersBySku
+     */
+    protected function createVolumePriceApplyingCallback(array $volumeTiersBySku): callable
+    {
+        return function (CartChangeTransfer $cartChangeTransfer) use ($volumeTiersBySku): CartChangeTransfer {
+            foreach ($cartChangeTransfer->getItems() as $itemTransfer) {
+                $sku = $itemTransfer->getSku();
+
+                if (!isset($volumeTiersBySku[$sku])) {
+                    continue;
+                }
+
+                [$unitGrossPrice, $unitNetPrice] = $this->resolveVolumeTierPrices(
+                    $volumeTiersBySku[$sku],
+                    $this->sumQuantityForSku($cartChangeTransfer, (string)$sku),
+                );
+                $itemTransfer->setUnitGrossPrice($unitGrossPrice)->setUnitNetPrice($unitNetPrice);
+            }
+
+            return $cartChangeTransfer;
+        };
+    }
+
+    protected function sumQuantityForSku(CartChangeTransfer $cartChangeTransfer, string $sku): int
+    {
+        $totalQuantity = 0;
+
+        foreach ($cartChangeTransfer->getItems() as $itemTransfer) {
+            if ($itemTransfer->getSku() === $sku) {
+                $totalQuantity += $itemTransfer->getQuantityOrFail();
+            }
+        }
+
+        foreach ($cartChangeTransfer->getQuoteOrFail()->getItems() as $itemTransfer) {
+            if ($itemTransfer->getSku() === $sku) {
+                $totalQuantity += $itemTransfer->getQuantityOrFail();
+            }
+        }
+
+        return $totalQuantity;
+    }
+
+    /**
+     * @param array<int, array<int, int>> $volumeTiers Ascending tiers, each [minQuantity, unitGrossPrice, unitNetPrice].
+     *
+     * @return array<int, int> The [unitGrossPrice, unitNetPrice] of the highest tier whose minimum quantity is reached.
+     */
+    protected function resolveVolumeTierPrices(array $volumeTiers, int $quantity): array
+    {
+        $unitPrices = [0, 0];
+
+        foreach ($volumeTiers as [$minQuantity, $unitGrossPrice, $unitNetPrice]) {
+            if ($quantity >= $minQuantity) {
+                $unitPrices = [$unitGrossPrice, $unitNetPrice];
+            }
+        }
+
+        return $unitPrices;
     }
 
     /**

@@ -1,0 +1,21 @@
+@use 'sass:meta';
+@use 'sass:map';
+@mixin order-experience-management-review-scope-selector($name: '.review-scope-selector') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-review-scope-selector-base-hook) {
+            @include order-experience-management-review-scope-selector-base-hook;
+        }
+
+        &__option {
+            padding: map.get($setting-spacing, 'default');
+            margin-bottom: 0.5rem;
+            background-color: $setting-color-white;
+            border: 1px solid $setting-color-lighter;
+        }
+
+        &__note {
+            @include helper-font-size(small);
+            display: block;
+        }
+    }
+}

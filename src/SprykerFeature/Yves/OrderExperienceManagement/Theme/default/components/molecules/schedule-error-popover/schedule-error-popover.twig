@@ -34,7 +34,7 @@
         </button>
     {% endblock %}
 
-    {% block popup%}
+    {% block popup %}
         {% include molecule('main-popup') with {
             data: {
                 title: 'recurring_orders.scheduled.order.errors.title' | trans,
@@ -48,17 +48,22 @@
     {% endblock %}
 {% endblock %}
 
-{% set errorsListClassName = 'list' %}
+{% set errorsListClassName = 'list list--bullet' %}
 {% set errorsListItemClassName = 'list__item' %}
 {% block errors %}
-    {% if data.createdAt %}
-        <p>{{ data.createdAt | formatDateTime }}</p>
-    {% endif %}
-    <ul class="{{ errorsListClassName }}">
-        {% for error in data.errors %}
-            <li class="{{ errorsListItemClassName }}">
-                {{ error.message | trans(error.parameters ?? {}) }}
-            </li>
-        {% endfor %}
-    </ul>
+    {% block errorsCreatedAt %}
+        {% if data.createdAt %}
+            <p>{{ data.createdAt | formatDateTime }}</p>
+        {% endif %}
+    {% endblock %}
+
+    {% block errorsList %}
+        <ul class="{{ errorsListClassName }}">
+            {% for error in data.errors %}
+                <li class="{{ errorsListItemClassName }}">
+                    {{ error.message | trans(error.parameters ?? {}) }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endblock %}
 {% endblock %}

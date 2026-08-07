@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Communication\Plugin;
 
 use Codeception\Test\Unit;
+use DateTimeImmutable;
 use Generated\Shared\Transfer\CheckoutResponseTransfer;
+use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\PaymentTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
@@ -39,6 +41,8 @@ class RecurringOrderCheckoutPreConditionPluginTest extends Unit
      * @uses \SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig::DEFAULT_INVOICE_PAYMENT_METHOD_KEYS
      */
     protected const string PAYMENT_METHOD_INVOICE = 'invoice';
+
+    protected const string DATE_FORMAT = 'Y-m-d';
 
     protected OrderExperienceManagementBusinessTester $tester;
 
@@ -73,7 +77,11 @@ class RecurringOrderCheckoutPreConditionPluginTest extends Unit
         // Arrange
         $plugin = new RecurringOrderCheckoutPreConditionPlugin();
         $quoteTransfer = (new QuoteTransfer())
-            ->setRecurringOrderSettings((new RecurringOrderSettingsTransfer())->setCadenceType('weekly'))
+            ->setRecurringOrderSettings(
+                (new RecurringOrderSettingsTransfer())
+                    ->setCadenceType('weekly')
+                    ->setStartDate((new DateTimeImmutable('today'))->format(static::DATE_FORMAT)),
+            )
             ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE));
         $checkoutResponseTransfer = new CheckoutResponseTransfer();
 
@@ -93,7 +101,8 @@ class RecurringOrderCheckoutPreConditionPluginTest extends Unit
             ->setRecurringOrderSettings(
                 (new RecurringOrderSettingsTransfer())
                     ->setCadenceType('every_n_weeks')
-                    ->setCadenceValue(3),
+                    ->setCadenceValue(3)
+                    ->setStartDate((new DateTimeImmutable('today'))->format(static::DATE_FORMAT)),
             )
             ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE));
         $checkoutResponseTransfer = new CheckoutResponseTransfer();
@@ -173,6 +182,60 @@ class RecurringOrderCheckoutPreConditionPluginTest extends Unit
                     ->setCadenceValue(0),
             )
             ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE));
+        $checkoutResponseTransfer = new CheckoutResponseTransfer();
+
+        // Act
+        $result = $plugin->checkCondition($quoteTransfer, $checkoutResponseTransfer);
+
+        // Assert
+        $this->assertFalse($result);
+        $this->assertNotEmpty($checkoutResponseTransfer->getErrors());
+    }
+
+    public function testCheckConditionReturnsFalseWhenQuoteIsLocked(): void
+    {
+        // Arrange — valid cadence + invoice payment, but a locked quote is ineligible.
+        $plugin = new RecurringOrderCheckoutPreConditionPlugin();
+        $quoteTransfer = (new QuoteTransfer())
+            ->setRecurringOrderSettings((new RecurringOrderSettingsTransfer())->setCadenceType('weekly'))
+            ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE))
+            ->setIsLocked(true);
+        $checkoutResponseTransfer = new CheckoutResponseTransfer();
+
+        // Act
+        $result = $plugin->checkCondition($quoteTransfer, $checkoutResponseTransfer);
+
+        // Assert
+        $this->assertFalse($result);
+        $this->assertNotEmpty($checkoutResponseTransfer->getErrors());
+    }
+
+    public function testCheckConditionReturnsFalseWhenQuoteIsRequestForQuote(): void
+    {
+        // Arrange — valid cadence + invoice payment, but an RFQ-derived quote is ineligible.
+        $plugin = new RecurringOrderCheckoutPreConditionPlugin();
+        $quoteTransfer = (new QuoteTransfer())
+            ->setRecurringOrderSettings((new RecurringOrderSettingsTransfer())->setCadenceType('weekly'))
+            ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE))
+            ->setQuoteRequestVersionReference('QR--1');
+        $checkoutResponseTransfer = new CheckoutResponseTransfer();
+
+        // Act
+        $result = $plugin->checkCondition($quoteTransfer, $checkoutResponseTransfer);
+
+        // Assert
+        $this->assertFalse($result);
+        $this->assertNotEmpty($checkoutResponseTransfer->getErrors());
+    }
+
+    public function testCheckConditionReturnsFalseWhenCustomerIsGuest(): void
+    {
+        // Arrange — valid cadence + invoice payment, but a guest customer is ineligible.
+        $plugin = new RecurringOrderCheckoutPreConditionPlugin();
+        $quoteTransfer = (new QuoteTransfer())
+            ->setRecurringOrderSettings((new RecurringOrderSettingsTransfer())->setCadenceType('weekly'))
+            ->addPayment((new PaymentTransfer())->setPaymentMethod(static::PAYMENT_METHOD_INVOICE))
+            ->setCustomer((new CustomerTransfer())->setIsGuest(true));
         $checkoutResponseTransfer = new CheckoutResponseTransfer();
 
         // Act

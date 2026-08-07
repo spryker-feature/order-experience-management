@@ -25,7 +25,9 @@ class RecurringOrderCheckoutPreConditionPlugin extends AbstractPlugin implements
      * {@inheritDoc}
      * - Does nothing and returns `true` when `QuoteTransfer.recurringOrderSettings` is null.
      * - Returns `false` and adds a `CheckoutErrorTransfer` when the quote is not eligible for a recurring order (locked, RFQ, guest, or non-invoice payment).
-     * - Returns `false` and adds a `CheckoutErrorTransfer` when `cadenceType` is not supported.
+     * - Returns `false` and adds a `CheckoutErrorTransfer` with the error returned by any `RecurringOrderCheckoutValidatorPluginInterface` plugin.
+     * - Returns `false` and adds a `CheckoutErrorTransfer` when `cadenceType` (frequency) is empty — the quote is flagged as recurring but the settings were never confirmed.
+     * - Returns `false` and adds a `CheckoutErrorTransfer` when `cadenceType` is set but not supported.
      * - Returns `false` and adds a `CheckoutErrorTransfer` when `cadenceType` is `every_n_weeks` and `cadenceValue` is missing or less than 1.
      *
      * @api

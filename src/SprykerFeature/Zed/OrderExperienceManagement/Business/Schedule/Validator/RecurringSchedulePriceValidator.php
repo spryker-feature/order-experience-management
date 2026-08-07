@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderQuoteBuilderInterface;
 
 class RecurringSchedulePriceValidator implements RecurringSchedulePriceValidatorInterface
 {
@@ -19,26 +19,25 @@ class RecurringSchedulePriceValidator implements RecurringSchedulePriceValidator
      * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift\PriceDriftCheckerInterface> $priceDriftCheckers
      */
     public function __construct(
-        protected readonly RecurringOrderQuoteBuilderInterface $quoteBuilder,
+        protected readonly ScheduleItemRepricerInterface $scheduleItemRepricer,
         protected readonly array $priceDriftCheckers,
     ) {
     }
 
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
-        if ($recurringScheduleTransfer->getQuoteData() === null) {
-            return $recurringScheduleValidationResultTransfer;
-        }
+        $priceMode = (string)$quoteTransfer->getPriceMode();
 
-        $originalQuoteTransfer = $this->quoteBuilder->buildPlaceableQuote($recurringScheduleTransfer);
-        $priceMode = (string)$originalQuoteTransfer->getPriceMode();
+        $repricedCartChangeTransfer = $this->scheduleItemRepricer->repriceQuoteItems($quoteTransfer);
 
         foreach ($this->priceDriftCheckers as $priceDriftChecker) {
             $recurringScheduleValidationResultTransfer = $priceDriftChecker->check(
                 $recurringScheduleTransfer,
-                $originalQuoteTransfer,
+                $quoteTransfer,
+                $repricedCartChangeTransfer,
                 $priceMode,
                 $recurringScheduleValidationResultTransfer,
             );

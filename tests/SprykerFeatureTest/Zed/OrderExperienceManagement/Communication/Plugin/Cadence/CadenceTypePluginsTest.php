@@ -77,6 +77,16 @@ class CadenceTypePluginsTest extends Unit
         $this->assertSame('2025-02-15', $result->format('Y-m-d'));
     }
 
+    public function testMonthlyPluginRollsOverWhenTargetDayDoesNotExistInNextMonth(): void
+    {
+        // Jan 31 has no counterpart in a 28-day February, so PHP's `+1 month` overflows into March.
+        $base = new DateTimeImmutable('2025-01-31');
+
+        $result = (new MonthlyCadenceTypePlugin())->getNextTriggerDate($base, null);
+
+        $this->assertSame('2025-03-03', $result->format('Y-m-d'));
+    }
+
     public function testEveryNWeeksPluginReturnsCorrectName(): void
     {
         $this->assertSame(OrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS, (new EveryNWeeksCadenceTypePlugin())->getName());

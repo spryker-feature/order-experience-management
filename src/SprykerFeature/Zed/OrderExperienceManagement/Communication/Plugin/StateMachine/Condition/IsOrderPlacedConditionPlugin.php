@@ -12,16 +12,13 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Stat
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 
 /**
  * {@inheritDoc}
  *
  * @api
  *
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface getRepository()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface getFacade()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
+ * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory getBusinessFactory()
  */
 class IsOrderPlacedConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
@@ -32,13 +29,9 @@ class IsOrderPlacedConditionPlugin extends AbstractPlugin implements ConditionPl
      */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
-        $historyTransfer = $this->getRepository()->findLatestHistoryByScheduleId($stateMachineItemTransfer->getIdentifierOrFail());
-
-        if ($historyTransfer === null) {
-            return false;
-        }
-
-        return $historyTransfer->getEventType() === SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_PLACED;
+        return $this->getBusinessFactory()
+            ->createRecurringScheduleDueChecker()
+            ->isOrderPlaced($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
     /**

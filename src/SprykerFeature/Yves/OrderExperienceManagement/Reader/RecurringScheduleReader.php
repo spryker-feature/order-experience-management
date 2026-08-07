@@ -65,7 +65,7 @@ class RecurringScheduleReader implements RecurringScheduleReaderInterface
         $recurringScheduleConditionsTransfer = (new RecurringScheduleConditionsTransfer())
             ->addUuid($uuid)
             ->setIsWithItems(true)
-            ->setGroupItemsByGroupKey(true);
+            ->setIsGroupedByGroupKey(true);
 
         return (new RecurringScheduleCriteriaTransfer())
             ->setRecurringScheduleConditions($recurringScheduleConditionsTransfer)
@@ -82,7 +82,7 @@ class RecurringScheduleReader implements RecurringScheduleReaderInterface
             ->setIsWithHistory(true)
             ->setIsWithCustomer(true)
             ->setIsWithSkipPreview(true)
-            ->setGroupItemsByGroupKey(true);
+            ->setIsGroupedByGroupKey(true);
 
         return (new RecurringScheduleCriteriaTransfer())
             ->setRecurringScheduleConditions($recurringScheduleConditionsTransfer)

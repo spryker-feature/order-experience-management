@@ -14,6 +14,7 @@ use Generated\Shared\Transfer\CheckoutErrorTransfer;
 use Generated\Shared\Transfer\CheckoutResponseTransfer;
 use Generated\Shared\Transfer\CustomerResponseTransfer;
 use Generated\Shared\Transfer\CustomerTransfer;
+use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteErrorTransfer;
 use Generated\Shared\Transfer\QuoteResponseTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
@@ -25,6 +26,7 @@ use RuntimeException;
 use Spryker\Zed\Cart\Business\CartFacadeInterface;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
+use Spryker\Zed\Kernel\Locator;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
 use Spryker\Zed\Payment\Business\PaymentFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
@@ -53,9 +55,19 @@ class PlaceOrderCommandTest extends Unit
     protected const string CUSTOMER_EMAIL = 'buyer@example.com';
 
     /**
-     * @uses \SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderPlacer::GLOSSARY_KEY_ITEMS_NOT_PURCHASABLE
+     * @uses \SprykerFeature\Zed\OrderExperienceManagement\Business\Order\PlacementCheckoutResponseBuilder::GLOSSARY_KEY_ITEMS_NOT_PURCHASABLE
      */
     protected const string GLOSSARY_KEY_ITEMS_NOT_PURCHASABLE = 'recurring_orders.error.items_not_purchasable';
+
+    protected const string SKU_2 = 'SKU-2';
+
+    protected const int QUANTITY_SKU_2 = 3;
+
+    protected const int QUANTITY_ABUNDANT = 999;
+
+    protected const string MESSENGER_KEY_STALE = 'test.recurring_orders.reload.stale';
+
+    protected const string MESSENGER_KEY_FRESH = 'test.recurring_orders.reload.fresh';
 
     protected OrderExperienceManagementBusinessTester $tester;
 
@@ -265,6 +277,93 @@ class PlaceOrderCommandTest extends Unit
         $this->assertHistoryDetail('checkout failed', $historyEntity->getDetail());
     }
 
+    public function testRunListsOnlyUnavailableSkusWhenSomeItemsRemainPurchasable(): void
+    {
+        // Arrange - a two-item schedule where the reload keeps SKU-1 in full but drops SKU-2 entirely.
+        $scheduleTransfer = $this->haveScheduleWithItem([RecurringScheduleTransfer::CUSTOMER_REFERENCE => static::CUSTOMER_REFERENCE]);
+        $this->tester->haveRecurringScheduleItem($scheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::SKU => static::SKU_2,
+            RecurringScheduleItemTransfer::QUANTITY => static::QUANTITY_SKU_2,
+            RecurringScheduleItemTransfer::ITEM_DATA => json_encode(['sku' => static::SKU_2], JSON_THROW_ON_ERROR),
+        ]);
+
+        $cartFacadeMock = $this->createMock(CartFacadeInterface::class);
+        $cartFacadeMock->method('reloadItemsInQuote')->willReturn(
+            (new QuoteResponseTransfer())->setIsSuccessful(true)->setQuoteTransfer(
+                (new QuoteTransfer())->addItem(
+                    (new ItemTransfer())->setSku(static::SKU)->setQuantity(static::QUANTITY_ABUNDANT),
+                ),
+            ),
+        );
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CART, $cartFacadeMock);
+
+        $checkoutFacadeMock = $this->createMock(CheckoutFacadeInterface::class);
+        $checkoutFacadeMock->expects($this->never())->method('placeOrder');
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CHECKOUT, $checkoutFacadeMock);
+
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_PAYMENT, $this->createMock(PaymentFacadeInterface::class));
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_MAIL, $this->createMock(MailFacadeInterface::class));
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CUSTOMER, $this->createCustomerFacadeMockReturningBuyer());
+
+        // Act
+        $this->createCommand()->run(
+            (new StateMachineItemTransfer())->setIdentifier($scheduleTransfer->getIdRecurringScheduleOrFail()),
+        );
+
+        // Assert - only SKU-2 is reported as not purchasable; the fully reloaded SKU-1 is excluded.
+        $historyEntity = SpyRecurringScheduleHistoryQuery::create()
+            ->filterByFkRecurringSchedule($scheduleTransfer->getIdRecurringScheduleOrFail())
+            ->findOne();
+        $this->assertNotNull($historyEntity);
+        $this->assertSame(SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED, $historyEntity->getEventType());
+
+        $unavailableSkus = $this->getUnpurchasableSkusFromDetail($historyEntity->getDetail());
+        $this->assertStringContainsString(static::SKU_2, $unavailableSkus);
+        $this->assertStringNotContainsString(static::SKU, $unavailableSkus);
+    }
+
+    public function testRunCapturesMessengerMessagesEmittedDuringReloadIntoFailureDetail(): void
+    {
+        // Arrange - a message already stored in the (process-static) messenger before placement must be ignored;
+        // only messages emitted DURING the reload should surface on the failure detail.
+        $scheduleTransfer = $this->haveScheduleWithItem([RecurringScheduleTransfer::CUSTOMER_REFERENCE => static::CUSTOMER_REFERENCE]);
+
+        // Seed the stored messages directly (bypassing translation) so only the reload-time message is captured.
+        /** @var \Spryker\Zed\Messenger\Business\MessengerFacadeInterface $messengerFacade */
+        $messengerFacade = Locator::getInstance()->messenger()->facade();
+        $messengerFacade->getStoredMessages()->addErrorMessage(static::MESSENGER_KEY_STALE);
+
+        $cartFacadeMock = $this->createMock(CartFacadeInterface::class);
+        $cartFacadeMock->method('reloadItemsInQuote')->willReturnCallback(
+            function () use ($messengerFacade): QuoteResponseTransfer {
+                $messengerFacade->getStoredMessages()->addErrorMessage(static::MESSENGER_KEY_FRESH);
+
+                return (new QuoteResponseTransfer())
+                    ->setIsSuccessful(false)
+                    ->addError((new QuoteErrorTransfer())->setMessage('reload failed'));
+            },
+        );
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CART, $cartFacadeMock);
+
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_MAIL, $this->createMock(MailFacadeInterface::class));
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_CUSTOMER, $this->createCustomerFacadeMockReturningBuyer());
+
+        // Act
+        $this->createCommand()->run(
+            (new StateMachineItemTransfer())->setIdentifier($scheduleTransfer->getIdRecurringScheduleOrFail()),
+        );
+
+        // Assert - the message emitted during reload is captured, the pre-existing one is not.
+        $historyEntity = SpyRecurringScheduleHistoryQuery::create()
+            ->filterByFkRecurringSchedule($scheduleTransfer->getIdRecurringScheduleOrFail())
+            ->findOne();
+        $this->assertNotNull($historyEntity);
+        $detail = $historyEntity->getDetail();
+        $this->assertNotNull($detail);
+        $this->assertStringContainsString(static::MESSENGER_KEY_FRESH, $detail);
+        $this->assertStringNotContainsString(static::MESSENGER_KEY_STALE, $detail);
+    }
+
     protected function haveScheduleWithItem(array $scheduleOverrides = []): RecurringScheduleTransfer
     {
         $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
@@ -313,6 +412,15 @@ class PlaceOrderCommandTest extends Unit
         $this->assertNotNull($detail);
         $errors = json_decode($detail, true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame($expectedMessage, $errors[0]['message']);
+    }
+
+    protected function getUnpurchasableSkusFromDetail(?string $detail): string
+    {
+        $this->assertNotNull($detail);
+        $errors = json_decode($detail, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(static::GLOSSARY_KEY_ITEMS_NOT_PURCHASABLE, $errors[0]['message']);
+
+        return $errors[0]['parameters']['%skus%'] ?? '';
     }
 
     protected function createCommand(): PlaceOrderCommandPlugin

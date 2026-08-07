@@ -13,8 +13,13 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
+use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery;
+use Orm\Zed\StateMachine\Persistence\SpyStateMachineProcessQuery;
+use Spryker\Zed\StateMachine\Dependency\Plugin\CommandPluginInterface;
+use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\RecurringOrdersStateMachineHandlerPlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
 
 /**
@@ -28,9 +33,9 @@ use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBu
  */
 class RecurringOrdersStateMachineHandlerPluginTest extends Unit
 {
-    protected const int ID_STATE_MACHINE_ITEM_STATE = 5;
+    protected const string STATE_NAME = 'paused';
 
-    protected const int ID_STATE_MACHINE_ITEM_STATE_OTHER = 9;
+    protected const string STATE_NAME_OTHER = 'cancelled';
 
     protected OrderExperienceManagementBusinessTester $tester;
 
@@ -48,12 +53,13 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
         $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
             RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
         ]);
+        $idStateMachineItemState = $this->haveStateMachineItemState(static::STATE_NAME);
 
         // Act
         $isUpdated = $this->createPlugin()->itemStateUpdated(
             (new StateMachineItemTransfer())
                 ->setIdentifier($recurringScheduleTransfer->getIdRecurringScheduleOrFail())
-                ->setIdItemState(static::ID_STATE_MACHINE_ITEM_STATE)
+                ->setIdItemState($idStateMachineItemState)
                 ->setStateName(SharedOrderExperienceManagementConfig::STATUS_PAUSED),
         );
 
@@ -62,7 +68,7 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
             ->findOneByIdRecurringSchedule($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
 
         $this->assertTrue($isUpdated);
-        $this->assertSame(static::ID_STATE_MACHINE_ITEM_STATE, $recurringScheduleEntity->getFkStateMachineItemState());
+        $this->assertSame($idStateMachineItemState, $recurringScheduleEntity->getFkStateMachineItemState());
         $this->assertSame(SharedOrderExperienceManagementConfig::STATUS_PAUSED, $recurringScheduleEntity->getStatus());
     }
 
@@ -70,16 +76,17 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
     {
         // Arrange
         $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
-        $idMatchingSchedule = $this->haveRecurringScheduleInState($idCustomer, static::ID_STATE_MACHINE_ITEM_STATE);
-        $this->haveRecurringScheduleInState($idCustomer, static::ID_STATE_MACHINE_ITEM_STATE_OTHER);
+        $idStateMachineItemState = $this->haveStateMachineItemState(static::STATE_NAME);
+        $idMatchingSchedule = $this->haveRecurringScheduleInState($idCustomer, $idStateMachineItemState);
+        $this->haveRecurringScheduleInState($idCustomer, $this->haveStateMachineItemState(static::STATE_NAME_OTHER));
 
         // Act
-        $stateMachineItemTransfers = $this->createPlugin()->getStateMachineItemsByStateIds([static::ID_STATE_MACHINE_ITEM_STATE]);
+        $stateMachineItemTransfers = $this->createPlugin()->getStateMachineItemsByStateIds([$idStateMachineItemState]);
 
         // Assert
         $this->assertCount(1, $stateMachineItemTransfers);
         $this->assertSame($idMatchingSchedule, $stateMachineItemTransfers[0]->getIdentifier());
-        $this->assertSame(static::ID_STATE_MACHINE_ITEM_STATE, $stateMachineItemTransfers[0]->getIdItemState());
+        $this->assertSame($idStateMachineItemState, $stateMachineItemTransfers[0]->getIdItemState());
     }
 
     public function testGetStateMachineItemsByStateIdsReturnsEmptyArrayWhenNoStateIdsGiven(): void
@@ -89,6 +96,73 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
 
         // Assert
         $this->assertSame([], $stateMachineItemTransfers);
+    }
+
+    public function testGetCommandPluginsReturnsConfiguredCommandPlugins(): void
+    {
+        // Act
+        $commandPlugins = $this->createPlugin()->getCommandPlugins();
+
+        // Assert
+        $this->assertNotEmpty($commandPlugins);
+        $this->assertContainsOnlyInstancesOf(CommandPluginInterface::class, $commandPlugins);
+    }
+
+    public function testGetConditionPluginsReturnsConfiguredConditionPlugins(): void
+    {
+        // Act
+        $conditionPlugins = $this->createPlugin()->getConditionPlugins();
+
+        // Assert
+        $this->assertNotEmpty($conditionPlugins);
+        $this->assertContainsOnlyInstancesOf(ConditionPluginInterface::class, $conditionPlugins);
+    }
+
+    public function testGetStateMachineNameReturnsConfiguredName(): void
+    {
+        $this->assertSame(
+            (new OrderExperienceManagementConfig())->getStateMachineName(),
+            $this->createPlugin()->getStateMachineName(),
+        );
+    }
+
+    public function testGetActiveProcessesReturnsConfiguredProcess(): void
+    {
+        $this->assertSame(
+            [(new OrderExperienceManagementConfig())->getProcessName()],
+            $this->createPlugin()->getActiveProcesses(),
+        );
+    }
+
+    public function testGetInitialStateForProcessReturnsConfiguredInitialState(): void
+    {
+        $this->assertSame(
+            (new OrderExperienceManagementConfig())->getInitialState(),
+            $this->createPlugin()->getInitialStateForProcess((new OrderExperienceManagementConfig())->getProcessName()),
+        );
+    }
+
+    /**
+     * Returns a real `spy_state_machine_item_state` id: `spy_recurring_schedule.fk_state_machine_item_state`
+     * is a foreign key, so a fabricated id would violate the constraint.
+     */
+    protected function haveStateMachineItemState(string $stateName): int
+    {
+        $config = new OrderExperienceManagementConfig();
+
+        $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
+            ->filterByStateMachineName($config->getStateMachineName())
+            ->filterByName($config->getProcessName())
+            ->findOneOrCreate();
+        $stateMachineProcessEntity->save();
+
+        $stateMachineItemStateEntity = SpyStateMachineItemStateQuery::create()
+            ->filterByFkStateMachineProcess($stateMachineProcessEntity->getIdStateMachineProcess())
+            ->filterByName($stateName)
+            ->findOneOrCreate();
+        $stateMachineItemStateEntity->save();
+
+        return $stateMachineItemStateEntity->getIdStateMachineItemState();
     }
 
     protected function haveRecurringScheduleInState(int $idCustomer, int $idStateMachineItemState): int

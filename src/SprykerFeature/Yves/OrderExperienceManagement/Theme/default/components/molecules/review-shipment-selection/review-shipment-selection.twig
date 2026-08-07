@@ -1,0 +1,75 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-shipment-selection',
+    tag: 'review-shipment-selection',
+} %}
+
+{% define data = {
+    shipmentAddressChoices: required,
+    shipmentMethodsUrl: required,
+} %}
+
+{% block extraClass %} {{ config.jsName }}{% endblock %}
+
+{% block body %}
+    {% set addressSelectClassName = 'select select--expand ' ~ config.jsName ~ '__address-select' %}
+
+    {% block addressSelect %}
+        <div class="{{ config.name }}__address">
+            {% block addressLabel %}
+                <label class="{{ config.name }}__label">{{ 'recurring_orders.review.add_product.shipment_address' | trans }}</label>
+            {% endblock %}
+
+            {% block select %}
+                <select name="shipment_address"
+                        class="{{ addressSelectClassName }}"
+                        {{ qa('review-shipment-selection-address') }}
+                        aria-label="{{ 'recurring_orders.review.add_product.shipment_address' | trans }}">
+                    <option value="">{{ 'recurring_orders.review.add_product.shipment_address.placeholder' | trans }}</option>
+                    {% for groupGlossaryKey, addressChoices in data.shipmentAddressChoices %}
+                        <optgroup label="{{ groupGlossaryKey | trans }}">
+                            {% for shippingAddressKey, addressChoice in addressChoices %}
+                                <option value="{{ shippingAddressKey }}"
+                                        data-id-company-unit-address="{{ addressChoice.idCompanyUnitAddress }}">{{ addressChoice.label }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+            {% endblock %}
+        </div>
+    {% endblock %}
+
+    {% block methodSelect %}
+        <div class="{{ config.name }}__methods {{ config.jsName }}__methods"></div>
+    {% endblock %}
+
+    {% set methodsProviderClassName = config.jsName ~ '__methods-provider' %}
+
+    {% block ajax %}
+        {% include molecule('ajax-provider') with {
+            class: methodsProviderClassName,
+            attributes: {
+                url: data.shipmentMethodsUrl,
+                method: 'GET',
+            },
+        } only %}
+
+        {% include molecule('ajax-renderer') with {
+            attributes: {
+                'parent-class-name': config.jsName,
+                'provider-class-name': methodsProviderClassName,
+                'target-class-name': config.jsName ~ '__methods',
+                'mount-after-render': true,
+            },
+        } only %}
+
+        {% include molecule('ajax-loader') with {
+            modifiers: ['big', 'dynamic'],
+            attributes: {
+                'parent-class-name': config.jsName,
+                'provider-class-name': methodsProviderClassName,
+            },
+        } only %}
+    {% endblock %}
+{% endblock %}

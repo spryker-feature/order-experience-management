@@ -10,34 +10,42 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule;
 
 use Generated\Shared\Transfer\CustomerTransfer;
+use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
+use Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer;
+use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\AccessibleRecurringScheduleReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReaderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
 class ScheduleEventTrigger implements ScheduleEventTriggerInterface
 {
     public function __construct(
-        protected OrderExperienceManagementRepositoryInterface $subscriptionRepository,
+        protected OrderExperienceManagementRepositoryInterface $repository,
         protected StateMachineFacadeInterface $stateMachineFacade,
-        protected OrderExperienceManagementConfig $subscriptionConfig,
-        protected AccessibleRecurringScheduleReaderInterface $accessibleRecurringScheduleReader,
+        protected OrderExperienceManagementConfig $config,
+        protected RecurringScheduleReaderInterface $recurringScheduleReader,
     ) {
     }
 
     public function triggerEvent(string $uuid, string $event, int $idCustomer, ?CustomerTransfer $customerTransfer = null): bool
     {
-        $scheduleTransfer = $this->accessibleRecurringScheduleReader->findAccessibleScheduleByUuid($uuid, $idCustomer, $customerTransfer);
+        $recurringScheduleTransfer = $this->recurringScheduleReader->findRecurringScheduleByUuid($uuid, $idCustomer, $customerTransfer);
 
-        if ($scheduleTransfer === null) {
+        if ($recurringScheduleTransfer === null) {
             return false;
         }
 
-        $idRecurringSchedule = $scheduleTransfer->getIdRecurringScheduleOrFail();
-        $idSmState = $this->subscriptionRepository->findCurrentSmStateIdForSchedule(
+        return $this->triggerEventForRecurringSchedule($recurringScheduleTransfer, $event);
+    }
+
+    public function triggerEventForRecurringSchedule(RecurringScheduleTransfer $recurringScheduleTransfer, string $event): bool
+    {
+        $idRecurringSchedule = $recurringScheduleTransfer->getIdRecurringScheduleOrFail();
+        $idSmState = $this->repository->findCurrentSmStateIdForSchedule(
             $idRecurringSchedule,
-            $this->subscriptionConfig->getStateMachineName(),
+            $this->config->getStateMachineName(),
         );
 
         if ($idSmState === null) {
@@ -45,6 +53,19 @@ class ScheduleEventTrigger implements ScheduleEventTriggerInterface
         }
 
         return $this->dispatchEvent($event, $idRecurringSchedule, $idSmState);
+    }
+
+    public function triggerManualEvent(
+        RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,
+    ): RecurringScheduleEventResponseTransfer {
+        $isSuccessful = $this->triggerEvent(
+            $recurringScheduleEventRequestTransfer->getUuidOrFail(),
+            $recurringScheduleEventRequestTransfer->getEventOrFail(),
+            $recurringScheduleEventRequestTransfer->getIdCustomerOrFail(),
+            $recurringScheduleEventRequestTransfer->getCustomer(),
+        );
+
+        return (new RecurringScheduleEventResponseTransfer())->setIsSuccessful($isSuccessful);
     }
 
     protected function dispatchEvent(string $event, int $idRecurringSchedule, int $idSmState): bool

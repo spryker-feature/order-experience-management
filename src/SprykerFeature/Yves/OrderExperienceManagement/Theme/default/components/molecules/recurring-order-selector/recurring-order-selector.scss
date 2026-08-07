@@ -1,9 +1,9 @@
 @use 'sass:meta';
 
-@mixin subscription-recurring-order-selector($name: '.recurring-order-selector') {
+@mixin order-experience-management-recurring-order-selector($name: '.recurring-order-selector') {
     #{$name} {
-        @if meta.mixin-exists(subscription-recurring-order-selector-base-hook) {
-            @include subscription-recurring-order-selector-base-hook;
+        @if meta.mixin-exists(order-experience-management-recurring-order-selector-base-hook) {
+            @include order-experience-management-recurring-order-selector-base-hook;
         }
 
         &__heading {

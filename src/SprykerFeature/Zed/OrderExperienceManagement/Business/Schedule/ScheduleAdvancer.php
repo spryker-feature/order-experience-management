@@ -19,7 +19,7 @@ class ScheduleAdvancer implements ScheduleAdvancerInterface
     protected const string DATE_FORMAT = 'Y-m-d';
 
     public function __construct(
-        protected OrderExperienceManagementRepositoryInterface $subscriptionRepository,
+        protected OrderExperienceManagementRepositoryInterface $repository,
         protected OrderExperienceManagementEntityManagerInterface $entityManager,
         protected CadenceResolverInterface $cadenceResolver,
     ) {
@@ -27,7 +27,7 @@ class ScheduleAdvancer implements ScheduleAdvancerInterface
 
     public function advance(int $idRecurringSchedule): void
     {
-        $scheduleTransfer = $this->subscriptionRepository->findRecurringScheduleById($idRecurringSchedule);
+        $scheduleTransfer = $this->repository->findRecurringScheduleById($idRecurringSchedule);
 
         if ($scheduleTransfer === null) {
             return;
@@ -44,5 +44,7 @@ class ScheduleAdvancer implements ScheduleAdvancerInterface
         );
 
         $this->entityManager->updateScheduleNextTriggerDate($idRecurringSchedule, $nextTriggerDate->format(static::DATE_FORMAT));
+        $this->entityManager->updateNextDeliveryQuantitiesToNull($idRecurringSchedule);
+        $this->entityManager->deleteRecurringScheduleItemsWithZeroQuantity($idRecurringSchedule);
     }
 }

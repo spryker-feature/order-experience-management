@@ -1,0 +1,21 @@
+{% set shipmentMethods = _view.shipmentMethods ?? [] %}
+
+<div class="spacing-bottom">
+    {% if shipmentMethods | length %}
+        <label class="label">{{ 'recurring_orders.review.add_product.shipment_method' | trans }}</label>
+        <select name="shipment_method"
+                class="select select--expand js-review-add-product__shipment-method"
+                data-qa="review-shipment-selection-method"
+                aria-label="{{ 'recurring_orders.review.add_product.shipment_method' | trans }}">
+            <option value="">{{ 'recurring_orders.review.add_product.shipment_method.placeholder' | trans }}</option>
+            {% for shipmentMethod in shipmentMethods %}
+                <option value="{{ shipmentMethod.idShipmentMethod }}">
+                    {{- shipmentMethod.name -}}
+                    {%- if shipmentMethod.storeCurrencyPrice is not null %} — {{ shipmentMethod.storeCurrencyPrice | money(true, shipmentMethod.currencyIsoCode) }}{% endif -%}
+                </option>
+            {% endfor %}
+        </select>
+    {% else %}
+        <p class="review-add-product__shipment-empty text-muted">{{ 'recurring_orders.review.add_product.shipment_method.none' | trans }}</p>
+    {% endif %}
+</div>

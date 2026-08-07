@@ -13,19 +13,21 @@
 
 {% block extraClass %} box {% endblock %}
 
+{% set gridClassName = "grid grid--justify grid--middle" %}
+{% set dataColumnClassName = "col col--expande" %}
+{% set actionsColumnClassName = "col" %}
 {% block body %}
-    <div class="grid grid--justify grid--middle">
+    <div class="{{ gridClassName }}">
         {% block data %}
-            <div class="col col--expand">
-                <small class="text-muted">
-                    {{ 'recurring_orders.review.footer.summary' | trans({
-                        '%removed%': data.review.removedItemCount,
-                    }) }}
-                </small>
+            <div class="{{ dataColumnClassName }}">
+                <small class="text-muted js-review-change-summary__removed"
+                    data-count-template="{{ 'recurring_orders.review.footer.summary' | trans | replace({'%removed%': '%count%'}) }}"
+                    data-qa="recurring-order-review-footer-summary"></small>
             </div>
         {% endblock %}
+
         {% block actions %}
-            <div class="col">
+            <div class="{{ actionsColumnClassName }}">
                 {% set backButtonClassName = 'button button--hollow' %}
                 {% set acceptButtonClassName = 'button spacing-left' %}
                 {% block backButton %}

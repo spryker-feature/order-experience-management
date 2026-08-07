@@ -11,7 +11,6 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
 use Generated\Shared\Transfer\RecurringOrderQuoteUpdateResponseTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
-use Spryker\Yves\Kernel\Controller\AbstractController;
 use Spryker\Yves\Kernel\View\View;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
@@ -24,18 +23,8 @@ use Symfony\Component\Security\Csrf\CsrfToken;
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementFactory getFactory()
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
  */
-class RecurringOrderController extends AbstractController
+class RecurringOrderController extends AbstractRecurringOrderFormController
 {
-    protected const string FORM_TEMPLATE = '@OrderExperienceManagement/views/recurring-order-form/recurring-order-form.twig';
-
-    protected const string CONFIRMED_TEMPLATE = '@OrderExperienceManagement/views/recurring-order-confirmed/recurring-order-confirmed.twig';
-
-    protected const string VIEW_PARAM_FORM = 'form';
-
-    protected const string VIEW_PARAM_RECURRING_ORDER_SETTINGS = 'recurringOrderSettings';
-
-    protected const string VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS = 'cadenceTypeEveryNWeeks';
-
     protected const string CSRF_TOKEN_ID_CLEAR = 'recurring-order-clear';
 
     protected const string REQUEST_PARAM_CSRF_TOKEN = '_token';
@@ -93,30 +82,6 @@ class RecurringOrderController extends AbstractController
         return $this->getFactory()
             ->createRecurringOrderQuoteUpdater()
             ->updateRecurringOrderSettingsOnQuote($idQuote, $recurringOrderSettingsTransfer);
-    }
-
-    protected function createFormView(FormInterface $form): View
-    {
-        return $this->view(
-            [
-                static::VIEW_PARAM_FORM => $form->createView(),
-                static::VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS => $this->getFactory()->getConfig()->getCadenceTypeEveryNWeeks(),
-            ],
-            [],
-            static::FORM_TEMPLATE,
-        );
-    }
-
-    protected function createConfirmedView(RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer): View
-    {
-        return $this->view(
-            [
-                static::VIEW_PARAM_RECURRING_ORDER_SETTINGS => $recurringOrderSettingsTransfer,
-                static::VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS => $this->getFactory()->getConfig()->getCadenceTypeEveryNWeeks(),
-            ],
-            [],
-            static::CONFIRMED_TEMPLATE,
-        );
     }
 
     protected function addResponseErrorsToForm(FormInterface $form, RecurringOrderQuoteUpdateResponseTransfer $responseTransfer): void

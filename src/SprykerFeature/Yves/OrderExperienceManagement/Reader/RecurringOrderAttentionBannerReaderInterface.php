@@ -7,12 +7,16 @@
 
 namespace SprykerFeature\Yves\OrderExperienceManagement\Reader;
 
+use Generated\Shared\Transfer\RecurringScheduleConditionsTransfer;
+
 interface RecurringOrderAttentionBannerReaderInterface
 {
+    public function buildStatusCountConditions(int $idCustomer): RecurringScheduleConditionsTransfer;
+
     /**
-     * @api
+     * @param iterable<\Generated\Shared\Transfer\RecurringScheduleStatusCountTransfer> $recurringScheduleStatusCountTransfers
      *
      * @return array<string, int>
      */
-    public function getAttentionStatusCounts(int $idCustomer): array;
+    public function getAttentionStatusCounts(iterable $recurringScheduleStatusCountTransfers): array;
 }

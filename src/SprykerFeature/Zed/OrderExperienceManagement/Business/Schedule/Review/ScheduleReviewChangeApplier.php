@@ -11,109 +11,112 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review;
 
 use Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer;
 use Generated\Shared\Transfer\RecurringScheduleReviewResponseTransfer;
-use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
-use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\AcceptedItemReviewMapperInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\Addition\ScheduleReviewItemAdderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Scope\ScheduleReviewScopeStrategyInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Scope\ScheduleReviewScopeStrategyResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
 class ScheduleReviewChangeApplier implements ScheduleReviewChangeApplierInterface
 {
-    use TransactionTrait;
-
     /**
      * @see \Spryker\Shared\Price\PriceConfig::PRICE_MODE_NET
      */
     protected const string PRICE_MODE_NET = 'NET_MODE';
 
-    public function __construct(protected readonly OrderExperienceManagementEntityManagerInterface $subscriptionEntityManager)
-    {
-    }
-
-    public function applyApprovedChanges(
-        RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
-        array $acceptedItemReviewTransfers,
-    ): void {
-        $this->getTransactionHandler()->handleTransaction(function () use (
-            $recurringScheduleReviewResponseTransfer,
-            $acceptedItemReviewTransfers,
-        ): void {
-            $this->executeApplyApprovedChangesTransaction($recurringScheduleReviewResponseTransfer, $acceptedItemReviewTransfers);
-        });
+    public function __construct(
+        protected readonly ScheduleReviewScopeStrategyResolverInterface $scheduleReviewScopeStrategyResolver,
+        protected readonly ScheduleReviewItemAdderInterface $scheduleReviewItemAdder,
+        protected readonly AcceptedItemReviewMapperInterface $acceptedItemReviewMapper,
+        protected readonly OrderExperienceManagementRepositoryInterface $repository,
+    ) {
     }
 
     /**
      * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
      */
-    protected function executeApplyApprovedChangesTransaction(
+    public function applyApprovedChanges(
         RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
         array $acceptedItemReviewTransfers,
+        ?string $scope,
     ): void {
         $recurringScheduleTransfer = $recurringScheduleReviewResponseTransfer->getRecurringScheduleOrFail();
         $idRecurringSchedule = $recurringScheduleTransfer->getIdRecurringScheduleOrFail();
         $isNetMode = $recurringScheduleTransfer->getPriceMode() === static::PRICE_MODE_NET;
+        $scheduleReviewScopeStrategy = $this->scheduleReviewScopeStrategyResolver->resolve($scope);
 
+        $this->removeUnpurchasableFlaggedItems($recurringScheduleReviewResponseTransfer, $idRecurringSchedule, $scheduleReviewScopeStrategy);
+        $this->removeAcceptedItems($acceptedItemReviewTransfers, $idRecurringSchedule, $scheduleReviewScopeStrategy);
+        $this->applyAcceptedItems($acceptedItemReviewTransfers, $idRecurringSchedule, $isNetMode, $scheduleReviewScopeStrategy);
+        $this->scheduleReviewItemAdder->addItems(
+            $recurringScheduleReviewResponseTransfer->getResolvedAddedItems(),
+            $recurringScheduleTransfer,
+            $scheduleReviewScopeStrategy,
+        );
+    }
+
+    protected function removeUnpurchasableFlaggedItems(
+        RecurringScheduleReviewResponseTransfer $recurringScheduleReviewResponseTransfer,
+        int $idRecurringSchedule,
+        ScheduleReviewScopeStrategyInterface $scheduleReviewScopeStrategy,
+    ): void {
         foreach ($recurringScheduleReviewResponseTransfer->getFlaggedItems() as $recurringScheduleItemReviewTransfer) {
             if ($recurringScheduleItemReviewTransfer->getIsPurchasable() === false) {
-                $this->removeItem($recurringScheduleItemReviewTransfer, $idRecurringSchedule);
+                $scheduleReviewScopeStrategy->applyRemoval($recurringScheduleItemReviewTransfer, $idRecurringSchedule);
             }
         }
+    }
 
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
+     */
+    protected function removeAcceptedItems(
+        array $acceptedItemReviewTransfers,
+        int $idRecurringSchedule,
+        ScheduleReviewScopeStrategyInterface $scheduleReviewScopeStrategy,
+    ): void {
         foreach ($acceptedItemReviewTransfers as $recurringScheduleItemReviewTransfer) {
-            $this->persistAcceptedPrice($recurringScheduleItemReviewTransfer, $idRecurringSchedule, $isNetMode);
+            if ($recurringScheduleItemReviewTransfer->getIsRemoved() === true) {
+                $scheduleReviewScopeStrategy->applyRemoval($recurringScheduleItemReviewTransfer, $idRecurringSchedule);
+            }
         }
     }
 
-    protected function removeItem(RecurringScheduleItemReviewTransfer $recurringScheduleItemReviewTransfer, int $idRecurringSchedule): void
-    {
-        $recurringScheduleItemTransfer = $recurringScheduleItemReviewTransfer->getRecurringScheduleItemOrFail();
-        $bundleItemIdentifier = $recurringScheduleItemTransfer->getBundleItemIdentifier();
-
-        if ($bundleItemIdentifier !== null) {
-            $this->subscriptionEntityManager->deleteRecurringScheduleItemsByBundleItemIdentifier($idRecurringSchedule, $bundleItemIdentifier);
-
-            return;
-        }
-
-        $configuredBundleGroupKey = $recurringScheduleItemTransfer->getConfiguredBundleGroupKey();
-
-        if ($configuredBundleGroupKey !== null) {
-            $this->subscriptionEntityManager->deleteRecurringScheduleItemsByConfiguredBundleGroupKey($idRecurringSchedule, $configuredBundleGroupKey);
-
-            return;
-        }
-
-        $groupKey = $recurringScheduleItemTransfer->getGroupKey();
-
-        if ($groupKey !== null) {
-            $this->subscriptionEntityManager->deleteRecurringScheduleItemsByGroupKey($idRecurringSchedule, $groupKey);
-
-            return;
-        }
-
-        $idRecurringScheduleItem = $recurringScheduleItemTransfer->getIdRecurringScheduleItem();
-
-        if ($idRecurringScheduleItem === null) {
-            return;
-        }
-
-        $this->subscriptionEntityManager->deleteRecurringScheduleItem($idRecurringScheduleItem);
-    }
-
-    protected function persistAcceptedPrice(
-        RecurringScheduleItemReviewTransfer $recurringScheduleItemReviewTransfer,
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
+     */
+    protected function applyAcceptedItems(
+        array $acceptedItemReviewTransfers,
         int $idRecurringSchedule,
         bool $isNetMode,
+        ScheduleReviewScopeStrategyInterface $scheduleReviewScopeStrategy,
     ): void {
-        $groupKey = $recurringScheduleItemReviewTransfer->getRecurringScheduleItemOrFail()->getGroupKey();
-        $acceptedPrice = $recurringScheduleItemReviewTransfer->getCurrentPrice();
+        $retainedItemReviewTransfers = $this->filterRetainedItemReviews($acceptedItemReviewTransfers);
 
-        if ($groupKey === null || $acceptedPrice === null) {
+        if ($retainedItemReviewTransfers === []) {
             return;
         }
 
-        $this->subscriptionEntityManager->updateReferencePricesByGroupKey(
-            $idRecurringSchedule,
-            $groupKey,
-            $isNetMode ? $acceptedPrice : null,
-            $isNetMode ? null : $acceptedPrice,
+        $groupKeysByIdRecurringScheduleItem = $this->repository->getRecurringScheduleItemGroupKeysByScheduleId($idRecurringSchedule);
+
+        $scheduleReviewScopeStrategy->applyAcceptedItems(
+            $this->acceptedItemReviewMapper->mapAcceptedPricesByGroupKey($retainedItemReviewTransfers),
+            $this->acceptedItemReviewMapper->mapAcceptedQuantitiesByGroupKey($retainedItemReviewTransfers),
+            $groupKeysByIdRecurringScheduleItem,
+            $isNetMode,
         );
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $acceptedItemReviewTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer>
+     */
+    protected function filterRetainedItemReviews(array $acceptedItemReviewTransfers): array
+    {
+        return array_values(array_filter(
+            $acceptedItemReviewTransfers,
+            static fn (RecurringScheduleItemReviewTransfer $recurringScheduleItemReviewTransfer): bool => $recurringScheduleItemReviewTransfer->getIsRemoved() !== true,
+        ));
     }
 }

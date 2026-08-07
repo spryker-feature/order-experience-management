@@ -30,6 +30,81 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Returns the statuses selectable in the Back Office Recurring Order Schedules filter, as [glossary key => status value].
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getBackOfficeFilterStatuses(): array
+    {
+        return [
+            'Active' => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+            'Paused' => SharedOrderExperienceManagementConfig::STATUS_PAUSED,
+            'Review required' => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
+            'Cancelled' => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
+            'Failed' => SharedOrderExperienceManagementConfig::STATUS_FAILED,
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the cadence types selectable in the Back Office Recurring Order Schedules filter, as [glossary key => cadence value].
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getBackOfficeFilterCadenceTypes(): array
+    {
+        return [
+            'Weekly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+            'Bi-weekly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BI_WEEKLY,
+            'Monthly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY,
+            'Every N weeks' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS,
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the relative date modifier applied to the reference date to build the forecast period's lower bound.
+     * - Shared by both forecast inputs: schedules still due to run and orders already placed.
+     * - `FORECAST_PERIOD_FROM_MONTH_START` covers the whole calendar month.
+     * - `FORECAST_PERIOD_FROM_TODAY` covers only the remainder of the month.
+     *
+     * @api
+     */
+    public function getForecastPeriodFrom(): string
+    {
+        return static::FORECAST_PERIOD_FROM_MONTH_START;
+    }
+
+    /**
+     * Specification:
+     * - Returns the relative date modifier applied to the reference date to build the forecast period's upper bound.
+     * - Shared by both forecast inputs: schedules still due to run and orders already placed.
+     * - Defaults to the last day of the current month, so the forecast covers the current calendar month.
+     *
+     * @api
+     */
+    public function getForecastPeriodTo(): string
+    {
+        return static::FORECAST_PERIOD_TO_MONTH_END;
+    }
+
+    /**
+     * Specification:
+     * - Returns the key under which the monthly forecast snapshot is stored and read.
+     *
+     * @api
+     */
+    public function getMonthlyForecastKey(): string
+    {
+        return static::FORECAST_KEY_MONTHLY;
+    }
+
+    /**
+     * Specification:
      * - Name of the StateMachine process definition file (without .xml extension).
      *
      * @api
@@ -58,6 +133,47 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
      * @var int
      */
     public const int DEFAULT_NOTIFICATION_WINDOW_HOURS = 48;
+
+    /**
+     * Specification:
+     * - Forecast period origin (relative date modifier): cover the whole current calendar month.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string FORECAST_PERIOD_FROM_MONTH_START = 'first day of this month';
+
+    /**
+     * Specification:
+     * - Forecast period origin (relative date modifier): cover only the remainder of the current month.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string FORECAST_PERIOD_FROM_TODAY = 'today';
+
+    /**
+     * Specification:
+     * - Forecast period boundary (relative date modifier): last date included in the forecast window.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string FORECAST_PERIOD_TO_MONTH_END = 'last day of this month';
+
+    /**
+     * Specification:
+     * - Identifies the monthly forecast snapshot row persisted in spy_recurring_schedule_forecast.
+     * - The scheduled refresh writes to this key; the Back Office reads from it.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string FORECAST_KEY_MONTHLY = 'monthly';
 
     /**
      * @uses \Spryker\Zed\Availability\AvailabilityConfig::ERROR_TYPE_AVAILABILITY
@@ -229,8 +345,10 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getReviewReasonGroupMap(): array
     {
         return [
-            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE => [
+            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_OUT_OF_STOCK => [
                 static::CHECKOUT_ERROR_TYPE_AVAILABILITY,
+            ],
+            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE => [
                 static::CHECKOUT_ERROR_TYPE_MERCHANT,
                 static::CHECKOUT_ERROR_TYPE_MERCHANT_PRODUCT_OPTION,
                 static::CHECKOUT_ERROR_TYPE_MERCHANT_SWITCHER,
@@ -250,9 +368,10 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Returns a list of checkout error types that mark a recurring schedule item as non-purchasable.
-     * - Items whose reviewReasons contain any of the returned types will have isPurchasable set to false.
-     * - Delegates to getReviewReasonGroupMap() so the error type definitions are managed in one place.
+     * - Returns the review reason groups that mark a recurring schedule item as non-purchasable.
+     * - Items whose reviewReasons contain any of the returned groups will have isPurchasable set to false.
+     * - Delegates to getReviewReasonGroupMap() so the error type definitions are managed in one place: every
+     *   group in that map is derived from a checkout error that already blocks placement.
      *
      * @api
      *
@@ -260,9 +379,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
      */
     public function getNonPurchasableReviewReasonGroups(): array
     {
-        return [
-            SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE,
-        ];
+        return array_keys($this->getReviewReasonGroupMap());
     }
 
     /**
@@ -274,5 +391,89 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getDefaultReviewReasonGroup(): string
     {
         return SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_UNAVAILABLE;
+    }
+
+    /**
+     * Specification:
+     * - Maps each recurring-schedule state machine state name to the public schedule status it represents.
+     * - State names not present in the map resolve to `null` (see `SmStateStatusResolver`).
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getSmStateNameToStatusMap(): array
+    {
+        return [
+            SharedOrderExperienceManagementConfig::STATUS_ACTIVE => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+            SharedOrderExperienceManagementConfig::STATUS_PAUSED => SharedOrderExperienceManagementConfig::STATUS_PAUSED,
+            SharedOrderExperienceManagementConfig::STATUS_CANCELLED => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
+            SharedOrderExperienceManagementConfig::STATUS_FAILED => SharedOrderExperienceManagementConfig::STATUS_FAILED,
+            SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
+            static::INITIAL_STATE => SharedOrderExperienceManagementConfig::STATUS_DRAFT,
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the delivery-like shipment type keys accepted for products added on the Review Required page.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getSupportedAddedItemShipmentTypeKeys(): array
+    {
+        return $this->getSharedConfig()->getSupportedAddedItemShipmentTypeKeys();
+    }
+
+    /**
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getSubstitutableReviewReasons(): array
+    {
+        return $this->getSharedConfig()->getSubstitutableReviewReasons();
+    }
+
+    /**
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getPriceChangeReviewReasons(): array
+    {
+        return $this->getSharedConfig()->getPriceChangeReviewReasons();
+    }
+
+    /**
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getUnavailableReviewReasons(): array
+    {
+        return $this->getSharedConfig()->getUnavailableReviewReasons();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isMeasurementUnitProductAdditionRestricted(): bool
+    {
+        return $this->getSharedConfig()->isMeasurementUnitProductAdditionRestricted();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isPackagingUnitProductAdditionRestricted(): bool
+    {
+        return $this->getSharedConfig()->isPackagingUnitProductAdditionRestricted();
     }
 }

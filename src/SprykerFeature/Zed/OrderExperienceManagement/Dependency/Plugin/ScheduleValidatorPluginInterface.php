@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 
@@ -16,7 +17,9 @@ interface ScheduleValidatorPluginInterface
 {
     /**
      * Specification:
-     * - Validates one aspect of the given recurring schedule.
+     * - Validates one aspect of the given recurring schedule and its placeable quote.
+     * - The placeable quote is built once from the schedule's stored quote data and shared across all schedule validator plugins; plugins must not mutate it.
+     * - Plugins are not invoked for schedules without stored quote data.
      * - Adds item reviews and blocking errors to the provided result transfer when issues are found.
      * - Sets isValid=false on the result transfer when this aspect fails.
      * - Returns the result transfer unchanged when this aspect passes.
@@ -25,6 +28,7 @@ interface ScheduleValidatorPluginInterface
      */
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer;
 }

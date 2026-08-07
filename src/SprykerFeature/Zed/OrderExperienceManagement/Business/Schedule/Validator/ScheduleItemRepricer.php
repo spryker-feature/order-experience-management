@@ -24,68 +24,64 @@ class ScheduleItemRepricer implements ScheduleItemRepricerInterface
     ) {
     }
 
-    public function repriceItems(QuoteTransfer $quoteTransfer): CartChangeTransfer
+    public function repriceQuoteItems(QuoteTransfer $quoteTransfer): CartChangeTransfer
     {
-        // important: deep copy, not a clone $quoteTransfer
-        $updatedQuoteTransfer = (new QuoteTransfer())->fromArray($quoteTransfer->toArray(), true);
+        $itemTransfers = $this->createRepricedItems($quoteTransfer->getItems());
 
-        foreach ($updatedQuoteTransfer->getItems() as $itemTransfer) {
-            $this->clearItemPrices($itemTransfer);
+        foreach ($this->createRepricedItems($quoteTransfer->getBundleItems()) as $repricedBundleItemTransfer) {
+            $itemTransfers->append($repricedBundleItemTransfer);
         }
 
-        // Use a context quote without items so volume-price quantity counting does not double-count the items
-        $contextQuoteTransfer = (new QuoteTransfer())->fromArray($updatedQuoteTransfer->toArray(), true);
-        $contextQuoteTransfer->setItems(new ArrayObject());
+        if ($itemTransfers->count() === 0) {
+            return new CartChangeTransfer();
+        }
 
-        $cartChangeTransfer = (new CartChangeTransfer())
-            ->setQuote($contextQuoteTransfer)
-            ->setItems($updatedQuoteTransfer->getItems());
+        return $this->priceCartChange($this->createContextQuoteWithoutItems($quoteTransfer), $itemTransfers);
+    }
 
-        /** @var \Generated\Shared\Transfer\CartChangeTransfer $cartChangeTransfer */
-        $cartChangeTransfer = $this->priceCartConnectorFacade->addPriceToItems($cartChangeTransfer, null, true);
-        $cartChangeTransfer = $this->applyAmountAwareUnitPrice($cartChangeTransfer);
+    protected function createContextQuoteWithoutItems(QuoteTransfer $quoteTransfer): QuoteTransfer
+    {
+        $itemTransfers = $quoteTransfer->getItems();
+        $quoteTransfer->setItems(new ArrayObject());
 
-        return $cartChangeTransfer;
+        $contextQuoteTransfer = (new QuoteTransfer())->fromArray($quoteTransfer->toArray(), true);
+
+        $quoteTransfer->setItems($itemTransfers);
+
+        return $contextQuoteTransfer;
     }
 
     /**
-     * @return array<string, \Generated\Shared\Transfer\ItemTransfer>
+     * @param \ArrayObject<int, \Generated\Shared\Transfer\ItemTransfer> $itemTransfers
      */
-    public function repriceBundleItems(QuoteTransfer $quoteTransfer): array
+    protected function priceCartChange(QuoteTransfer $quoteTransfer, ArrayObject $itemTransfers): CartChangeTransfer
     {
-        $bundleItemTransfers = new ArrayObject();
-
-        foreach ($quoteTransfer->getBundleItems() as $bundleItemTransfer) {
-            $repricedBundleItemTransfer = (new ItemTransfer())->fromArray($bundleItemTransfer->toArray(), true);
-            $this->clearItemPrices($repricedBundleItemTransfer);
-            $bundleItemTransfers->append($repricedBundleItemTransfer);
-        }
-
-        if ($bundleItemTransfers->count() === 0) {
-            return [];
-        }
-
         $cartChangeTransfer = (new CartChangeTransfer())
             ->setQuote($quoteTransfer)
-            ->setItems($bundleItemTransfers);
+            ->setItems($itemTransfers);
 
         /** @var \Generated\Shared\Transfer\CartChangeTransfer $cartChangeTransfer */
         $cartChangeTransfer = $this->priceCartConnectorFacade->addPriceToItems($cartChangeTransfer, null, true);
-        $cartChangeTransfer = $this->applyAmountAwareUnitPrice($cartChangeTransfer);
 
-        $repricedBundleItemsByBundleIdentifier = [];
+        return $this->applyAmountAwareUnitPrice($cartChangeTransfer);
+    }
 
-        foreach ($cartChangeTransfer->getItems() as $repricedBundleItemTransfer) {
-            $bundleItemIdentifier = $repricedBundleItemTransfer->getBundleItemIdentifier();
+    /**
+     * @param iterable<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
+     *
+     * @return \ArrayObject<int, \Generated\Shared\Transfer\ItemTransfer>
+     */
+    protected function createRepricedItems(iterable $itemTransfers): ArrayObject
+    {
+        $repricedItemTransfers = new ArrayObject();
 
-            if ($bundleItemIdentifier === null) {
-                continue;
-            }
-
-            $repricedBundleItemsByBundleIdentifier[$bundleItemIdentifier] = $repricedBundleItemTransfer;
+        foreach ($itemTransfers as $itemTransfer) {
+            $repricedItemTransfer = (new ItemTransfer())->fromArray($itemTransfer->toArray(), true);
+            $this->clearItemPrices($repricedItemTransfer);
+            $repricedItemTransfers->append($repricedItemTransfer);
         }
 
-        return $repricedBundleItemsByBundleIdentifier;
+        return $repricedItemTransfers;
     }
 
     protected function applyAmountAwareUnitPrice(CartChangeTransfer $cartChangeTransfer): CartChangeTransfer

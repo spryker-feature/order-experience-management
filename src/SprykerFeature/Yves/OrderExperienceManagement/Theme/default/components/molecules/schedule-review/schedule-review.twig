@@ -2,6 +2,7 @@
 
 {% define config = {
     name: 'schedule-review',
+    tag: 'schedule-review',
 }%}
 
 {% define data = {
@@ -9,19 +10,31 @@
     schedule: required,
     reviewReasonLabelMap: [],
     reviewReasonBadgeMap: [],
+    priceChangeReviewReasons: [],
+    itemFlagLabelMap: [],
+    itemFlagBadgeMap: [],
+    shipmentAddressChoices: [],
     approveForm: required,
+    scopeChoices: [],
     title: '',
     activePage: '',
 }%}
 
+{% set confirmModalTriggerClassName = 'js-approve-review-button' %}
+
+{% define attributes = {
+    'confirm-modal-trigger-class-name': confirmModalTriggerClassName,
+} %}
+
 {% block extraClass %} box {% endblock %}
 
-{% set confirmModalTriggerClassName = 'js-approve-review-button' %}
+{% set reviewFormId = 'recurring-order-review-form' %}
 
 {% block body %}
     {% set reviewHeaderClassName = 'spacing-bottom' %}
     {% set reviewHeaderTitleClassName = 'title--h2' %}
     {% set reviewHeaderTextClassName = 'text-muted spacing--reset' %}
+
     {% block reviewHeader %}
         <div class="{{ reviewHeaderClassName }}">
             <h2 class="{{ reviewHeaderTitleClassName }}">
@@ -52,24 +65,82 @@
         {% endif %}
     {% endblock %}
 
-    {% block flaggedItems %}
-        {% include molecule('review-flagged-items', 'OrderExperienceManagement') with {
-            data: {
-                flaggedItems: data.review.flaggedItems,
-                reviewReasonLabelMap: data.reviewReasonLabelMap,
-                reviewReasonBadgeMap: data.reviewReasonBadgeMap,
-                currencyIsoCode: data.schedule.currencyIsoCode,
-            },
-        } only %}
-    {% endblock %}
+    {% set formByGroupKey = {} %}
+    {% for acceptedItemForm in data.approveForm.acceptedItems %}
+        {% set formByGroupKey = formByGroupKey | merge({ ('gk_' ~ acceptedItemForm.groupKey.vars.value): acceptedItemForm }) %}
+    {% endfor %}
 
-    {% block unchangedItems %}
-        {% include molecule('review-unchanged-items', 'OrderExperienceManagement') with {
-            data: {
-                unchangedItems: data.review.unchangedItems,
-                currencyIsoCode: data.schedule.currencyIsoCode,
-            },
-        } only %}
+    {% set addedItemKeys = [] %}
+    {% for addedItemForm in data.approveForm.addedItems %}
+        {% set addedItemKeys = addedItemKeys | merge([addedItemForm.vars.name]) %}
+    {% endfor %}
+
+    {{ form_start(data.approveForm, {action: url('recurring-orders/review-required', {uuid: data.schedule.uuid}), attr: {id: reviewFormId, class: 'form ' ~ config.jsName ~ '__form'}}) }}
+        {{ form_widget(data.approveForm.uuid) }}
+
+        {% block costCenterBudget %}
+            {% include molecule('recurring-order-cost-center-budget', 'PurchasingControl') with {
+                data: {
+                    approveForm: data.approveForm,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block flaggedItems %}
+            {% include molecule('review-flagged-items', 'OrderExperienceManagement') with {
+                data: {
+                    flaggedItems: data.review.flaggedItems,
+                    reviewReasonLabelMap: data.reviewReasonLabelMap,
+                    reviewReasonBadgeMap: data.reviewReasonBadgeMap,
+                    priceChangeReviewReasons: data.priceChangeReviewReasons,
+                    itemFlagLabelMap: data.itemFlagLabelMap,
+                    itemFlagBadgeMap: data.itemFlagBadgeMap,
+                    currencyIsoCode: data.schedule.currencyIsoCode,
+                    priceMode: data.schedule.priceMode,
+                    formByGroupKey: formByGroupKey,
+                    addedItemKeys: addedItemKeys,
+                    shipmentAddressChoices: data.shipmentAddressChoices,
+                    shipmentMethodsUrl: url('recurring-orders/shipment-methods', {uuid: data.schedule.uuid}),
+                    priceUrl: url('recurring-orders/product-price', {uuid: data.schedule.uuid}),
+                },
+            } only %}
+        {% endblock %}
+
+        {% block unchangedItems %}
+            {% include molecule('review-unchanged-items', 'OrderExperienceManagement') with {
+                data: {
+                    unchangedItems: data.review.unchangedItems,
+                    itemFlagLabelMap: data.itemFlagLabelMap,
+                    itemFlagBadgeMap: data.itemFlagBadgeMap,
+                    currencyIsoCode: data.schedule.currencyIsoCode,
+                    priceMode: data.schedule.priceMode,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block addProduct %}
+            {% include molecule('review-add-product', 'OrderExperienceManagement') with {
+                data: {
+                    schedule: data.schedule,
+                    shipmentAddressChoices: data.shipmentAddressChoices,
+                    approveForm: data.approveForm,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block scope %}
+            <div data-qa="recurring-order-review-scope">
+                {{ form_widget(data.approveForm.scope) }}
+            </div>
+        {% endblock %}
+
+        {% if data.approveForm._token is defined %}
+            {{ form_widget(data.approveForm._token) }}
+        {% endif %}
+    {{ form_end(data.approveForm, {'render_rest': false}) }}
+
+    {% block changeSummary %}
+        {% include molecule('review-change-summary', 'OrderExperienceManagement') only %}
     {% endblock %}
 
     {% block reviewFooter %}
@@ -86,27 +157,59 @@
     {% block confirmModal %}
         {% set confirmContent %}
             <p>{{ 'recurring_orders.review.modal.body' | trans }}</p>
+            {% set changeSummaryRows = [
+                {
+                    label: 'recurring_orders.review.modal.removed_items',
+                    jsClass: 'js-review-change-summary__removed',
+                    qa: 'recurring-order-review-modal-removed',
+                },
+                {
+                    label: 'recurring_orders.review.modal.accepted_prices',
+                    jsClass: 'js-review-change-summary__price-changes',
+                    qa: 'recurring-order-review-modal-price-changes',
+                },
+                {
+                    label: 'recurring_orders.review.modal.substituted_items',
+                    jsClass: 'js-review-change-summary__substituted',
+                    qa: 'recurring-order-review-modal-substituted',
+                },
+                {
+                    label: 'recurring_orders.review.modal.added_products',
+                    jsClass: 'js-review-change-summary__added',
+                    qa: 'recurring-order-review-modal-added',
+                },
+            ] %}
+
             <ul class="spacing-top--small">
-                <li>{{ 'recurring_orders.review.modal.removed_items' | trans }}: {{ data.review.removedItemCount }}</li>
-                <li>{{ 'recurring_orders.review.modal.accepted_prices' | trans }}: {{ data.review.priceChangeCount }}</li>
+                {% for changeSummaryRow in changeSummaryRows %}
+                    <li>{{ changeSummaryRow.label | trans }}: <span class="{{ changeSummaryRow.jsClass }}" data-qa="{{ changeSummaryRow.qa }}">0</span></li>
+                {% endfor %}
                 <li>{{ 'recurring_orders.review.modal.original_total' | trans }}: {{ data.review.originalTotal | money(true, data.schedule.currencyIsoCode) }}</li>
-                <li>{{ 'recurring_orders.review.modal.new_total' | trans }}: {{ data.review.updatedTotal | money(true, data.schedule.currencyIsoCode) }}</li>
+                <li>{{ 'recurring_orders.review.modal.new_total' | trans }}: <span class="js-review-total-recalculator__total" data-qa="recurring-order-review-modal-new-total">{{ data.review.updatedTotal | money(true, data.schedule.currencyIsoCode) }}</span></li>
             </ul>
-            {# The form carries the schedule UUID and the accepted price per kept item (validated server-side). #}
-            {{ form_start(data.approveForm, {action: url('recurring-order/approve-review', {uuid: data.schedule.uuid}), attr: {class: 'form'}}) }}
-                {{ form_widget(data.approveForm) }}
-                <div class="grid grid--right spacing-top">
-                    <button type="button" class="button button--hollow js-main-popup-close">
-                        {{ 'global.cancel' | trans }}
-                    </button>
-                    <button type="submit" class="button spacing-left" data-qa="recurring-order-review-approve-submit">
-                        {{ 'recurring_orders.review.cta.accept_and_place' | trans }}
-                    </button>
-                </div>
-            {{ form_end(data.approveForm) }}
+            
+            {% block scopeSelector %}
+                {% include molecule('review-scope-selector', 'OrderExperienceManagement') with {
+                    data: {
+                        choices: data.scopeChoices,
+                        inputSelector: '#' ~ data.approveForm.scope.vars.id,
+                        nextTriggerDate: data.schedule.nextTriggerDate,
+                    },
+                } only %}
+            {% endblock %}
+
+            <div class="grid grid--right spacing-top">
+                <button type="button" class="button button--hollow js-main-popup-close">
+                    {{ 'global.cancel' | trans }}
+                </button>
+                <button type="submit" form="{{ reviewFormId }}" class="button spacing-left js-{{ config.name }}__modal-submit" data-qa="recurring-order-review-approve-submit">
+                    {{ 'recurring_orders.review.cta.accept_and_place' | trans }}
+                </button>
+            </div>
         {% endset %}
 
         {% include molecule('main-popup') with {
+            class: config.jsName ~ '__confirmation-popup',
             data: {
                 title: 'recurring_orders.review.modal.headline' | trans,
                 content: confirmContent,

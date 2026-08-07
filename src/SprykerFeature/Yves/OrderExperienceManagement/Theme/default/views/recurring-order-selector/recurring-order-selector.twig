@@ -9,6 +9,9 @@
     {% include molecule('recurring-order-selector', 'OrderExperienceManagement') with {
         data: {
             isConfirmed: data.isConfirmed,
-        }
+        },
+        attributes: {
+            'submit-button-class-name': 'js-summary__submit-button',
+        },
     } only %}
 {% endblock %}

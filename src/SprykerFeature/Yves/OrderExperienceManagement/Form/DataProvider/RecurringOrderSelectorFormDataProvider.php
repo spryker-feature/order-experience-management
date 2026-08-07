@@ -14,7 +14,7 @@ use SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfi
 
 class RecurringOrderSelectorFormDataProvider
 {
-    public function __construct(protected readonly OrderExperienceManagementConfig $subscriptionConfig)
+    public function __construct(protected readonly OrderExperienceManagementConfig $config)
     {
     }
 
@@ -22,11 +22,15 @@ class RecurringOrderSelectorFormDataProvider
     {
         $existingRecurringOrderSettings = $quoteTransfer->getRecurringOrderSettings();
 
-        if ($existingRecurringOrderSettings === null) {
-            return new RecurringOrderSettingsTransfer();
+        $recurringOrderSettingsTransfer = new RecurringOrderSettingsTransfer();
+
+        // The start date is intentionally left empty for a new schedule: the customer must pick it, because
+        // today and a future date produce different first delivery dates.
+        if ($existingRecurringOrderSettings !== null) {
+            $recurringOrderSettingsTransfer->fromArray($existingRecurringOrderSettings->toArray());
         }
 
-        return (new RecurringOrderSettingsTransfer())->fromArray($existingRecurringOrderSettings->toArray());
+        return $recurringOrderSettingsTransfer;
     }
 
     /**
@@ -35,7 +39,7 @@ class RecurringOrderSelectorFormDataProvider
     public function getOptions(): array
     {
         return [
-            RecurringOrderSelectorForm::OPTION_CADENCE_TYPE_CHOICES => $this->subscriptionConfig->getSupportedCadenceTypes(),
+            RecurringOrderSelectorForm::OPTION_CADENCE_TYPE_CHOICES => $this->config->getSupportedCadenceTypes(),
         ];
     }
 }

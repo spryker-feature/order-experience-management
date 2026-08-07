@@ -1,0 +1,27 @@
+{% embed '@Gui/Partials/widget.twig' with { widget_title: 'Total Committed Recurring Volume' | trans } %}
+    {% block widget_content %}
+        <div data-qa="recurring-schedule-forecast-summary">
+            <p class="text-muted" data-qa="recurring-schedule-forecast-month">{{ 'Current month' | trans }}: {{ monthLabel }}</p>
+            {% if forecasts is not empty %}
+                {% set scheduleCount = 0 %}
+                {% set executedOrderCount = 0 %}
+                {% for forecast in forecasts %}
+                    {% set scheduleCount = scheduleCount + forecast.scheduleCount %}
+                    {% set executedOrderCount = executedOrderCount + forecast.executedOrderCount %}
+                {% endfor %}
+                {% for forecast in forecasts %}
+                    <h3 class="no-margins" data-qa="recurring-schedule-forecast-total">{{ (forecast.estimatedTotal / 100) | number_format(2) }} {{ forecast.currencyIsoCode }}</h3>
+                    <p class="text-muted" data-qa="recurring-schedule-forecast-breakdown">
+                        {{ 'Already placed: %executed% · Still planned: %planned%' | trans({
+                            '%executed%': (forecast.executedTotal / 100) | number_format(2) ~ ' ' ~ forecast.currencyIsoCode,
+                            '%planned%': (forecast.plannedTotal / 100) | number_format(2) ~ ' ' ~ forecast.currencyIsoCode,
+                        }) }}
+                    </p>
+                {% endfor %}
+                <p class="help-block" data-qa="recurring-schedule-forecast-run-rate">{{ 'Current month run-rate: %orders% orders already placed plus %count% active schedules still due. Global — not affected by filters.' | trans({'%orders%': executedOrderCount, '%count%': scheduleCount}) }}</p>
+            {% else %}
+                <p data-qa="recurring-schedule-forecast-empty">{{ 'No recurring order activity this month.' | trans }}</p>
+            {% endif %}
+        </div>
+    {% endblock %}
+{% endembed %}

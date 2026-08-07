@@ -10,3 +10,52 @@ Schedule,Schedule
 "Schedule grace period is required","Schedule grace period is required"
 "Must be at least 1 hour","Must be at least 1 hour"
 "Cannot exceed 720 hours (30 days)","Cannot exceed 720 hours (30 days)"
+"Recurring Order Schedules","Recurring Order Schedules"
+"List of Recurring Order Schedules","List of Recurring Order Schedules"
+"Recurring Order Schedule","Recurring Order Schedule"
+"Schedule Details","Schedule Details"
+"Scheduled Items","Scheduled Items"
+"Apply filters","Apply filters"
+"Reset filters","Reset filters"
+Name,Name
+Company,Company
+"Business Unit","Business Unit"
+Owner,Owner
+Status,Status
+Frequency,Frequency
+"Cycle Total","Cycle Total"
+"Next Trigger Date","Next Trigger Date"
+"Last Execution","Last Execution"
+Actions,Actions
+View,View
+"Original Order","Original Order"
+"Product Name","Product Name"
+"Bundle: %name%","Bundle: %name%"
+SKU,SKU
+Merchant,Merchant
+Quantity,Quantity
+"No scheduled items.","No scheduled items."
+"Select Statuses","Select Statuses"
+"Select Frequency","Select Frequency"
+"Cycle total from","Cycle total from"
+"Cycle total to","Cycle total to"
+"Next trigger date from","Next trigger date from"
+"Next trigger date to","Next trigger date to"
+"Recurring order schedule was not found.","Recurring order schedule was not found."
+Active,Active
+Paused,Paused
+"Review required","Review required"
+Cancelled,Cancelled
+Weekly,Weekly
+Bi-weekly,Bi-weekly
+Monthly,Monthly
+"Every N weeks","Every N weeks"
+Failed,Failed
+Price,Price
+"Total Committed Recurring Volume","Total Committed Recurring Volume"
+"Current month run-rate: %orders% orders already placed plus %count% active schedules still due. Global — not affected by filters.","Current month run-rate: %orders% orders already placed plus %count% active schedules still due. Global — not affected by filters."
+"Already placed: %executed% · Still planned: %planned%","Already placed: %executed% · Still planned: %planned%"
+"Current month","Current month"
+"No recurring order activity this month.","No recurring order activity this month."
+Total,Total
+"Sum total","Sum total"

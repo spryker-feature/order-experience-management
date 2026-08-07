@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\ScheduleValidator;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
@@ -32,10 +33,11 @@ class PriceScheduleValidatorPlugin extends AbstractPlugin implements ScheduleVal
      */
     public function validate(
         RecurringScheduleTransfer $recurringScheduleTransfer,
+        QuoteTransfer $quoteTransfer,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
         return $this->getBusinessFactory()
             ->createRecurringSchedulePriceValidator()
-            ->validate($recurringScheduleTransfer, $recurringScheduleValidationResultTransfer);
+            ->validate($recurringScheduleTransfer, $quoteTransfer, $recurringScheduleValidationResultTransfer);
     }
 }

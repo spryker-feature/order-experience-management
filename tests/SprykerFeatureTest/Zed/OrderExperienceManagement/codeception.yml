@@ -39,6 +39,7 @@ suites:
                 - \SprykerTest\Zed\CompanyBusinessUnit\Helper\CompanyBusinessUnitHelper
                 - \SprykerTest\Zed\CompanyRole\Helper\CompanyRoleHelper
                 - \SprykerTest\Zed\Permission\Helper\PermissionHelper
+                - \SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper
                 - \SprykerFeatureTest\Shared\OrderExperienceManagement\Helper\RecurringScheduleHelper
     Communication:
         path: Communication

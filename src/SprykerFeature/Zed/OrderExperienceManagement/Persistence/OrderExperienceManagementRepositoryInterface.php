@@ -13,12 +13,15 @@ use Generated\Shared\Transfer\PaginationTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleDueDataTransfer;
+use Generated\Shared\Transfer\RecurringScheduleForecastSnapshotTransfer;
 use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
 use Generated\Shared\Transfer\RecurringScheduleStatusCountCollectionTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 
 interface OrderExperienceManagementRepositoryInterface
 {
+    public function findRecurringScheduleForecastSnapshot(string $forecastKey): ?RecurringScheduleForecastSnapshotTransfer;
+
     /**
      * @param array<int> $stateIds
      *
@@ -59,4 +62,28 @@ interface OrderExperienceManagementRepositoryInterface
      * @return array<\Generated\Shared\Transfer\RecurringScheduleHistoryTransfer>
      */
     public function findScheduleHistoriesByScheduleIds(array $scheduleIds, ?PaginationTransfer $paginationTransfer = null): array;
+
+    /**
+     * @return array<int, string> Group keys keyed by recurring schedule item ID, ordered by ID ascending. Items without a group key are omitted.
+     */
+    public function getRecurringScheduleItemGroupKeysByScheduleId(int $idRecurringSchedule): array;
+
+    /**
+     * @param array<int> $scheduleIds
+     *
+     * @return array<int, string> Keyed by recurring schedule ID, value is the latest placement date.
+     */
+    public function getLastExecutionDatesByScheduleIds(array $scheduleIds): array;
+
+    /**
+     * @return array<\Generated\Shared\Transfer\RecurringScheduleForecastTransfer>
+     */
+    public function getRecurringScheduleForecastData(
+        RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer
+    ): array;
+
+    /**
+     * @return array<\Generated\Shared\Transfer\RecurringScheduleForecastTransfer>
+     */
+    public function getExecutedRecurringOrderTotals(string $placedFrom, string $placedTo): array;
 }

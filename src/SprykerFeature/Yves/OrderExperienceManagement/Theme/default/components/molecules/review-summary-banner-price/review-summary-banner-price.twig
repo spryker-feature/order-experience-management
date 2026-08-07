@@ -1,0 +1,24 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-summary-banner-price',
+    tag: 'review-summary-banner-price',
+}%}
+
+{% define attributes = {
+    'line-class-name': 'js-review-total-recalculator__line',
+    'total-class-name': 'js-review-total-recalculator__total',
+}%}
+
+{% define data = {
+    total: 0,
+    currency: 'EUR',
+}%}
+
+{% define attributes = {
+    'data-currency': data.currency,
+}%}
+
+{% block body %}
+    {{ data.total }}
+{% endblock %}

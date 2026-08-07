@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition;
 
-use DateTimeImmutable;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
@@ -19,9 +18,7 @@ use Spryker\Zed\StateMachine\Dependency\Plugin\ConditionPluginInterface;
  *
  * @api
  *
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface getRepository()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface getFacade()
- * @method \SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
+ * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory getBusinessFactory()
  */
 class IsPlacementDueConditionPlugin extends AbstractPlugin implements ConditionPluginInterface
 {
@@ -32,15 +29,9 @@ class IsPlacementDueConditionPlugin extends AbstractPlugin implements ConditionP
      */
     public function check(StateMachineItemTransfer $stateMachineItemTransfer): bool
     {
-        $dueData = $this->getRepository()->findRecurringScheduleDueData($stateMachineItemTransfer->getIdentifierOrFail());
-
-        if ($dueData === null) {
-            return false;
-        }
-
-        $triggerDate = new DateTimeImmutable($dueData->getNextTriggerDateOrFail());
-
-        return $triggerDate <= new DateTimeImmutable('now');
+        return $this->getBusinessFactory()
+            ->createRecurringScheduleDueChecker()
+            ->isPlacementDue($stateMachineItemTransfer->getIdentifierOrFail());
     }
 
     /**

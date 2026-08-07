@@ -9,26 +9,22 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift;
 
+use Generated\Shared\Transfer\CartChangeTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\ScheduleItemRepricerInterface;
 
 class BundlePriceDriftChecker extends AbstractPriceDriftChecker
 {
-    public function __construct(
-        protected readonly ScheduleItemRepricerInterface $scheduleItemRepricer,
-    ) {
-    }
-
     public function check(
         RecurringScheduleTransfer $recurringScheduleTransfer,
         QuoteTransfer $originalQuoteTransfer,
+        CartChangeTransfer $repricedCartChangeTransfer,
         string $priceMode,
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
-        $repricedBundleItemsByBundleIdentifier = $this->scheduleItemRepricer->repriceBundleItems($originalQuoteTransfer);
-        $scheduleItemsByBundleIdentifier = $this->indexScheduleItemsByBundleIdentifier($recurringScheduleTransfer);
+        $repricedBundleItemsByBundleIdentifier = $this->indexRepricedItemsByBundleIdentifier($repricedCartChangeTransfer);
+        $scheduleItemsByBundleIdentifier = $this->recurringScheduleItemIndexer->indexByBundleItemIdentifier($recurringScheduleTransfer);
 
         foreach ($originalQuoteTransfer->getBundleItems() as $bundleItemTransfer) {
             $bundleItemIdentifier = $bundleItemTransfer->getBundleItemIdentifier();
@@ -57,22 +53,22 @@ class BundlePriceDriftChecker extends AbstractPriceDriftChecker
     }
 
     /**
-     * @return array<string, \Generated\Shared\Transfer\RecurringScheduleItemTransfer> Parent rows keyed by their bundle identifier.
+     * @return array<string, \Generated\Shared\Transfer\ItemTransfer> Re-priced bundle parents keyed by bundle identifier.
      */
-    protected function indexScheduleItemsByBundleIdentifier(RecurringScheduleTransfer $recurringScheduleTransfer): array
+    protected function indexRepricedItemsByBundleIdentifier(CartChangeTransfer $repricedCartChangeTransfer): array
     {
-        $scheduleItemsByBundleIdentifier = [];
+        $repricedBundleItemsByBundleIdentifier = [];
 
-        foreach ($recurringScheduleTransfer->getItems() as $scheduleItemTransfer) {
-            $bundleItemIdentifier = $scheduleItemTransfer->getBundleItemIdentifier();
+        foreach ($repricedCartChangeTransfer->getItems() as $repricedItemTransfer) {
+            $bundleItemIdentifier = $repricedItemTransfer->getBundleItemIdentifier();
 
             if ($bundleItemIdentifier === null) {
                 continue;
             }
 
-            $scheduleItemsByBundleIdentifier[$bundleItemIdentifier] = $scheduleItemTransfer;
+            $repricedBundleItemsByBundleIdentifier[$bundleItemIdentifier] = $repricedItemTransfer;
         }
 
-        return $scheduleItemsByBundleIdentifier;
+        return $repricedBundleItemsByBundleIdentifier;
     }
 }

@@ -17,6 +17,7 @@ use Generated\Shared\Transfer\ShipmentMethodTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Generated\Shared\Transfer\StateMachineProcessTransfer;
 use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
+use Spryker\Zed\Locale\Business\LocaleFacadeInterface;
 use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\RecurringScheduleItemMapperInterface;
@@ -34,12 +35,13 @@ class ScheduleWriter implements ScheduleWriterInterface
     public function __construct(
         protected OrderExperienceManagementEntityManagerInterface $entityManager,
         protected StateMachineFacadeInterface $stateMachineFacade,
-        protected OrderExperienceManagementConfig $subscriptionConfig,
+        protected OrderExperienceManagementConfig $config,
         protected RecurringScheduleCheckoutValidatorInterface $validator,
         protected RecurringScheduleMapperInterface $scheduleMapper,
         protected RecurringScheduleItemMapperInterface $scheduleItemMapper,
-        protected OrderExperienceManagementRepositoryInterface $subscriptionRepository,
+        protected OrderExperienceManagementRepositoryInterface $repository,
         protected QuoteSanitizerInterface $quoteSanitizer,
+        protected LocaleFacadeInterface $localeFacade,
     ) {
     }
 
@@ -56,7 +58,11 @@ class ScheduleWriter implements ScheduleWriterInterface
         }
 
         $quoteTransfer = $this->quoteSanitizer->sanitize($quoteTransfer);
-        $recurringScheduleTransfer = $this->scheduleMapper->mapQuoteToRecurringSchedule($quoteTransfer, $checkoutResponseTransfer);
+        $recurringScheduleTransfer = $this->scheduleMapper->mapQuoteToRecurringSchedule(
+            $quoteTransfer,
+            $checkoutResponseTransfer,
+            $this->localeFacade->getCurrentLocaleName(),
+        );
 
         $this->getTransactionHandler()->handleTransaction(
             fn () => $this->executeSaveRecurringScheduleTransaction($recurringScheduleTransfer, $quoteTransfer),
@@ -72,8 +78,8 @@ class ScheduleWriter implements ScheduleWriterInterface
         $this->saveRecurringScheduleItems($quoteTransfer, $recurringScheduleTransfer->getIdRecurringScheduleOrFail());
 
         $stateMachineProcessTransfer = (new StateMachineProcessTransfer())
-            ->setStateMachineName($this->subscriptionConfig->getStateMachineName())
-            ->setProcessName($this->subscriptionConfig->getProcessName());
+            ->setStateMachineName($this->config->getStateMachineName())
+            ->setProcessName($this->config->getProcessName());
 
         $idRecurringSchedule = $recurringScheduleTransfer->getIdRecurringScheduleOrFail();
 
@@ -87,9 +93,9 @@ class ScheduleWriter implements ScheduleWriterInterface
 
     protected function autoActivate(int $idRecurringSchedule): void
     {
-        $idDraftState = $this->subscriptionRepository->findSmStateIdByStateMachineAndStateName(
-            $this->subscriptionConfig->getStateMachineName(),
-            $this->subscriptionConfig->getInitialState(),
+        $idDraftState = $this->repository->findSmStateIdByStateMachineAndStateName(
+            $this->config->getStateMachineName(),
+            $this->config->getInitialState(),
         );
 
         if ($idDraftState === null) {
@@ -108,28 +114,30 @@ class ScheduleWriter implements ScheduleWriterInterface
 
     protected function saveRecurringScheduleItems(QuoteTransfer $quoteTransfer, int $idRecurringSchedule): void
     {
-        $shipmentDataByShipmentTypeUuid = $this->buildExpenseShipmentMethodMap($quoteTransfer);
+        $shipmentDataByShipmentTypeUuid = $this->buildShipmentDataMapByShipmentTypeUuid($quoteTransfer);
 
         $itemTransfers = array_merge(
             $quoteTransfer->getItems()->getArrayCopy(),
             $quoteTransfer->getBundleItems()->getArrayCopy(),
         );
 
+        $recurringScheduleItemTransfers = [];
+
         foreach ($itemTransfers as $itemTransfer) {
-            $recurringScheduleItemTransfer = $this->scheduleItemMapper->mapItemToRecurringScheduleItem(
+            $recurringScheduleItemTransfers[] = $this->scheduleItemMapper->mapItemToRecurringScheduleItem(
                 $itemTransfer,
                 $idRecurringSchedule,
                 $shipmentDataByShipmentTypeUuid,
             );
-
-            $this->entityManager->createRecurringScheduleItem($recurringScheduleItemTransfer);
         }
+
+        $this->entityManager->createRecurringScheduleItemCollection($recurringScheduleItemTransfers);
     }
 
     /**
      * @return array<string, array{ShipmentMethodTransfer::ID_SHIPMENT_METHOD: int, ExpenseTransfer::UNIT_GROSS_PRICE: int, ExpenseTransfer::UNIT_NET_PRICE: int}>
      */
-    protected function buildExpenseShipmentMethodMap(QuoteTransfer $quoteTransfer): array
+    protected function buildShipmentDataMapByShipmentTypeUuid(QuoteTransfer $quoteTransfer): array
     {
         $shipmentDataByShipmentTypeUuid = [];
 
@@ -143,8 +151,8 @@ class ScheduleWriter implements ScheduleWriterInterface
             $shipmentTypeUuid = $shipmentTransfer->getShipmentTypeUuid() ?? '';
             $shipmentDataByShipmentTypeUuid[$shipmentTypeUuid] = [
                 ShipmentMethodTransfer::ID_SHIPMENT_METHOD => $shipmentTransfer->getMethod()->getIdShipmentMethod(),
-                ExpenseTransfer::UNIT_GROSS_PRICE => $expenseTransfer->getUnitGrossPrice() ?? 0,
-                ExpenseTransfer::UNIT_NET_PRICE => $expenseTransfer->getUnitNetPrice() ?? 0,
+                ExpenseTransfer::UNIT_GROSS_PRICE => (int)($expenseTransfer->getUnitGrossPrice() ?? 0),
+                ExpenseTransfer::UNIT_NET_PRICE => (int)($expenseTransfer->getUnitNetPrice() ?? 0),
             ];
         }
 

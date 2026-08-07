@@ -16,6 +16,7 @@ class OrderExperienceManagementDependencyProvider extends AbstractDependencyProv
 
     public function provideServiceLayerDependencies(Container $container): Container
     {
+        $container = parent::provideServiceLayerDependencies($container);
         $container = $this->addZedRequestClient($container);
 
         return $container;

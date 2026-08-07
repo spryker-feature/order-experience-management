@@ -12,7 +12,9 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Facade;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\PermissionCollectionTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
+use Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
+use Spryker\Zed\CompanyBusinessUnitSalesConnector\Communication\Plugin\Permission\SeeBusinessUnitOrdersPermissionPlugin;
 use Spryker\Zed\CompanyMailConnector\Business\CompanyMailConnectorBusinessFactory;
 use Spryker\Zed\CompanyMailConnector\CompanyMailConnectorDependencyProvider;
 use Spryker\Zed\CompanyMailConnector\Dependency\Facade\CompanyMailConnectorToMailFacadeInterface;
@@ -120,6 +122,56 @@ class TriggerManualEventForScheduleTest extends Unit
         $this->assertTrue($responseTransfer->getIsSuccessful());
     }
 
+    public function testReturnsTrueWhenCompanyUserWithSeeBusinessUnitOrdersPermissionTriggersColleagueSchedule(): void
+    {
+        // Arrange
+        $this->tester->setDependency(
+            CompanyMailConnectorDependencyProvider::FACADE_MAIL,
+            $this->createMock(CompanyMailConnectorToMailFacadeInterface::class),
+            CompanyMailConnectorBusinessFactory::class,
+        );
+        $this->tester->preparePermissionStorageDependency(new PermissionStoragePlugin());
+
+        $stateMachineFacadeMock = $this->createMock(StateMachineFacadeInterface::class);
+        $stateMachineFacadeMock->method('triggerEvent')->willReturn(1);
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_STATE_MACHINE, $stateMachineFacadeMock);
+
+        $companyTransfer = $this->tester->haveCompany();
+        $permissionTransfer = $this->tester->havePermission(new SeeBusinessUnitOrdersPermissionPlugin());
+
+        $companyUserTransfer = $this->tester->haveCompanyUserWithPermissions(
+            $companyTransfer,
+            (new PermissionCollectionTransfer())->addPermission($permissionTransfer),
+        );
+
+        $sameBusinessUnitCompanyUserTransfer = $this->tester->haveCompanyUserWithPermissions(
+            $companyTransfer,
+            new PermissionCollectionTransfer(),
+        );
+        $sameBusinessUnitCompanyUserTransfer->setFkCompanyBusinessUnit($companyUserTransfer->getFkCompanyBusinessUnit());
+
+        // Schedule owned by a colleague in the same business unit, not by the acting company user.
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule(
+            (int)$sameBusinessUnitCompanyUserTransfer->getCustomer()->getIdCustomer(),
+            [RecurringScheduleTransfer::ID_COMPANY_USER => $sameBusinessUnitCompanyUserTransfer->getIdCompanyUser()],
+        );
+
+        $customerTransfer = $companyUserTransfer->getCustomerOrFail()
+            ->setCompanyUserTransfer($companyUserTransfer);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setEvent(static::TEST_EVENT)
+            ->setIdCustomer($customerTransfer->getIdCustomerOrFail())
+            ->setCustomer($customerTransfer);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->triggerManualEventForSchedule($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+    }
+
     public function testReturnsFalseWhenScheduleNotFound(): void
     {
         // Arrange
@@ -180,7 +232,9 @@ class TriggerManualEventForScheduleTest extends Unit
     protected function mockScheduleEventTrigger(bool $isApplied): void
     {
         $scheduleEventTriggerMock = $this->createMock(ScheduleEventTriggerInterface::class);
-        $scheduleEventTriggerMock->method('triggerEvent')->willReturn($isApplied);
+        $scheduleEventTriggerMock->method('triggerManualEvent')->willReturn(
+            (new RecurringScheduleEventResponseTransfer())->setIsSuccessful($isApplied),
+        );
 
         $this->tester->mockFactoryMethod(static::FACTORY_METHOD_SCHEDULE_EVENT_TRIGGER, $scheduleEventTriggerMock);
     }

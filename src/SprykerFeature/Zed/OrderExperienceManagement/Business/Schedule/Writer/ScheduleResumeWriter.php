@@ -12,14 +12,14 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Writer;
 use Generated\Shared\Transfer\RecurringScheduleEventRequestTransfer;
 use Generated\Shared\Transfer\RecurringScheduleEventResponseTransfer;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\AccessibleRecurringScheduleReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReaderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\ScheduleEventTriggerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
 
 class ScheduleResumeWriter implements ScheduleResumeWriterInterface
 {
     public function __construct(
-        protected AccessibleRecurringScheduleReaderInterface $accessibleRecurringScheduleReader,
+        protected RecurringScheduleReaderInterface $recurringScheduleReader,
         protected OrderExperienceManagementEntityManagerInterface $entityManager,
         protected ScheduleEventTriggerInterface $scheduleEventTrigger,
     ) {
@@ -31,7 +31,7 @@ class ScheduleResumeWriter implements ScheduleResumeWriterInterface
         $responseTransfer = new RecurringScheduleEventResponseTransfer();
 
         $customerTransfer = $recurringScheduleEventRequestTransfer->getCustomer();
-        $scheduleTransfer = $this->accessibleRecurringScheduleReader->findAccessibleScheduleByUuid(
+        $scheduleTransfer = $this->recurringScheduleReader->findRecurringScheduleByUuid(
             $recurringScheduleEventRequestTransfer->getUuidOrFail(),
             $recurringScheduleEventRequestTransfer->getIdCustomerOrFail(),
             $customerTransfer,
@@ -50,11 +50,9 @@ class ScheduleResumeWriter implements ScheduleResumeWriterInterface
             $recurringScheduleEventRequestTransfer->getNextExecutionDateOrFail(),
         );
 
-        $isSuccessful = $this->scheduleEventTrigger->triggerEvent(
-            $recurringScheduleEventRequestTransfer->getUuidOrFail(),
+        $isSuccessful = $this->scheduleEventTrigger->triggerEventForRecurringSchedule(
+            $scheduleTransfer,
             SharedOrderExperienceManagementConfig::SM_EVENT_RESUME,
-            $recurringScheduleEventRequestTransfer->getIdCustomerOrFail(),
-            $customerTransfer,
         );
 
         return $responseTransfer->setIsSuccessful($isSuccessful);

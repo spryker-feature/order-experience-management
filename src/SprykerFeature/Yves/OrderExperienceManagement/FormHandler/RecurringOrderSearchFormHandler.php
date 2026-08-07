@@ -107,7 +107,9 @@ class RecurringOrderSearchFormHandler
         }
 
         if ($scope !== static::SCOPE_MY_SCHEDULES && is_numeric($scope) && $companyUserTransfer !== null && $this->can(static::PERMISSION_SEE_BUSINESS_UNIT_ORDERS)) {
-            $recurringScheduleConditionsTransfer->addCompanyBusinessUnitId((int)$scope);
+            $recurringScheduleConditionsTransfer
+                ->addCompanyBusinessUnitId((int)$scope)
+                ->addCompanyId($companyUserTransfer->getFkCompanyOrFail());
 
             return;
         }

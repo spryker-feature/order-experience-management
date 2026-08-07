@@ -12,7 +12,6 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Order;
 use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
-use Generated\Shared\Transfer\ShipmentTransfer;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\Mapper\PlaceableItemMapperInterface;
 
 class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
@@ -20,6 +19,7 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
     public function __construct(
         protected ItemShipmentMethodResolverInterface $itemShipmentMethodResolver,
         protected PlaceableItemMapperInterface $placeableItemMapper,
+        protected BundleItemClassifierInterface $bundleItemClassifier,
     ) {
     }
 
@@ -29,7 +29,8 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
         bool $isPlacement = false,
     ): QuoteTransfer {
         $itemTransfers = $this->buildItemTransfers($quoteTransfer, $recurringScheduleTransfer, $isPlacement);
-        $itemTransfers = $this->alignBundleShipments($itemTransfers);
+        $itemTransfers = $this->itemShipmentMethodResolver->applyFallbackShipments($itemTransfers, $quoteTransfer);
+        $itemTransfers = $this->itemShipmentMethodResolver->alignBundleShipments($itemTransfers);
 
         return $this->assignItemsToQuote($quoteTransfer, $itemTransfers);
     }
@@ -42,14 +43,19 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
         RecurringScheduleTransfer $recurringScheduleTransfer,
         bool $isPlacement,
     ): array {
-        $shipmentMethodIdMap = $this->itemShipmentMethodResolver->buildExpenseShipmentMethodMap($quoteTransfer);
+        $shipmentMethodIdMap = $this->itemShipmentMethodResolver->buildShipmentMethodIdMapByMerchantReference($quoteTransfer);
 
         $itemTransfers = [];
-
         foreach ($this->groupScheduleItemsByGroupKey($recurringScheduleTransfer) as $recurringScheduleItemTransfers) {
+            $nextDeliveryQuantity = $this->sumNextDeliveryQuantity($recurringScheduleItemTransfers);
+
+            if ($nextDeliveryQuantity <= 0) {
+                continue;
+            }
+
             $itemTransfer = $this->placeableItemMapper->mapRecurringScheduleItemToItemTransfer(
                 $recurringScheduleItemTransfers[0],
-                $this->sumNextDeliveryQuantity($recurringScheduleItemTransfers),
+                $nextDeliveryQuantity,
                 new ItemTransfer(),
             );
             $this->itemShipmentMethodResolver->applyShipmentMethodId($itemTransfer, $shipmentMethodIdMap);
@@ -95,7 +101,7 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
     protected function assignItemsToQuote(QuoteTransfer $quoteTransfer, array $itemTransfers): QuoteTransfer
     {
         foreach ($itemTransfers as $itemTransfer) {
-            if ($this->isBundleItem($itemTransfer)) {
+            if ($this->bundleItemClassifier->isBundleItem($itemTransfer)) {
                 $quoteTransfer->addBundleItem($itemTransfer);
 
                 continue;
@@ -105,57 +111,6 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
         }
 
         return $quoteTransfer;
-    }
-
-    /**
-     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
-     *
-     * @return array<\Generated\Shared\Transfer\ItemTransfer>
-     */
-    protected function alignBundleShipments(array $itemTransfers): array
-    {
-        $childShipmentByBundleIdentifier = $this->indexChildShipments($itemTransfers);
-
-        foreach ($itemTransfers as $itemTransfer) {
-            if (!$this->isBundleItem($itemTransfer)) {
-                continue;
-            }
-
-            $childShipmentTransfer = $childShipmentByBundleIdentifier[$itemTransfer->getBundleItemIdentifier()] ?? null;
-
-            if ($childShipmentTransfer === null) {
-                continue;
-            }
-
-            $itemTransfer->setShipment(
-                (new ShipmentTransfer())->fromArray($childShipmentTransfer->toArray(true, true), true),
-            );
-        }
-
-        return $itemTransfers;
-    }
-
-    /**
-     * @param array<\Generated\Shared\Transfer\ItemTransfer> $itemTransfers
-     *
-     * @return array<string, \Generated\Shared\Transfer\ShipmentTransfer>
-     */
-    protected function indexChildShipments(array $itemTransfers): array
-    {
-        $childShipmentByBundleIdentifier = [];
-
-        foreach ($itemTransfers as $itemTransfer) {
-            $relatedBundleItemIdentifier = $itemTransfer->getRelatedBundleItemIdentifier();
-            $shipmentTransfer = $itemTransfer->getShipment();
-
-            if ($relatedBundleItemIdentifier === null || $shipmentTransfer === null) {
-                continue;
-            }
-
-            $childShipmentByBundleIdentifier[$relatedBundleItemIdentifier] ??= $shipmentTransfer;
-        }
-
-        return $childShipmentByBundleIdentifier;
     }
 
     /**
@@ -207,11 +162,5 @@ class PlaceableQuoteItemBuilder implements PlaceableQuoteItemBuilderInterface
         }
 
         return $flattenedScheduleItemTransfers;
-    }
-
-    protected function isBundleItem(ItemTransfer $itemTransfer): bool
-    {
-        return $itemTransfer->getBundleItemIdentifier() !== null
-            && $itemTransfer->getRelatedBundleItemIdentifier() === null;
     }
 }

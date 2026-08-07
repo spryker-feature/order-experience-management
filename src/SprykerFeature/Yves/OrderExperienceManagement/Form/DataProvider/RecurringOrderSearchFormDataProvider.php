@@ -9,6 +9,7 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form\DataProvider;
 
 use Generated\Shared\Transfer\CompanyBusinessUnitCriteriaFilterTransfer;
 use Generated\Shared\Transfer\CustomerTransfer;
+use Generated\Shared\Transfer\PaginationTransfer;
 use Spryker\Client\CompanyBusinessUnit\CompanyBusinessUnitClientInterface;
 use Spryker\Yves\Kernel\PermissionAwareTrait;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSearchForm;
@@ -26,7 +27,7 @@ class RecurringOrderSearchFormDataProvider
     protected const string GLOSSARY_KEY_SCOPE_MY_BUSINESS_UNIT = 'recurring_orders.list.scope.my_business_unit';
 
     public function __construct(
-        protected readonly OrderExperienceManagementConfig $subscriptionConfig,
+        protected readonly OrderExperienceManagementConfig $config,
         protected readonly CompanyBusinessUnitClientInterface $companyBusinessUnitClient,
     ) {
     }
@@ -38,7 +39,7 @@ class RecurringOrderSearchFormDataProvider
     {
         return [
             RecurringOrderSearchForm::OPTION_SCOPE_CHOICES => $this->buildScopeChoices($customerTransfer),
-            RecurringOrderSearchForm::OPTION_STATUS_CHOICES => $this->subscriptionConfig->getRecurringScheduleStatusChoices(),
+            RecurringOrderSearchForm::OPTION_STATUS_CHOICES => $this->config->getRecurringScheduleStatusChoices(),
         ];
     }
 
@@ -83,7 +84,12 @@ class RecurringOrderSearchFormDataProvider
     protected function addAllCompanyBusinessUnitChoices(array $choices, int $idCompany): array
     {
         $companyBusinessUnitCriteriaFilterTransfer = (new CompanyBusinessUnitCriteriaFilterTransfer())
-            ->setIdCompany($idCompany);
+            ->setIdCompany($idCompany)
+            ->setPagination(
+                (new PaginationTransfer())
+                    ->setPage(1)
+                    ->setMaxPerPage($this->config->getBusinessUnitChoicesLimit()),
+            );
 
         $companyBusinessUnitCollectionTransfer = $this->companyBusinessUnitClient
             ->getCompanyBusinessUnitCollection($companyBusinessUnitCriteriaFilterTransfer);

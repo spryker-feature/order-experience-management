@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config>
+    <recurring-order-schedules>
+        <label>Recurring Order Schedules</label>
+        <title>Recurring Order Schedules</title>
+        <bundle>order-experience-management</bundle>
+        <controller>recurring-schedule</controller>
+        <action>index</action>
+        <pages>
+            <recurring-schedule-view>
+                <label>View Recurring Order Schedule</label>
+                <title>View Recurring Order Schedule</title>
+                <bundle>order-experience-management</bundle>
+                <controller>recurring-schedule</controller>
+                <action>view</action>
+                <visible>0</visible>
+            </recurring-schedule-view>
+        </pages>
+    </recurring-order-schedules>
+</config>

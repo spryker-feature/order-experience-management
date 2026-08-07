@@ -10,11 +10,10 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition;
 
 use Codeception\Test\Unit;
-use DateTimeImmutable;
-use Generated\Shared\Transfer\RecurringScheduleDueDataTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Due\RecurringScheduleDueCheckerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Condition\IsPlacementDueConditionPlugin;
-use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
 
 /**
@@ -36,52 +35,56 @@ class IsPlacementDueConditionTest extends Unit
         $this->assertSame('RecurringOrders/IsPlacementDue', (new IsPlacementDueConditionPlugin())->getName());
     }
 
-    public function testCheckReturnsFalseWhenScheduleNotFound(): void
+    public function testCheckReturnsTrueWhenCheckerReturnsTrue(): void
     {
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(null);
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->method('isPlacementDue')->willReturn(true);
 
-        $this->assertFalse($this->createCondition($repositoryMock)->check(
-            (new StateMachineItemTransfer())->setIdentifier(99),
-        ));
-    }
-
-    public function testCheckReturnsFalseWhenTriggerDateIsInFuture(): void
-    {
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate((new DateTimeImmutable('+1 day'))->format('Y-m-d H:i:s')),
-        );
-
-        $this->assertFalse($this->createCondition($repositoryMock)->check(
+        $this->assertTrue($this->createCondition($checkerMock)->check(
             (new StateMachineItemTransfer())->setIdentifier(1),
         ));
     }
 
-    public function testCheckReturnsTrueWhenTriggerDateIsInThePast(): void
+    public function testCheckReturnsFalseWhenCheckerReturnsFalse(): void
     {
-        $repositoryMock = $this->createMock(OrderExperienceManagementRepositoryInterface::class);
-        $repositoryMock->method('findRecurringScheduleDueData')->willReturn(
-            (new RecurringScheduleDueDataTransfer())
-                ->setNextTriggerDate((new DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s')),
-        );
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->method('isPlacementDue')->willReturn(false);
 
-        $this->assertTrue($this->createCondition($repositoryMock)->check(
+        $this->assertFalse($this->createCondition($checkerMock)->check(
             (new StateMachineItemTransfer())->setIdentifier(1),
         ));
     }
 
-    protected function createCondition(OrderExperienceManagementRepositoryInterface $repository): IsPlacementDueConditionPlugin
+    public function testCheckPassesScheduleIdentifierToChecker(): void
     {
-        return new class ($repository) extends IsPlacementDueConditionPlugin {
-            public function __construct(private readonly OrderExperienceManagementRepositoryInterface $repositoryOverride)
+        $idRecurringSchedule = 42;
+
+        $checkerMock = $this->createMock(RecurringScheduleDueCheckerInterface::class);
+        $checkerMock->expects($this->once())
+            ->method('isPlacementDue')
+            ->with($idRecurringSchedule)
+            ->willReturn(true);
+
+        $this->createCondition($checkerMock)->check(
+            (new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule),
+        );
+    }
+
+    protected function createCondition(RecurringScheduleDueCheckerInterface $recurringScheduleDueChecker): IsPlacementDueConditionPlugin
+    {
+        $businessFactoryMock = $this->getMockBuilder(OrderExperienceManagementBusinessFactory::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $businessFactoryMock->method('createRecurringScheduleDueChecker')->willReturn($recurringScheduleDueChecker);
+
+        return new class ($businessFactoryMock) extends IsPlacementDueConditionPlugin {
+            public function __construct(private readonly OrderExperienceManagementBusinessFactory $businessFactoryOverride)
             {
             }
 
-            public function getRepository(): OrderExperienceManagementRepositoryInterface
+            public function getBusinessFactory(): OrderExperienceManagementBusinessFactory
             {
-                return $this->repositoryOverride;
+                return $this->businessFactoryOverride;
             }
         };
     }

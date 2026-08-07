@@ -1,0 +1,25 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'review-added-items',
+    tag: 'review-added-items',
+} %}
+
+{% define data = {
+    form: required,
+} %}
+
+{% block body %}
+    {% set collectionClassName = config.name ~ '__collection ' ~ config.jsName ~ '__collection' %}
+
+    {% block collection %}
+        <div
+            class="{{ collectionClassName }}"
+            data-prototype="{{ form_widget(data.form.vars.prototype) | e('html_attr') }}"
+            {{ qa(config.name ~ '-collection') }}
+            hidden
+        >
+            {{ form_widget(data.form) }}
+        </div>
+    {% endblock %}
+{% endblock %}

@@ -1,0 +1,21 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-review-shipment-selection($name: '.review-shipment-selection') {
+    #{$name} {
+        display: block;
+
+        @if meta.mixin-exists(order-experience-management-review-shipment-selection-base-hook) {
+            @include order-experience-management-review-shipment-selection-base-hook;
+        }
+
+        &__address {
+            margin-bottom: 0.5rem;
+        }
+
+        &__label {
+            display: block;
+        }
+
+        @content;
+    }
+}

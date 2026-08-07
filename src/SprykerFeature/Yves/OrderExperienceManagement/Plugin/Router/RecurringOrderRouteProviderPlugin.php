@@ -36,7 +36,15 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     public const string ROUTE_NAME_RECURRING_ORDER_REVIEW = 'recurring-orders/review-required';
 
-    public const string ROUTE_NAME_RECURRING_ORDER_APPROVE_REVIEW = 'recurring-order/approve-review';
+    public const string ROUTE_NAME_RECURRING_ORDER_SHIPMENT_METHODS = 'recurring-orders/shipment-methods';
+
+    public const string ROUTE_NAME_RECURRING_ORDER_PRODUCT_PRICE = 'recurring-orders/product-price';
+
+    public const string ROUTE_NAME_RECURRING_ORDER_PRODUCT_CONCRETE_SEARCH = 'recurring-orders/product-concrete-search';
+
+    public const string ROUTE_NAME_RECURRING_ORDER_PRODUCT_OFFER_SELECT = 'recurring-order/product-offer-select';
+
+    public const string ROUTE_NAME_RECURRING_ORDER_EDIT = 'recurring-order/edit';
 
     protected const string PATTERN_RECURRING_ORDER_SAVE = '/recurring-order/save';
 
@@ -62,7 +70,15 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     protected const string PATTERN_RECURRING_ORDER_REVIEW = '/recurring-orders/{uuid}/review-required';
 
-    protected const string PATTERN_RECURRING_ORDER_APPROVE_REVIEW = '/recurring-order/{uuid}/approve-review';
+    protected const string PATTERN_RECURRING_ORDER_SHIPMENT_METHODS = '/recurring-orders/{uuid}/shipment-methods';
+
+    protected const string PATTERN_RECURRING_ORDER_PRODUCT_PRICE = '/recurring-orders/{uuid}/product-price';
+
+    protected const string PATTERN_RECURRING_ORDER_PRODUCT_CONCRETE_SEARCH = '/recurring-orders/{uuid}/product-concrete-search';
+
+    protected const string PATTERN_RECURRING_ORDER_PRODUCT_OFFER_SELECT = '/recurring-order/product-offer-select';
+
+    protected const string PATTERN_RECURRING_ORDER_EDIT = '/recurring-order/{uuid}/edit';
 
     /**
      * {@inheritDoc}
@@ -83,7 +99,96 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
         $routeCollection = $this->addDetailRoute($routeCollection);
         $routeCollection = $this->addFormRoute($routeCollection);
         $routeCollection = $this->addReviewRoute($routeCollection);
-        $routeCollection = $this->addApproveReviewRoute($routeCollection);
+        $routeCollection = $this->addShipmentMethodsRoute($routeCollection);
+        $routeCollection = $this->addProductPriceRoute($routeCollection);
+        $routeCollection = $this->addProductConcreteSearchRoute($routeCollection);
+        $routeCollection = $this->addProductOfferSelectRoute($routeCollection);
+        $routeCollection = $this->addEditRoute($routeCollection);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringScheduleEditController::indexAction()
+     */
+    protected function addEditRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildPostRoute(
+            static::PATTERN_RECURRING_ORDER_EDIT,
+            'OrderExperienceManagement',
+            'RecurringScheduleEdit',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_EDIT, $route);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderProductPriceController::indexAction()
+     */
+    protected function addProductPriceRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildRoute(
+            static::PATTERN_RECURRING_ORDER_PRODUCT_PRICE,
+            'OrderExperienceManagement',
+            'RecurringOrderProductPrice',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_PRODUCT_PRICE, $route);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderProductConcreteSearchController::indexAction()
+     */
+    protected function addProductConcreteSearchRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildRoute(
+            static::PATTERN_RECURRING_ORDER_PRODUCT_CONCRETE_SEARCH,
+            'OrderExperienceManagement',
+            'RecurringOrderProductConcreteSearch',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_PRODUCT_CONCRETE_SEARCH, $route);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderProductOfferSelectController::indexAction()
+     */
+    protected function addProductOfferSelectRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildRoute(
+            static::PATTERN_RECURRING_ORDER_PRODUCT_OFFER_SELECT,
+            'OrderExperienceManagement',
+            'RecurringOrderProductOfferSelect',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_PRODUCT_OFFER_SELECT, $route);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderShipmentMethodsController::indexAction()
+     */
+    protected function addShipmentMethodsRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildRoute(
+            static::PATTERN_RECURRING_ORDER_SHIPMENT_METHODS,
+            'OrderExperienceManagement',
+            'RecurringOrderShipmentMethods',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_SHIPMENT_METHODS, $route);
 
         return $routeCollection;
     }
@@ -101,23 +206,6 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
         );
 
         $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_REVIEW, $route);
-
-        return $routeCollection;
-    }
-
-    /**
-     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderApproveReviewController::indexAction()
-     */
-    protected function addApproveReviewRoute(RouteCollection $routeCollection): RouteCollection
-    {
-        $route = $this->buildPostRoute(
-            static::PATTERN_RECURRING_ORDER_APPROVE_REVIEW,
-            'OrderExperienceManagement',
-            'RecurringOrderApproveReview',
-            'index',
-        );
-
-        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_APPROVE_REVIEW, $route);
 
         return $routeCollection;
     }

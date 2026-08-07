@@ -9,19 +9,33 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement;
 
+use Spryker\Service\Customer\CustomerServiceInterface;
+use Spryker\Service\Shipment\ShipmentServiceInterface;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
+use Spryker\Zed\Calculation\Business\CalculationFacadeInterface;
 use Spryker\Zed\Cart\Business\CartFacadeInterface;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
+use Spryker\Zed\Company\Business\CompanyFacadeInterface;
+use Spryker\Zed\CompanyBusinessUnit\Business\CompanyBusinessUnitFacadeInterface;
+use Spryker\Zed\CompanyUnitAddress\Business\CompanyUnitAddressFacadeInterface;
 use Spryker\Zed\CompanyUser\Business\CompanyUserFacadeInterface;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
+use Spryker\Zed\Glossary\Business\GlossaryFacadeInterface;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use Spryker\Zed\Locale\Business\LocaleFacadeInterface;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
+use Spryker\Zed\Merchant\Business\MerchantFacadeInterface;
+use Spryker\Zed\MerchantProduct\Business\MerchantProductFacadeInterface;
+use Spryker\Zed\Messenger\Business\MessengerFacadeInterface;
 use Spryker\Zed\Payment\Business\PaymentFacadeInterface;
 use Spryker\Zed\PriceCartConnector\Business\PriceCartConnectorFacadeInterface;
+use Spryker\Zed\ProductMeasurementUnit\Business\ProductMeasurementUnitFacadeInterface;
+use Spryker\Zed\ProductOffer\Business\ProductOfferFacadeInterface;
 use Spryker\Zed\ProductPackagingUnit\Business\ProductPackagingUnitFacadeInterface;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
+use Spryker\Zed\Sales\Business\SalesFacadeInterface;
+use Spryker\Zed\Shipment\Business\ShipmentFacadeInterface;
 use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
 
 /**
@@ -39,9 +53,21 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
 
     public const string FACADE_CART = 'FACADE_CART';
 
+    public const string FACADE_CALCULATION = 'FACADE_CALCULATION';
+
     public const string FACADE_PAYMENT = 'FACADE_PAYMENT';
 
     public const string FACADE_COMPANY_USER = 'FACADE_COMPANY_USER';
+
+    public const string FACADE_COMPANY = 'FACADE_COMPANY';
+
+    public const string FACADE_COMPANY_BUSINESS_UNIT = 'FACADE_COMPANY_BUSINESS_UNIT';
+
+    public const string FACADE_SALES = 'FACADE_SALES';
+
+    public const string FACADE_MERCHANT = 'FACADE_MERCHANT';
+
+    public const string FACADE_GLOSSARY = 'FACADE_GLOSSARY';
 
     public const string FACADE_MAIL = 'FACADE_MAIL';
 
@@ -49,7 +75,21 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
 
     public const string FACADE_PRICE_CART_CONNECTOR = 'FACADE_PRICE_CART_CONNECTOR';
 
+    public const string FACADE_MESSENGER = 'FACADE_MESSENGER';
+
+    public const string FACADE_PRODUCT_MEASUREMENT_UNIT = 'FACADE_PRODUCT_MEASUREMENT_UNIT';
+
     public const string FACADE_PRODUCT_PACKAGING_UNIT = 'FACADE_PRODUCT_PACKAGING_UNIT';
+
+    public const string FACADE_PRODUCT_OFFER = 'FACADE_PRODUCT_OFFER';
+
+    public const string FACADE_MERCHANT_PRODUCT = 'FACADE_MERCHANT_PRODUCT';
+
+    public const string FACADE_SHIPMENT = 'FACADE_SHIPMENT';
+
+    public const string SERVICE_SHIPMENT = 'SERVICE_SHIPMENT';
+
+    public const string FACADE_COMPANY_UNIT_ADDRESS = 'FACADE_COMPANY_UNIT_ADDRESS';
 
     public const string SERVICE_ORDER_EXPERIENCE_MANAGEMENT = 'SERVICE_ORDER_EXPERIENCE_MANAGEMENT';
 
@@ -57,7 +97,13 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
 
     public const string PLUGINS_SCHEDULE_VALIDATOR = 'PLUGINS_SCHEDULE_VALIDATOR';
 
+    public const string PLUGINS_ADDED_ITEM_VALIDATOR = 'PLUGINS_ADDED_ITEM_VALIDATOR';
+
+    public const string PLUGINS_RECURRING_ORDER_CHECKOUT_VALIDATOR = 'PLUGINS_RECURRING_ORDER_CHECKOUT_VALIDATOR';
+
     public const string SERVICE_UTIL_ENCODING = 'SERVICE_UTIL_ENCODING';
+
+    public const string SERVICE_CUSTOMER = 'SERVICE_CUSTOMER';
 
     public function provideBusinessLayerDependencies(Container $container): Container
     {
@@ -67,6 +113,7 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
         $container = $this->addStateMachineFacade($container);
         $container = $this->addCheckoutFacade($container);
         $container = $this->addCartFacade($container);
+        $container = $this->addCalculationFacade($container);
         $container = $this->addPaymentFacade($container);
         $container = $this->addCompanyUserFacade($container);
         $container = $this->addMailFacade($container);
@@ -74,9 +121,77 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
         $container = $this->addOrderExperienceManagementService($container);
         $container = $this->addCadenceTypePlugins($container);
         $container = $this->addScheduleValidatorPlugins($container);
+        $container = $this->addAddedItemValidatorPlugins($container);
         $container = $this->addUtilEncodingService($container);
         $container = $this->addPriceCartConnectorFacade($container);
         $container = $this->addProductPackagingUnitFacade($container);
+        $container = $this->addProductMeasurementUnitFacade($container);
+        $container = $this->addProductOfferFacade($container);
+        $container = $this->addMerchantProductFacade($container);
+        $container = $this->addShipmentFacade($container);
+        $container = $this->addShipmentService($container);
+        $container = $this->addCompanyUnitAddressFacade($container);
+        $container = $this->addMessengerFacade($container);
+        $container = $this->addCustomerService($container);
+        $container = $this->addRecurringOrderCheckoutValidatorPlugins($container);
+
+        return $container;
+    }
+
+    public function provideCommunicationLayerDependencies(Container $container): Container
+    {
+        $container = parent::provideCommunicationLayerDependencies($container);
+        $container = $this->addCompanyFacade($container);
+        $container = $this->addCompanyBusinessUnitFacade($container);
+        $container = $this->addSalesFacade($container);
+        $container = $this->addMerchantFacade($container);
+        $container = $this->addGlossaryFacade($container);
+        $container = $this->addLocaleFacade($container);
+
+        return $container;
+    }
+
+    protected function addMerchantFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_MERCHANT, function (Container $container): MerchantFacadeInterface {
+            return $container->getLocator()->merchant()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addGlossaryFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_GLOSSARY, function (Container $container): GlossaryFacadeInterface {
+            return $container->getLocator()->glossary()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addCompanyFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_COMPANY, function (Container $container): CompanyFacadeInterface {
+            return $container->getLocator()->company()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addCompanyBusinessUnitFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_COMPANY_BUSINESS_UNIT, function (Container $container): CompanyBusinessUnitFacadeInterface {
+            return $container->getLocator()->companyBusinessUnit()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addSalesFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SALES, function (Container $container): SalesFacadeInterface {
+            return $container->getLocator()->sales()->facade();
+        });
 
         return $container;
     }
@@ -121,6 +236,15 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
     {
         $container->set(static::FACADE_CART, function (Container $container): CartFacadeInterface {
             return $container->getLocator()->cart()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addCalculationFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_CALCULATION, function (Container $container): CalculationFacadeInterface {
+            return $container->getLocator()->calculation()->facade();
         });
 
         return $container;
@@ -180,6 +304,15 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
         return $container;
     }
 
+    protected function addCustomerService(Container $container): Container
+    {
+        $container->set(static::SERVICE_CUSTOMER, function (Container $container): CustomerServiceInterface {
+            return $container->getLocator()->customer()->service();
+        });
+
+        return $container;
+    }
+
     protected function addCadenceTypePlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_CADENCE_TYPE, function (): array {
@@ -215,6 +348,69 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
         return $container;
     }
 
+    protected function addProductMeasurementUnitFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_PRODUCT_MEASUREMENT_UNIT, function (Container $container): ProductMeasurementUnitFacadeInterface {
+            return $container->getLocator()->productMeasurementUnit()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addProductOfferFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_PRODUCT_OFFER, function (Container $container): ProductOfferFacadeInterface {
+            return $container->getLocator()->productOffer()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addMerchantProductFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_MERCHANT_PRODUCT, function (Container $container): MerchantProductFacadeInterface {
+            return $container->getLocator()->merchantProduct()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addMessengerFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_MESSENGER, function (Container $container): MessengerFacadeInterface {
+            return $container->getLocator()->messenger()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addShipmentFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SHIPMENT, function (Container $container): ShipmentFacadeInterface {
+            return $container->getLocator()->shipment()->facade();
+        });
+
+        return $container;
+    }
+
+    protected function addShipmentService(Container $container): Container
+    {
+        $container->set(static::SERVICE_SHIPMENT, function (Container $container): ShipmentServiceInterface {
+            return $container->getLocator()->shipment()->service();
+        });
+
+        return $container;
+    }
+
+    protected function addCompanyUnitAddressFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_COMPANY_UNIT_ADDRESS, function (Container $container): CompanyUnitAddressFacadeInterface {
+            return $container->getLocator()->companyUnitAddress()->facade();
+        });
+
+        return $container;
+    }
+
     protected function addScheduleValidatorPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_SCHEDULE_VALIDATOR, function (): array {
@@ -228,6 +424,40 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
      * @return array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\ScheduleValidatorPluginInterface>
      */
     protected function getScheduleValidatorPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addAddedItemValidatorPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_ADDED_ITEM_VALIDATOR, function (): array {
+            return $this->getAddedItemValidatorPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\AddedItemValidatorPluginInterface>
+     */
+    protected function getAddedItemValidatorPlugins(): array
+    {
+        return [];
+    }
+
+    protected function addRecurringOrderCheckoutValidatorPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_RECURRING_ORDER_CHECKOUT_VALIDATOR, function (): array {
+            return $this->getRecurringOrderCheckoutValidatorPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\RecurringOrderCheckoutValidatorPluginInterface>
+     */
+    protected function getRecurringOrderCheckoutValidatorPlugins(): array
     {
         return [];
     }
