@@ -1538,9 +1538,7 @@ class ApproveScheduleReviewTest extends Unit
     }
 
     /**
-     * @param string $status
      * @param array<int, array<string, mixed>> $itemOverridesList
-     * @param string $priceMode
      *
      * @return array{0: string, 1: int, 2: int}
      */
@@ -1623,9 +1621,6 @@ class ApproveScheduleReviewTest extends Unit
     }
 
     /**
-     * @param int $idCustomer
-     * @param int $idRecurringSchedule
-     *
      * @return array<string, mixed>
      */
     protected function findScheduleQuoteData(int $idCustomer, int $idRecurringSchedule): array
@@ -1646,9 +1641,6 @@ class ApproveScheduleReviewTest extends Unit
     }
 
     /**
-     * @param int $idCustomer
-     * @param int $idRecurringSchedule
-     *
      * @return array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
      */
     protected function findScheduleItems(int $idCustomer, int $idRecurringSchedule): array
