@@ -30,20 +30,12 @@ const EMPTY_SELECTION = { entryKey: '', sku: '', productName: '', merchantLabel:
  */
 export default class ReviewSubstitute extends Component {
     protected addedItems: ReviewAddedItems | null;
-
     protected modal: MainPopup | null;
-
     protected removeButton: HTMLButtonElement | null;
-
     protected quantityInput: HTMLInputElement | null;
-
     protected quantityControl: ReviewSubstituteQuantityInput;
-
     protected summaryRenderer: ReviewSubstituteSummaryRenderer;
-
     protected applied: SubstitutePriceDetail = EMPTY_SELECTION;
-
-    protected readyCallback(): void {}
 
     protected init(): void {
         this.addedItems = document.querySelector<ReviewAddedItems>('review-added-items');

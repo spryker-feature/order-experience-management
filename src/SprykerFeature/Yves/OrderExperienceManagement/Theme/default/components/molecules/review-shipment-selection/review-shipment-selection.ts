@@ -11,16 +11,10 @@ export interface ProductContext {
 
 export default class ReviewShipmentSelection extends Component {
     protected static readonly SHIPMENT_ADDRESS_FIELD = 'shipment_address';
-
     protected static readonly SHIPMENT_METHOD_FIELD = 'shipment_method';
-
     protected sku = '';
-
     protected productOfferReference = '';
-
     protected pendingShipmentMethod = '';
-
-    protected readyCallback(): void {}
 
     protected init(): void {
         this.addEventListener('change', (event: Event) => this.onChange(event));

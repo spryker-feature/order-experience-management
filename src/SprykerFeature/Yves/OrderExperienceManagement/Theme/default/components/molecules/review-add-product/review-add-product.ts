@@ -21,8 +21,6 @@ export default class ReviewAddProduct extends Component {
     protected lineRenderer: ReviewAddProductLineRenderer;
     protected entryIndex = 0;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.linesContainer = this.querySelector(`.${this.jsName}__lines`);
         this.addedItems = this.querySelector<ReviewAddedItems>('review-added-items');

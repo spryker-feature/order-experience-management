@@ -56,11 +56,9 @@ export default class ReviewSubstitutePicker extends Component {
 
     protected selectedPrice = 0;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.shipmentSelection = this.querySelector<ReviewShipmentSelection>('review-shipment-selection');
-        this.priceProvider = this.querySelector<AjaxProvider>(`.${this.jsName}__price-provider`);
+        this.priceProvider = this.querySelector<AjaxProvider>(`.${this.getAttribute('price-provider-class') ?? ''}`);
         this.offerSelector = new ReviewSubstituteOfferSelector(
             this,
             {

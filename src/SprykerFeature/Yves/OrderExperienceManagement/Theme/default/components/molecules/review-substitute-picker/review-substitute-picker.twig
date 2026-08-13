@@ -19,16 +19,17 @@
 } %}
 
 {% set substituteOptions = data.itemReview.substituteOptions %}
-{% set autocompleteClass = 'js' ~ config.name ~ '__autocomplete-' ~ data.index %}
+{% set autocompleteClass = 'js-' ~ config.name ~ '__autocomplete-' ~ data.index %}
 {% set radioGroupName = 'substitute-option-' ~ data.index %}
 {% set offersWidgetId = 'review-substitute-offers-' ~ data.index %}
-{% set priceProviderClass = 'js' ~ config.name ~ '__price-provider' %}
+{% set priceProviderClass = 'js-' ~ config.name ~ '__price-provider' %}
 
 {% define attributes = {
     'currency': data.currency,
     'entry-key': data.entryKey,
     'autocomplete-class': autocompleteClass,
     'confirm-class': data.confirmClass,
+    'price-provider-class': priceProviderClass,
 } %}
 
 {% block body %}

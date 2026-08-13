@@ -8,8 +8,6 @@ export default class ScheduleReview extends Component {
     protected confirmationPopup: MainPopup;
     protected isSubmitConfirmed = false;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.form = <HTMLFormElement>this.querySelector(`.${this.jsName}__form`);
         this.trigger = <HTMLElement>document.querySelector(`.${this.getAttribute('confirm-modal-trigger-class-name')}`);

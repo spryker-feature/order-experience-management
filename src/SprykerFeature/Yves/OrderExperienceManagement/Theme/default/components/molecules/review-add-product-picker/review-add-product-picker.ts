@@ -47,8 +47,6 @@ export default class ReviewAddProductPicker extends Component {
 
     protected selectedPrice = 0;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.skuInput = this.querySelector(`input[name="${this.getAttribute('sku-field-name') ?? ''}"]`);
         this.quantityInput = this.querySelector(`.${this.jsName}__quantity`);
