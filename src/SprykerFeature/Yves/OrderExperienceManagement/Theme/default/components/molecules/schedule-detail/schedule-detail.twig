@@ -139,7 +139,7 @@
     {% endblock %}
 
     {% block grid %}
-        <div class="grid">
+        <div class="{{ config.name }}__grid grid grid--gap">
             {% block scheduleDetailContent %}
                 <div class="col col--sm-12 col--lg-8 spacing-bottom">
                     {% block scheduleNextExecution %}
@@ -168,8 +168,8 @@
                 </div>
             {% endblock %}
 
-            {% block scheduleDetailSidebar %}
-                <div class="col col--sm-12 col--lg-4 spacing-bottom">
+            <div class="col col--sm-12 col--lg-4 spacing-bottom">
+                {% block scheduleDetailSidebar %}
                     {% include molecule('schedule-detail-sidebar', 'OrderExperienceManagement') with {
                         data: {
                             schedule: data.schedule,
@@ -179,8 +179,8 @@
                             withBudgetSummary: true,
                         },
                     } only %}
-                </div>
-            {% endblock %}
+                {% endblock %}
+            </div>
         </div>
     {% endblock %}
 

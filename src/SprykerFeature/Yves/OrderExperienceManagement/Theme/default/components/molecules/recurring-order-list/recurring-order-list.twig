@@ -20,12 +20,14 @@
 
 {% block body %}
     {% set searchForm = data.searchForm %}
-    {% include molecule('recurring-order-attention-banner', 'OrderExperienceManagement') with {
-        data: {
-            count: data.attentionCount,
-            attentionStatusCounts: data.attentionStatusCounts,
-        },
-    } only %}
+    {% block attentionBanner %}
+        {% include molecule('recurring-order-attention-banner', 'OrderExperienceManagement') with {
+            data: {
+                count: data.attentionCount,
+                attentionStatusCounts: data.attentionStatusCounts,
+            },
+        } only %}
+    {% endblock %}
 
     {% set wrapperClassName = 'box' %}
     {% block wrapper %}

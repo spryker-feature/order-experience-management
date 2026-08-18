@@ -13,16 +13,17 @@
 
 {% block extraClass %} box {% endblock %}
 
-{% set gridClassName = "grid grid--justify grid--middle" %}
-{% set dataColumnClassName = "col col--expande" %}
-{% set actionsColumnClassName = "col" %}
+{% set gridClassName = "grid grid--gap-smaller grid--justify grid--middle" %}
+{% set dataColumnClassName = config.name ~ "__data-column col col--expand" %}
+{% set actionsColumnClassName = config.name ~ "__actions-column col" %}
+
 {% block body %}
     <div class="{{ gridClassName }}">
         {% block data %}
             <div class="{{ dataColumnClassName }}">
-                <small class="text-muted js-review-change-summary__removed"
-                    data-count-template="{{ 'recurring_orders.review.footer.summary' | trans | replace({'%removed%': '%count%'}) }}"
-                    data-qa="recurring-order-review-footer-summary"></small>
+                {{ 'recurring_orders.review.footer.new_total' | trans }}:
+                <span class="js-review-total-recalculator__total"
+                    data-qa="recurring-order-review-footer-summary"></span>
             </div>
         {% endblock %}
 

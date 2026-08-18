@@ -138,6 +138,19 @@ export default class ReviewShipmentSelection extends Component {
         this.clearMethods();
     }
 
+    showErrors(addressError: string, methodError: string): void {
+        this.setErrorText(`.${this.jsName}__error-address`, addressError);
+        this.setErrorText(`.${this.jsName}__error-method`, methodError);
+    }
+
+    protected setErrorText(selector: string, text: string): void {
+        const container = this.querySelector<HTMLElement>(selector);
+
+        if (container) {
+            container.textContent = text;
+        }
+    }
+
     get selectedShippingAddress(): string {
         return this.addressSelect?.value ?? '';
     }

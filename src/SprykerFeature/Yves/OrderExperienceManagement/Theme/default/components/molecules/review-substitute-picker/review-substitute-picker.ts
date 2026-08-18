@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import Component from 'ShopUi/models/component';
 import AjaxProvider from 'ShopUi/components/molecules/ajax-provider/ajax-provider';
 import ReviewShipmentSelection from '../review-shipment-selection/review-shipment-selection';
@@ -33,12 +34,6 @@ export interface RestoredSubstitute {
     idShipmentMethod: string;
 }
 
-/**
- * Modal side of the substitute flow. main-popup moves this markup into a <body>-level clone on first open, so the
- * element is initialized once in place and once in the clone: init() only wires listeners to its own subtree, and
- * the host kicks off every request through selectDefault()/restore() once the clone is mounted, which leaves the
- * discarded instance idle. Events reach the host by bubbling to document, as the clone is not a descendant of it.
- */
 export default class ReviewSubstitutePicker extends Component {
     protected shipmentSelection: ReviewShipmentSelection | null;
 
@@ -129,7 +124,6 @@ export default class ReviewSubstitutePicker extends Component {
         this.refreshPrice();
     }
 
-    /** The offer select is the widget's own field, so it is recognized by the container it was moved into. */
     protected onSelectionChange(event: Event): void {
         if ((event.target as HTMLElement | null)?.closest(`.${this.jsName}__offer`)) {
             this.onOfferApplied();
@@ -150,11 +144,21 @@ export default class ReviewSubstitutePicker extends Component {
         this.refreshPrice();
     }
 
+    /** Renders a message under every unfilled shipment field and reports whether the substitute may be confirmed. */
+    protected validate(shippingAddressKey: string, idShipmentMethod: string): boolean {
+        const addressError = shippingAddressKey === '' ? (this.getAttribute('shipping-address-error') ?? '') : '';
+        const methodError = idShipmentMethod === '' ? (this.getAttribute('shipment-method-error') ?? '') : '';
+
+        this.shipmentSelection?.showErrors(addressError, methodError);
+
+        return addressError === '' && methodError === '';
+    }
+
     protected confirmSelection(): void {
         const shippingAddressKey = this.shipmentSelection?.selectedShippingAddress ?? '';
         const idShipmentMethod = this.shipmentSelection?.selectedShipmentMethod ?? '';
 
-        if (shippingAddressKey === '' || idShipmentMethod === '') {
+        if (!this.validate(shippingAddressKey, idShipmentMethod)) {
             return;
         }
 

@@ -1,9 +1,7 @@
+/* eslint-disable max-lines */
 import Component from 'ShopUi/models/component';
 import AjaxProvider from 'ShopUi/components/molecules/ajax-provider/ajax-provider';
-import ReviewShipmentSelection, {
-    EVENT_SHIPMENT_METHODS_UPDATED,
-    EVENT_SHIPMENT_METHOD_CHANGE,
-} from '../review-shipment-selection/review-shipment-selection';
+import ReviewShipmentSelection from '../review-shipment-selection/review-shipment-selection';
 
 const CENTS_IN_UNIT = 100;
 
@@ -56,20 +54,17 @@ export default class ReviewAddProductPicker extends Component {
         this.priceContainer = this.querySelector(`.${this.jsName}__price`);
 
         this.mapEvents();
-        this.updateAddButtonState();
-        this.observeAddButtonState();
     }
 
     protected mapEvents(): void {
         this.addButton?.addEventListener('click', () => this.onAdd());
         this.querySelector(`.${this.jsName}__clear`)?.addEventListener('click', () => this.reset());
         this.quantityInput?.addEventListener('input', () => this.renderPricePreview());
+        this.addEventListener('input', (event: Event) => this.onSearchInput(event));
 
         this.quantityInput?.addEventListener('change', () => this.correctQuantityInputValue());
         this.addEventListener('click', (event: Event) => this.captureSelection(event), true);
         this.addEventListener('change', (event: Event) => this.onSelectionChange(event));
-        this.shipmentSelection?.addEventListener(EVENT_SHIPMENT_METHODS_UPDATED, () => this.updateAddButtonState());
-        this.shipmentSelection?.addEventListener(EVENT_SHIPMENT_METHOD_CHANGE, () => this.updateAddButtonState());
     }
 
     protected captureSelection(event: Event): void {
@@ -89,6 +84,27 @@ export default class ReviewAddProductPicker extends Component {
         this.refreshPrice();
     }
 
+    protected onSearchInput(event: Event): void {
+        const input = event.target as HTMLInputElement | null;
+
+        if (!input?.classList.contains(ReviewAddProductPicker.AUTOCOMPLETE_TEXT_INPUT_CLASS)) {
+            return;
+        }
+
+        if (input.value.trim() === '' && this.selectedSku !== '') {
+            this.clearSelection();
+        }
+    }
+
+    protected clearSelection(): void {
+        this.selectedSku = '';
+        this.selectedName = '';
+        this.selectedBasePrice = 0;
+        this.selectedPrice = 0;
+        this.setInputValue(this.skuInput, '');
+        this.renderPricePreview();
+    }
+
     protected onSelectionChange(event: Event): void {
         const targetName = (event.target as HTMLElement | null)?.getAttribute('name');
 
@@ -96,24 +112,6 @@ export default class ReviewAddProductPicker extends Component {
             this.refreshShipmentMethods();
             this.refreshPrice();
         }
-    }
-
-    protected updateAddButtonState(): void {
-        if (this.addButton) {
-            this.addButton.disabled = this.selectedShipmentMethod === '';
-        }
-    }
-
-    protected observeAddButtonState(): void {
-        if (!this.addButton) {
-            return;
-        }
-
-        new MutationObserver(() => {
-            if (!this.addButton.disabled && this.selectedShipmentMethod === '') {
-                this.addButton.disabled = true;
-            }
-        }).observe(this.addButton, { attributes: true, attributeFilter: ['disabled'] });
     }
 
     protected refreshShipmentMethods(): void {
@@ -159,14 +157,12 @@ export default class ReviewAddProductPicker extends Component {
             : amount.toLocaleString(document.documentElement.lang || 'en', { style: 'currency', currency });
     }
 
-    /** Truncates fractions and raises anything below the floor the template rendered as the input's min. */
     protected clampQuantity(quantity: number): number {
         const minimum = Number(this.quantityInput?.min) || 1;
 
         return Number.isFinite(quantity) ? Math.max(Math.trunc(quantity), minimum) : minimum;
     }
 
-    /** Null for a blank or unparseable value, so a cleared field is left alone instead of being corrected. */
     protected normalizeQuantity(value: string | null | undefined): number | null {
         const trimmedValue = value?.trim() ?? '';
         const quantity = Number(trimmedValue);
@@ -189,13 +185,32 @@ export default class ReviewAddProductPicker extends Component {
         this.renderPricePreview();
     }
 
+    protected validate(sku: string, shippingAddressKey: string, idShipmentMethod: string): boolean {
+        const skuError = sku === '' ? (this.getAttribute('product-error') ?? '') : '';
+        const addressError = shippingAddressKey === '' ? (this.getAttribute('shipping-address-error') ?? '') : '';
+        const methodError = idShipmentMethod === '' ? (this.getAttribute('shipment-method-error') ?? '') : '';
+
+        this.showSkuError(skuError);
+        this.shipmentSelection?.showErrors(addressError, methodError);
+
+        return skuError === '' && addressError === '' && methodError === '';
+    }
+
+    protected showSkuError(text: string): void {
+        const container = this.querySelector<HTMLElement>(`.${this.jsName}__error-sku`);
+
+        if (container) {
+            container.textContent = text;
+        }
+    }
+
     protected onAdd(): void {
         const sku = this.selectedSku || (this.skuInput?.value ?? '');
         const quantity = this.currentQuantity;
         const shippingAddressKey = this.shipmentSelection?.selectedShippingAddress ?? '';
         const idShipmentMethod = this.selectedShipmentMethod;
 
-        if (sku === '' || shippingAddressKey === '' || idShipmentMethod === '') {
+        if (!this.validate(sku, shippingAddressKey, idShipmentMethod)) {
             return;
         }
 
@@ -217,30 +232,22 @@ export default class ReviewAddProductPicker extends Component {
     }
 
     protected reset(): void {
-        this.selectedSku = '';
-        this.selectedName = '';
-        this.selectedBasePrice = 0;
-        this.selectedPrice = 0;
-
-        if (this.skuInput) {
-            this.skuInput.value = '';
-        }
-
-        if (this.quantityInput) {
-            this.quantityInput.value = '1';
-        }
-
-        const searchTextInput = this.querySelector<HTMLInputElement>(
-            `.${ReviewAddProductPicker.AUTOCOMPLETE_TEXT_INPUT_CLASS}`,
+        this.clearSelection();
+        this.showSkuError('');
+        this.shipmentSelection?.showErrors('', '');
+        this.setInputValue(this.quantityInput, '1');
+        this.setInputValue(
+            this.querySelector<HTMLInputElement>(`.${ReviewAddProductPicker.AUTOCOMPLETE_TEXT_INPUT_CLASS}`),
+            '',
         );
-
-        if (searchTextInput) {
-            searchTextInput.value = '';
-        }
-
         this.offerSelect?.closest('ajax-renderer')?.replaceChildren();
         this.shipmentSelection?.reset();
-        this.renderPricePreview();
+    }
+
+    protected setInputValue(input: HTMLInputElement | null, value: string): void {
+        if (input) {
+            input.value = value;
+        }
     }
 
     protected get offerSelect(): HTMLSelectElement | null {

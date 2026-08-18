@@ -31,25 +31,29 @@
                 </button>
             {% endblock %}
 
-            {% include atom('checkbox') with {
-                class: titleClass,
-                attributes: {
-                    name: 'recurring-order-enabled',
-                    checked: data.isConfirmed,
-                    'data-qa': 'recurring-order-toggle',
-                    'ajax-provider-selector': ajaxProviderClassName,
-                    'data-create-recurrent-order-url': path('recurring-order/form'),
-                    'data-clear-recurrent-order-url': path('recurring-order/clear'),
-                    'data-clear-recurrent-order-csrf-token': csrf_token('recurring-order-clear'),
-                    'data-edit-recurrent-order-url': path('recurring-order/form') ~ '?edit=1',
-                },
-                data: {
-                    label: 'recurring_orders.checkout.enable_label' | trans,
-                    inputClass: config.jsName ~ '__recurring-order-toggle',
-                },
-            } only %}
+            {% block checkbox %}
+                {% include atom('checkbox') with {
+                    class: titleClass,
+                    attributes: {
+                        name: 'recurring-order-enabled',
+                        checked: data.isConfirmed,
+                        'data-qa': 'recurring-order-toggle',
+                        'ajax-provider-selector': ajaxProviderClassName,
+                        'data-create-recurrent-order-url': path('recurring-order/form'),
+                        'data-clear-recurrent-order-url': path('recurring-order/clear'),
+                        'data-clear-recurrent-order-csrf-token': csrf_token('recurring-order-clear'),
+                        'data-edit-recurrent-order-url': path('recurring-order/form') ~ '?edit=1',
+                    },
+                    data: {
+                        label: 'recurring_orders.checkout.enable_label' | trans,
+                        inputClass: config.jsName ~ '__recurring-order-toggle',
+                    },
+                } only %}
+            {% endblock %}
 
-            <p>{{ 'recurring_orders.checkout.enable_description' | trans }}</p>
+            {% block description %}
+                <p>{{ 'recurring_orders.checkout.enable_description' | trans }}</p>
+            {% endblock %}
         </div>
     {% endblock %}
 
@@ -82,6 +86,9 @@
                 } only %}
             {% endblock %}
         {% endblock %}
-        <div class="{{ ajaxContainerClassName }}"></div>
+        
+        {% block ajaxContainer %}
+            <div class="{{ ajaxContainerClassName }}"></div>
+        {% endblock %}
     {% endblock %}
 {% endblock %}

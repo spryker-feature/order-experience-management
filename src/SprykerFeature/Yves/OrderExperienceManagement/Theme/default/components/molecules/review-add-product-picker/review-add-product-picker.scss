@@ -1,3 +1,4 @@
+@use 'sass:map';
 @use 'sass:meta';
 
 @mixin order-experience-management-review-add-product-picker($name: '.review-add-product-picker') {
@@ -21,6 +22,16 @@
 
         .autocomplete-form__text-input {
             padding-right: 7rem;
+        }
+
+        &__error {
+            display: block;
+            margin-top: 0.25rem;
+            color: helper-color-dark(map.get($setting-color-actions, 'alert'));
+
+            &:empty {
+                display: none;
+            }
         }
 
         &__price {

@@ -30,6 +30,8 @@
     'autocomplete-class': autocompleteClass,
     'confirm-class': data.confirmClass,
     'price-provider-class': priceProviderClass,
+    'shipping-address-error': 'recurring_orders.review.add_product.error.shipping_address_required' | trans,
+    'shipment-method-error': 'recurring_orders.review.add_product.error.shipment_method_required' | trans,
 } %}
 
 {% block body %}
@@ -85,10 +87,10 @@
     {% block merchantSelect %}
         <span class="{{ autocompleteClass }} {{ data.hiddenClass }}"></span>
         <div class="{{ config.name }}__offer {{ config.jsName }}__offer" {{ qa('recurring-order-review-substitute-offer') }}>
+            {# The Confirm button stays enabled at all times, so the widget must not toggle its disabled state. #}
             {% widget 'MerchantProductOffersSelectWidget' with {
                 data: {
                     id: offersWidgetId,
-                    submitButtonClassName: data.confirmClass,
                     autocompleteFormClassName: autocompleteClass,
                 },
             } only %}{% endwidget %}

@@ -17,5 +17,7 @@
             @include helper-font-size(small);
             display: block;
         }
+
+        @content;
     }
 }

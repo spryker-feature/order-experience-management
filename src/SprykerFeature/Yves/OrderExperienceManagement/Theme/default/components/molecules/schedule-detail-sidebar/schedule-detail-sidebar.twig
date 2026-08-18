@@ -20,7 +20,7 @@
         <div class="{{ config.name }}__heading">
             <h4 class="{{ titleClassName }} col col--expand">{{ 'recurring_orders.detail.sidebar.title' | trans }}</h4>
             {% set editButtonClassName = "button button--hollow" %}
-            {% set editModalTriggerClassName = 'js-edit-schedule-button' %}
+            
             {% block editButton %}
                 {% if data.editModalTriggerClassName %}
                     <button type="button" class="{{ data.editModalTriggerClassName }} {{ editButtonClassName}}"

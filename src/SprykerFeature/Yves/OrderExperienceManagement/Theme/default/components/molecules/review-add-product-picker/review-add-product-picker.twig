@@ -17,6 +17,9 @@
 {% define attributes = {
     'sku-field-name': data.skuFieldName,
     'currency': data.currency,
+    'product-error': 'recurring_orders.review.add_product.error.product_required' | trans,
+    'shipping-address-error': 'recurring_orders.review.add_product.error.shipping_address_required' | trans,
+    'shipment-method-error': 'recurring_orders.review.add_product.error.shipment_method_required' | trans,
 }%}
 
 {% block body %}
@@ -24,25 +27,41 @@
 
     {% block addProductForm %}
         <div class="{{ config.name }}__product-info">
-            <div class="{{ config.name }}__product-col">
-                <span class="label">{{ 'recurring_orders.review.add_product.label' | trans }}</span>
-                <div class="{{ config.name }}__search" {{ qa(config.name ~ '-search') }}>
-                    {% widget 'ProductConcreteSearchWidget' args ['review-add-product-picker',data.skuFieldName,'','',] with {
-                        data: {
-                            autocompleteFormClassName: pickerAutocompleteClassName,
-                            suggestionsUrl: data.searchUrl,
-                        },
-                    } only %}{% endwidget %}
+            {% block productCell %}
+                <div class="{{ config.name }}__product-col">
+                    {% block productCellLabel %}
+                        <span class="label">{{ 'recurring_orders.review.add_product.label' | trans }}</span>
+                    {% endblock %}
 
-                    {% block pricePreview %}
+                    <div class="{{ config.name }}__search" {{ qa(config.name ~ '-search') }}>
+                        {% block searchWidget %}
+                            {% widget 'ProductConcreteSearchWidget' args ['review-add-product-picker',data.skuFieldName,'','',] with {
+                                data: {
+                                    autocompleteFormClassName: pickerAutocompleteClassName,
+                                    suggestionsUrl: data.searchUrl,
+                                },
+                            } only %}{% endwidget %}
+                        {% endblock %}
+
+                        {% block pricePreview %}
+                            <span
+                                class="{{ config.name }}__price {{ config.jsName }}__price"
+                                {{ qa(config.name ~ "-price") }}
+                                aria-label="{{ 'recurring_orders.review.add_product.price' | trans }}"
+                            ></span>
+                        {% endblock %}
+                    </div>
+
+                    {% block productError %}
                         <span
-                            class="{{ config.name }}__price {{ config.jsName }}__price"
-                            {{ qa(config.name ~ "-price") }}
-                            aria-label="{{ 'recurring_orders.review.add_product.price' | trans }}"
+                            class="{{ config.name }}__error {{ config.jsName }}__error-sku"
+                            {{ qa(config.name ~ '-error-sku') }}
+                            role="alert"
                         ></span>
                     {% endblock %}
                 </div>
-            </div>
+            {% endblock %}
+
             {% block quantityCell %}
                 <div class="{{ config.name }}__quantity-col">
                     {% block quantityLabel %}
@@ -70,7 +89,6 @@
             {% widget 'MerchantProductOffersSelectWidget' with {
                 data: {
                     id: 'review-add-product-offers',
-                    submitButtonClassName: config.jsName ~ '__add',
                     autocompleteFormClassName: pickerAutocompleteClassName,
                     url: 'recurring-order/product-offer-select',
                 },
@@ -99,7 +117,7 @@
             {% endblock %}
 
             {% block actionAddButton %}
-                <button type="button" class="{{ actionAddButtonClassName }} spacing-left" disabled {{ qa(config.name ~ '-submit') }}>
+                <button type="button" class="{{ actionAddButtonClassName }} spacing-left" {{ qa(config.name ~ '-submit') }}>
                     {{ 'recurring_orders.review.add_product.add' | trans }}
                 </button>
             {% endblock %}

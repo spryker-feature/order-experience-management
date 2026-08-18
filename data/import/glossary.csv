@@ -264,6 +264,12 @@ recurring_orders.review.add_product.error.packaging_unit_not_supported,Product %
 recurring_orders.review.add_product.error.packaging_unit_not_supported,Das Produkt %sku% wird in Verpackungseinheiten verkauft und kann hier nicht hinzugefügt werden. Bitte wählen Sie ein anderes Produkt.,de_DE
 recurring_orders.review.add_product.error.not_placeable,The added products cannot be scheduled. Please review your selection and try again.,en_US
 recurring_orders.review.add_product.error.not_placeable,Die hinzugefügten Produkte können nicht eingeplant werden. Bitte überprüfen Sie Ihre Auswahl und versuchen Sie es erneut.,de_DE
+recurring_orders.review.add_product.error.product_required,Please choose a product.,en_US
+recurring_orders.review.add_product.error.product_required,Bitte wählen Sie ein Produkt aus.,de_DE
+recurring_orders.review.add_product.error.shipping_address_required,Please choose a shipping address.,en_US
+recurring_orders.review.add_product.error.shipping_address_required,Bitte wählen Sie eine Lieferadresse aus.,de_DE
+recurring_orders.review.add_product.error.shipment_method_required,Please choose a shipment method.,en_US
+recurring_orders.review.add_product.error.shipment_method_required,Bitte wählen Sie eine Versandart aus.,de_DE
 recurring_orders.review.approve_failed,The changes could not be applied.,en_US
 recurring_orders.review.approve_failed,Die Änderungen konnten nicht übernommen werden.,de_DE
 recurring_orders.review.approve_success,Your changes were applied and the order was placed.,en_US

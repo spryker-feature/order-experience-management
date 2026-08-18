@@ -37,6 +37,7 @@
             actions: historyItem.idSalesOrder ? [{
                 url: url('customer/order/details', { id: historyItem.idSalesOrder }),
                 label: 'recurring_orders.detail.history.view_order',
+                icon: 'eye',
                 qa: 'recurring-order-history-view-order',
             }] : [],
         }) %}

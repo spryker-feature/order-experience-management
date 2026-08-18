@@ -142,61 +142,71 @@
 {% endblock %}
 
 {% block body %}
-    {% include molecule('main-popup') with {
-        data: {
-            title: 'recurring_orders.detail.skip.modal.title' | trans,
-            content: block('skipContent'),
-        },
-        attributes: {
-            'content-id': config.jsName ~ '-skip-popup',
-            'trigger-class-name': data.skipModalTriggerClassName,
-        },
-    } only %}
-
-    {% include molecule('main-popup') with {
-        data: {
-            title: 'recurring_orders.detail.cancel.modal.title' | trans,
-            content: block('cancelContent'),
-        },
-        attributes: {
-            'content-id': config.jsName ~ '-cancel-popup',
-            'trigger-class-name': data.cancelModalTriggerClassName,
-        },
-    } only %}
-
-    {% include molecule('main-popup') with {
-        data: {
-            title: 'recurring_orders.detail.pause.modal.title' | trans,
-            content: block('pauseContent'),
-        },
-        attributes: {
-            'content-id': config.jsName ~ '-pause-popup',
-            'trigger-class-name': data.pauseModalTriggerClassName,
-        },
-    } only %}
-
-    {% include molecule('main-popup') with {
-        data: {
-            title: 'recurring_orders.detail.resume.modal.title' | trans,
-            content: block('resumeContent'),
-        },
-        attributes: {
-            'content-id': config.jsName ~ '-resume-popup',
-            'trigger-class-name': data.resumeModalTriggerClassName,
-        },
-    } only %}
-
-    {% if data.editForm %}
+    {% block skipPopup %}
         {% include molecule('main-popup') with {
             data: {
-                title: 'recurring_orders.detail.edit.title' | trans,
-                content: block('editContent'),
+                title: 'recurring_orders.detail.skip.modal.title' | trans,
+                content: block('skipContent'),
             },
             attributes: {
-                'content-id': config.jsName ~ '-edit-popup',
-                'trigger-class-name': data.editModalTriggerClassName,
-                'has-content-mount': true,
+                'content-id': config.jsName ~ '-skip-popup',
+                'trigger-class-name': data.skipModalTriggerClassName,
             },
         } only %}
-    {% endif %}
+    {% endblock %}
+
+    {% block cancelPopup %}
+        {% include molecule('main-popup') with {
+            data: {
+                title: 'recurring_orders.detail.cancel.modal.title' | trans,
+                content: block('cancelContent'),
+            },
+            attributes: {
+                'content-id': config.jsName ~ '-cancel-popup',
+                'trigger-class-name': data.cancelModalTriggerClassName,
+            },
+        } only %}
+    {% endblock %}
+
+    {% block pausePopup %}
+        {% include molecule('main-popup') with {
+            data: {
+                title: 'recurring_orders.detail.pause.modal.title' | trans,
+                content: block('pauseContent'),
+            },
+            attributes: {
+                'content-id': config.jsName ~ '-pause-popup',
+                'trigger-class-name': data.pauseModalTriggerClassName,
+            },
+        } only %}
+    {% endblock %}
+
+    {% block resumePopup %}
+        {% include molecule('main-popup') with {
+            data: {
+                title: 'recurring_orders.detail.resume.modal.title' | trans,
+                content: block('resumeContent'),
+            },
+            attributes: {
+                'content-id': config.jsName ~ '-resume-popup',
+                'trigger-class-name': data.resumeModalTriggerClassName,
+            },
+        } only %}
+    {% endblock %}
+
+    {% block editFormPopup %}
+        {% if data.editForm %}
+            {% include molecule('main-popup') with {
+                data: {
+                    title: 'recurring_orders.detail.edit.title' | trans,
+                    content: block('editContent'),
+                },
+                attributes: {
+                    'content-id': config.jsName ~ '-edit-popup',
+                    'trigger-class-name': data.editModalTriggerClassName,
+                    'has-content-mount': true,
+                },
+            } only %}
+        {% endif %}
+    {% endblock %}
 {% endblock %}

@@ -37,11 +37,27 @@
                     {% endfor %}
                 </select>
             {% endblock %}
+
+            {% block addressError %}
+                <span
+                    class="{{ config.name }}__error {{ config.jsName }}__error-address"
+                    {{ qa('review-shipment-selection-error-address') }}
+                    role="alert"
+                ></span>
+            {% endblock %}
         </div>
     {% endblock %}
 
     {% block methodSelect %}
         <div class="{{ config.name }}__methods {{ config.jsName }}__methods"></div>
+
+        {% block methodError %}
+            <span
+                class="{{ config.name }}__error {{ config.jsName }}__error-method"
+                {{ qa('review-shipment-selection-error-method') }}
+                role="alert"
+            ></span>
+        {% endblock %}
     {% endblock %}
 
     {% set methodsProviderClassName = config.jsName ~ '__methods-provider' %}

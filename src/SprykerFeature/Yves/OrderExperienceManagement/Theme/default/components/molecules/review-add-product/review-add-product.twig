@@ -24,80 +24,82 @@
     {% set openModalClassName = config.jsName ~ '__open-modal' %}
     {% set addedItemsCount = data.approveForm.addedItems | length %}
 
-    <details open>
-        <summary>
-            {% block title %}
-                <span class="{{ config.jsName }}__title">
-                    {{ (addedItemsCount == 1 ? 'recurring_orders.review.add_product.title.singular' : 'recurring_orders.review.add_product.title') | trans({'%count%': addedItemsCount}) }}
-                </span>
-            {% endblock %}
-
-            {% block titleTemplates %}
-                <template data-id="{{ config.jsName }}-title-template">{{ 'recurring_orders.review.add_product.title' | trans({'%count%': '%count%'}) }}</template>
-                <template data-id="{{ config.jsName }}-title-template-singular">{{ 'recurring_orders.review.add_product.title.singular' | trans({'%count%': '%count%'}) }}</template>
-            {% endblock %}
-        </summary>
-
-        {% set contentClassName = 'box' %}
-        {% block content %}
-            <div class="{{ contentClassName }}">
-                {% block lines %}
-                    <div class="{{ config.name }}__lines {{ config.jsName }}__lines"></div>
+    {% block details %}
+        <details class="{{ config.name }}__details" open>
+            <summary class="{{ config.name }}__summary">
+                {% block title %}
+                    <span class="{{ config.jsName }}__title {{ config.name }}__title">
+                        {{ (addedItemsCount == 1 ? 'recurring_orders.review.add_product.title.singular' : 'recurring_orders.review.add_product.title') | trans({'%count%': addedItemsCount}) }}
+                    </span>
                 {% endblock %}
 
-                {% block lineTemplate %}
-                    <template data-id="{{ config.jsName }}-line-template">
-                        <div
-                            class="{{ config.name }}__line js-review-total-recalculator__line"
-                            {{ qa(config.name ~ '-line') }}
-                        >
-                            <span class="{{ config.name }}__line-name" {{ qa(config.name ~ '-line-name') }}>
-                                <span class="{{ config.jsName }}__line-name-text"></span>
-                                <small class="{{ config.name }}__line-sku {{ config.jsName }}__line-sku text-muted"></small>
-                            </span>
+                {% block titleTemplates %}
+                    <template data-id="{{ config.jsName }}-title-template">{{ 'recurring_orders.review.add_product.title' | trans({'%count%': '%count%'}) }}</template>
+                    <template data-id="{{ config.jsName }}-title-template-singular">{{ 'recurring_orders.review.add_product.title.singular' | trans({'%count%': '%count%'}) }}</template>
+                {% endblock %}
+            </summary>
 
-                            <input
-                                type="number"
-                                min="{{ minimumQuantity }}"
-                                class="input {{ config.name }}__line-quantity js-review-total-recalculator__line-quantity"
-                                {{ qa(config.name ~ '-line-quantity') }}
+            {% set contentClassName = 'box' %}
+            {% block content %}
+                <div class="{{ contentClassName }}">
+                    {% block lines %}
+                        <div class="{{ config.name }}__lines {{ config.jsName }}__lines"></div>
+                    {% endblock %}
+
+                    {% block lineTemplate %}
+                        <template data-id="{{ config.jsName }}-line-template">
+                            <div
+                                class="{{ config.name }}__line js-review-total-recalculator__line"
+                                {{ qa(config.name ~ '-line') }}
                             >
+                                <span class="{{ config.name }}__line-name" {{ qa(config.name ~ '-line-name') }}>
+                                    <span class="{{ config.jsName }}__line-name-text"></span>
+                                    <small class="{{ config.name }}__line-sku {{ config.jsName }}__line-sku text-muted"></small>
+                                </span>
 
-                            <span class="{{ config.name }}__line-price {{ config.jsName }}__line-price" {{ qa(config.name ~ '-line-price') }}></span>
+                                <input
+                                    type="number"
+                                    min="{{ minimumQuantity }}"
+                                    class="input {{ config.name }}__line-quantity js-review-total-recalculator__line-quantity"
+                                    {{ qa(config.name ~ '-line-quantity') }}
+                                >
 
+                                <span class="{{ config.name }}__line-price {{ config.jsName }}__line-price" {{ qa(config.name ~ '-line-price') }}></span>
+
+                                <button
+                                    type="button"
+                                    class="{{ config.name }}__line-remove {{ config.jsName }}__line-remove"
+                                    {{ qa(config.name ~ '-line-remove') }}
+                                >
+                                    {{ 'recurring_orders.review.add_product.remove' | trans }}
+                                </button>
+                            </div>
+                        </template>
+                    {% endblock %}
+
+                    {% block collection %}
+                        {% include molecule('review-added-items', 'OrderExperienceManagement') with {
+                            data: {
+                                form: data.approveForm.addedItems,
+                            },
+                        } only %}
+                    {% endblock %}
+
+                    {% block openModalButton %}
+                        <div class="grid grid--right spacing-bottom">
                             <button
                                 type="button"
-                                class="{{ config.name }}__line-remove {{ config.jsName }}__line-remove"
-                                {{ qa(config.name ~ '-line-remove') }}
+                                class="{{ openModalClassName }} button"
+                                {{ qa(config.name ~ '-open-modal') }}
                             >
-                                {{ 'recurring_orders.review.add_product.remove' | trans }}
+                                {{ 'recurring_orders.review.add_product.open_modal' | trans }}
                             </button>
                         </div>
-                    </template>
-                {% endblock %}
-
-                {% block collection %}
-                    {% include molecule('review-added-items', 'OrderExperienceManagement') with {
-                        data: {
-                            form: data.approveForm.addedItems,
-                        },
-                    } only %}
-                {% endblock %}
-
-                {% block openModalButton %}
-                    <div class="grid grid--right spacing-bottom">
-                        <button
-                            type="button"
-                            class="{{ openModalClassName }} button"
-                            {{ qa(config.name ~ '-open-modal') }}
-                        >
-                            {{ 'recurring_orders.review.add_product.open_modal' | trans }}
-                        </button>
-                    </div>
-                {% endblock %}
-            </div>
-        {% endblock %}
-    </details>
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </details>
+    {% endblock %}
 
     {% block modal %}
         {% set pickerContent %}
