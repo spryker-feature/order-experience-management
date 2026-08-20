@@ -15,6 +15,10 @@
           data.review.substitutedCount or
           data.review.unavailableCount %}
         {{ parent() }}
+    {% else %}
+        <div class="is-hidden">
+            {{ block('newValue') }}
+        </div>
     {% endif %}
 {% endblock %}
 
@@ -44,18 +48,20 @@
                         <s>{{ data.review.originalTotal | money(true, data.currencyIsoCode) }}</s>
                     {% endblock %}
                     
-                    {% block newValue %}
-                        <span data-qa="recurring-order-review-footer-total">
-                            {% include molecule('review-summary-banner-price', 'OrderExperienceManagement') with {
-                                data: {
-                                    total: data.review.updatedTotal | money(true, data.currencyIsoCode),
-                                    currency: data.currencyIsoCode,
-                                },
-                            } only %}
-                        </span>
-                    {% endblock %}
+                    {{ block('newValue') }}
                 {% endblock %}
             </div>
         </div>
     {% endblock %}
+{% endblock %}
+
+{% block newValue %}
+    <span data-qa="recurring-order-review-footer-total">
+        {% include molecule('review-summary-banner-price', 'OrderExperienceManagement') with {
+            data: {
+                total: data.review.updatedTotal | money(true, data.currencyIsoCode),
+                currency: data.currencyIsoCode,
+            },
+        } only %}
+    </span>
 {% endblock %}
