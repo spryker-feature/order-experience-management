@@ -69,6 +69,11 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
     protected const string MESSAGE_HARD_MAXIMUM_THRESHOLD = 'sales-order-threshold.hard-maximum-threshold.de.eur.message';
 
     /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetCheckoutValidator::GLOSSARY_KEY_VALIDATION_WARN
+     */
+    protected const string MESSAGE_BUDGET_WARN = 'purchasing_control.validation.warn';
+
+    /**
      * @uses \Spryker\Zed\SalesOrderThreshold\Business\HardThresholdCheck\HardThresholdChecker::THRESHOLD_GLOSSARY_PARAMETER
      */
     protected const string THRESHOLD_GLOSSARY_PARAMETER = '{{threshold}}';
@@ -370,6 +375,52 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
         );
     }
 
+    public function testKeepsScheduleValidWhenCheckoutReturnsOnlySoftError(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST),
+        ]);
+        $checkoutResponseTransfer = $this->createCheckoutResponse(
+            [$this->createCheckoutError(null, null)->setMessage(static::MESSAGE_BUDGET_WARN)],
+            true,
+        );
+        $plugin = $this->createPlugin($checkoutResponseTransfer);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertTrue($resultTransfer->getIsValid());
+        $this->assertCount(0, $resultTransfer->getItemReviews());
+        $this->assertCount(1, $resultTransfer->getBlockingErrors());
+
+        $blockingErrorTransfer = $resultTransfer->getBlockingErrors()->offsetGet(0);
+        $this->assertSame(static::MESSAGE_BUDGET_WARN, $blockingErrorTransfer->getMessage());
+        $this->assertTrue($blockingErrorTransfer->getIsSuccess(), 'A soft error must stay non-blocking for review approval.');
+    }
+
+    public function testKeepsScheduleInvalidWhenPriceDriftIsFlaggedAndCheckoutReturnsOnlySoftError(): void
+    {
+        // Arrange
+        $recurringScheduleTransfer = $this->createScheduleTransfer([
+            $this->createScheduleItem(static::SKU_FIRST, static::GROUP_KEY_FIRST),
+        ]);
+        $checkoutResponseTransfer = $this->createCheckoutResponse(
+            [$this->createCheckoutError(null, null)->setMessage(static::MESSAGE_BUDGET_WARN)],
+            true,
+        );
+        $plugin = $this->createPlugin($checkoutResponseTransfer);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createInvalidResult());
+
+        // Assert
+        $this->assertFalse($resultTransfer->getIsValid(), 'A successful checkout response must never re-validate a drifted schedule.');
+        $this->assertCount(1, $resultTransfer->getBlockingErrors());
+        $this->assertTrue($resultTransfer->getBlockingErrors()->offsetGet(0)->getIsSuccess());
+    }
+
     protected function createScheduleItem(string $sku, string $groupKey): RecurringScheduleItemTransfer
     {
         return (new RecurringScheduleItemTransfer())
@@ -407,9 +458,9 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
     /**
      * @param array<\Generated\Shared\Transfer\CheckoutErrorTransfer> $checkoutErrorTransfers
      */
-    protected function createCheckoutResponse(array $checkoutErrorTransfers): CheckoutResponseTransfer
+    protected function createCheckoutResponse(array $checkoutErrorTransfers, bool $isSuccess = false): CheckoutResponseTransfer
     {
-        $checkoutResponseTransfer = (new CheckoutResponseTransfer())->setIsSuccess(false);
+        $checkoutResponseTransfer = (new CheckoutResponseTransfer())->setIsSuccess($isSuccess);
 
         foreach ($checkoutErrorTransfers as $checkoutErrorTransfer) {
             $checkoutResponseTransfer->addError($checkoutErrorTransfer);
@@ -421,6 +472,11 @@ class CheckoutPlaceabilityScheduleValidatorPluginTest extends Unit
     protected function createValidResult(): RecurringScheduleValidationResultTransfer
     {
         return (new RecurringScheduleValidationResultTransfer())->setIsValid(true);
+    }
+
+    protected function createInvalidResult(): RecurringScheduleValidationResultTransfer
+    {
+        return (new RecurringScheduleValidationResultTransfer())->setIsValid(false);
     }
 
     protected function buildPlaceableQuote(RecurringScheduleTransfer $recurringScheduleTransfer): QuoteTransfer

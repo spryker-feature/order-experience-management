@@ -19,7 +19,7 @@
 {% set listItemClassName = 'list__item' %}
 {% block body %}
     <div class="{{ wrapperClassName }}">
-        <ul class="{{ listClassName }}" qa('recurring-order-review-blocking-errors')>
+        <ul class="{{ listClassName }}" {{ qa('recurring-order-review-blocking-errors') }}>
             {% block blockingErrors %}
                 {% for blockingError in data.blockingErrors %}
                     <li class="{{ listItemClassName }}">{{ blockingError.message | trans(blockingError.parameters ?? {}) }}</li>

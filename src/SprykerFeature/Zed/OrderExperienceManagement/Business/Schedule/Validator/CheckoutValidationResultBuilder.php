@@ -34,7 +34,10 @@ class CheckoutValidationResultBuilder implements CheckoutValidationResultBuilder
         RecurringScheduleValidationResultTransfer $recurringScheduleValidationResultTransfer,
     ): RecurringScheduleValidationResultTransfer {
         $itemsByGroupKey = $this->recurringScheduleItemIndexer->indexByGroupKey($recurringScheduleTransfer);
-        $recurringScheduleValidationResultTransfer->setIsValid($checkoutResponseTransfer->getIsSuccess());
+
+        if (!$checkoutResponseTransfer->getIsSuccess()) {
+            $recurringScheduleValidationResultTransfer->setIsValid(false);
+        }
 
         foreach ($checkoutResponseTransfer->getErrors() as $checkoutErrorTransfer) {
             $groupKey = $checkoutErrorTransfer->getGroupKey();

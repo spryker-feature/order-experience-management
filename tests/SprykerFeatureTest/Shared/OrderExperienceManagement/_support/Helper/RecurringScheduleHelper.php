@@ -86,6 +86,12 @@ class RecurringScheduleHelper extends Module
 
     protected const string OVERRIDE_AMOUNT_SALES_UNIT_ID = 'id_product_measurement_sales_unit';
 
+    protected const string OVERRIDE_ID_COST_CENTER = 'id_cost_center';
+
+    protected const string OVERRIDE_ID_BUDGET = 'id_budget';
+
+    protected const string OVERRIDE_ENABLE_STATE_MACHINE = 'enable_state_machine';
+
     /**
      * @param array<string, mixed> $overrides
      */
@@ -94,13 +100,20 @@ class RecurringScheduleHelper extends Module
         $buildQuoteData = (bool)($overrides[static::OVERRIDE_BUILD_QUOTE_DATA] ?? false);
         unset($overrides[static::OVERRIDE_BUILD_QUOTE_DATA]);
 
+        $quoteDataOverrides = $this->extractQuoteDataOverrides($overrides);
+        unset($overrides[static::OVERRIDE_ID_COST_CENTER], $overrides[static::OVERRIDE_ID_BUDGET]);
+
+        $enableStateMachine = (bool)($overrides[static::OVERRIDE_ENABLE_STATE_MACHINE] ?? false);
+        unset($overrides[static::OVERRIDE_ENABLE_STATE_MACHINE]);
+
         $recurringScheduleTransfer = (new RecurringScheduleBuilder($overrides))->build()
             ->setIdCustomer($idCustomer);
 
-        $recurringScheduleTransfer = $this->persistRecurringSchedule($recurringScheduleTransfer, $buildQuoteData);
+        $recurringScheduleTransfer = $this->persistRecurringSchedule($recurringScheduleTransfer, $buildQuoteData, $quoteDataOverrides);
         $this->initializeStateMachineState(
             $recurringScheduleTransfer->getIdRecurringScheduleOrFail(),
             $recurringScheduleTransfer->getStatusOrFail(),
+            $enableStateMachine,
         );
         $this->scheduleRecurringScheduleCleanup($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
 
@@ -377,7 +390,7 @@ class RecurringScheduleHelper extends Module
         return $idSalesOrder;
     }
 
-    protected function initializeStateMachineState(int $idRecurringSchedule, string $status): void
+    protected function initializeStateMachineState(int $idRecurringSchedule, string $status, bool $enableStateMachine = false): void
     {
         $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
             ->filterByStateMachineName(OrderExperienceManagementConfig::STATE_MACHINE_NAME)
@@ -395,10 +408,55 @@ class RecurringScheduleHelper extends Module
             ->setFkStateMachineItemState($stateMachineItemStateEntity->getIdStateMachineItemState())
             ->setIdentifier($idRecurringSchedule)
             ->save();
+
+        if (!$enableStateMachine) {
+            return;
+        }
+
+        $this->linkScheduleToStateMachineItemState(
+            $idRecurringSchedule,
+            $stateMachineItemStateEntity->getIdStateMachineItemState(),
+        );
     }
 
-    protected function resolveQuoteData(RecurringScheduleTransfer $recurringScheduleTransfer, bool $buildMinimalQuoteData = false): string
+    protected function linkScheduleToStateMachineItemState(int $idRecurringSchedule, int $idStateMachineItemState): void
     {
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->filterByIdRecurringSchedule($idRecurringSchedule)
+            ->findOne();
+
+        if ($recurringScheduleEntity === null) {
+            return;
+        }
+
+        $recurringScheduleEntity
+            ->setFkStateMachineItemState($idStateMachineItemState)
+            ->save();
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, int>
+     */
+    protected function extractQuoteDataOverrides(array $overrides): array
+    {
+        $quoteDataOverrides = [
+            QuoteTransfer::ID_COST_CENTER => $overrides[static::OVERRIDE_ID_COST_CENTER] ?? null,
+            QuoteTransfer::ID_BUDGET => $overrides[static::OVERRIDE_ID_BUDGET] ?? null,
+        ];
+
+        return array_map('intval', array_filter($quoteDataOverrides, static fn (mixed $value): bool => $value !== null));
+    }
+
+    /**
+     * @param array<string, int> $quoteDataOverrides
+     */
+    protected function resolveQuoteData(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        bool $buildMinimalQuoteData = false,
+        array $quoteDataOverrides = [],
+    ): string {
         $quoteData = $recurringScheduleTransfer->getQuoteData();
         $hasSeededQuoteData = $quoteData !== null && $quoteData !== '{}';
 
@@ -406,7 +464,7 @@ class RecurringScheduleHelper extends Module
             return $hasSeededQuoteData ? $quoteData : '{}';
         }
 
-        $minimalQuoteData = $this->buildMinimalQuoteData($recurringScheduleTransfer);
+        $minimalQuoteData = $this->buildMinimalQuoteData($recurringScheduleTransfer, $quoteDataOverrides);
 
         if (!$hasSeededQuoteData) {
             return $minimalQuoteData;
@@ -530,7 +588,10 @@ class RecurringScheduleHelper extends Module
         return json_encode($itemTransfer->toArray(), JSON_THROW_ON_ERROR);
     }
 
-    protected function buildMinimalQuoteData(RecurringScheduleTransfer $recurringScheduleTransfer): string
+    /**
+     * @param array<string, int> $quoteDataOverrides
+     */
+    protected function buildMinimalQuoteData(RecurringScheduleTransfer $recurringScheduleTransfer, array $quoteDataOverrides = []): string
     {
         $customerTransfer = $this->getModule('\SprykerTest\Shared\Customer\Helper\CustomerDataHelper')
             ->haveConfirmedCustomer(['locale_name' => 'en_US']);
@@ -563,7 +624,8 @@ class RecurringScheduleHelper extends Module
             ->setPayment($paymentTransfer)
             ->setTotals($totalsTransfer)
             ->setBillingAddress($addressTransfer)
-            ->setShippingAddress($addressTransfer);
+            ->setShippingAddress($addressTransfer)
+            ->fromArray($quoteDataOverrides, true);
 
         return json_encode($quoteTransfer->toArray(), JSON_THROW_ON_ERROR);
     }
@@ -573,8 +635,14 @@ class RecurringScheduleHelper extends Module
         return (new AddressBuilder())->build();
     }
 
-    protected function persistRecurringSchedule(RecurringScheduleTransfer $recurringScheduleTransfer, bool $buildQuoteData = false): RecurringScheduleTransfer
-    {
+    /**
+     * @param array<string, int> $quoteDataOverrides
+     */
+    protected function persistRecurringSchedule(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        bool $buildQuoteData = false,
+        array $quoteDataOverrides = [],
+    ): RecurringScheduleTransfer {
         $recurringScheduleEntity = (new SpyRecurringSchedule())
             ->setFkCustomer($recurringScheduleTransfer->getIdCustomerOrFail())
             ->setFkCompanyUser($recurringScheduleTransfer->getIdCompanyUser())
@@ -589,7 +657,7 @@ class RecurringScheduleHelper extends Module
             ->setCurrencyIsoCode($recurringScheduleTransfer->getCurrencyIsoCodeOrFail())
             ->setPriceMode($recurringScheduleTransfer->getPriceModeOrFail())
             ->setCustomerReference($recurringScheduleTransfer->getCustomerReference())
-            ->setQuoteData($this->resolveQuoteData($recurringScheduleTransfer, $buildQuoteData));
+            ->setQuoteData($this->resolveQuoteData($recurringScheduleTransfer, $buildQuoteData, $quoteDataOverrides));
 
         $recurringScheduleEntity->save();
 
