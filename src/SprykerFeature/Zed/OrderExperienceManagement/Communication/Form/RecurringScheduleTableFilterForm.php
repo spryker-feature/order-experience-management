@@ -10,12 +10,12 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Form;
 
 use Generated\Shared\Transfer\RecurringScheduleTableFilterTransfer;
+use Spryker\Zed\Gui\Communication\Form\Type\DatePickerType;
 use Spryker\Zed\Gui\Communication\Form\Type\Select2ComboBoxType;
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\DataProvider\RecurringScheduleTableFilterFormDataProvider;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
@@ -46,6 +46,8 @@ class RecurringScheduleTableFilterForm extends AbstractType
     public const string FIELD_NEXT_TRIGGER_DATE_FROM = 'nextTriggerDateFrom';
 
     public const string FIELD_NEXT_TRIGGER_DATE_TO = 'nextTriggerDateTo';
+
+    protected const string RANGE_GROUP_NEXT_TRIGGER_DATE = 'recurring-schedule-next-trigger-date';
 
     protected const string COMPANY_FIELD_SELECTOR = '#recurringScheduleTableFilter_idCompany';
 
@@ -226,7 +228,12 @@ class RecurringScheduleTableFilterForm extends AbstractType
      */
     protected function addNextTriggerDateFromField(FormBuilderInterface $builder)
     {
-        $this->addDateField($builder, static::FIELD_NEXT_TRIGGER_DATE_FROM, 'Next trigger date from');
+        $this->addDateField(
+            $builder,
+            static::FIELD_NEXT_TRIGGER_DATE_FROM,
+            'Next trigger date from',
+            DatePickerType::RANGE_ROLE_START,
+        );
 
         return $this;
     }
@@ -236,19 +243,24 @@ class RecurringScheduleTableFilterForm extends AbstractType
      */
     protected function addNextTriggerDateToField(FormBuilderInterface $builder)
     {
-        $this->addDateField($builder, static::FIELD_NEXT_TRIGGER_DATE_TO, 'Next trigger date to');
+        $this->addDateField(
+            $builder,
+            static::FIELD_NEXT_TRIGGER_DATE_TO,
+            'Next trigger date to',
+            DatePickerType::RANGE_ROLE_END,
+        );
 
         return $this;
     }
 
-    protected function addDateField(FormBuilderInterface $builder, string $fieldName, string $label): void
+    protected function addDateField(FormBuilderInterface $builder, string $fieldName, string $label, string $rangeRole): void
     {
-        $builder->add($fieldName, DateType::class, [
+        $builder->add($fieldName, DatePickerType::class, [
             'label' => $label,
             'required' => false,
-            'widget' => 'single_text',
-            'html5' => true,
             'input' => 'string',
+            'range_group' => static::RANGE_GROUP_NEXT_TRIGGER_DATE,
+            'range_role' => $rangeRole,
         ]);
     }
 
