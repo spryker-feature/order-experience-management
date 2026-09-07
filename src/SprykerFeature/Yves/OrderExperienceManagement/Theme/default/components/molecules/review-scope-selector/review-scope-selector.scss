@@ -1,5 +1,6 @@
 @use 'sass:meta';
 @use 'sass:map';
+
 @mixin order-experience-management-review-scope-selector($name: '.review-scope-selector') {
     #{$name} {
         @if meta.mixin-exists(order-experience-management-review-scope-selector-base-hook) {
