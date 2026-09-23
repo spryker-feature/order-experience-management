@@ -1,0 +1,9 @@
+post:
+    event:
+        - NotBlank: ~
+        - Length:
+              max: 255
+
+    itemUuids:
+        - Type:
+              type: array

@@ -1,0 +1,376 @@
+# Canonical shape of one order line item.
+object:
+    name: OrdersItem
+    properties:
+        sku:
+            type: string
+            required: true
+            description: 'Concrete product SKU.'
+            openapiContext:
+                example: '008_30692992'
+
+        quantity:
+            type: integer
+            description: >-
+                Ordered quantity, in the product's base measurement unit. Required, except when
+                `salesUnit.amount` is supplied — the quantity is then derived from it, and must either be
+                omitted or match what it derives to.
+            openapiContext:
+                example: 200
+
+        salesUnit:
+            type: object
+            description: >-
+                The measurement unit this line is ordered in — "2 metres" rather than "200 base units".
+                Optional; omit it for a product sold in base units. On POST supply `code`, and `amount` when
+                you want the quantity derived from it. Everything else is returned from the order's own
+                snapshot.
+            properties:
+                code:
+                    type: string
+                    description: >-
+                        Measurement unit code — e.g. `METR`, `KILO`. Must be a unit this line's product is
+                        sold in, and available in the order's store.
+                    openapiContext:
+                        example: 'METR'
+                amount:
+                    type: number
+                    description: >-
+                        How many of `code` are ordered. The base-unit `quantity` is derived as
+                        `amount * conversion` and the order is rejected when that is not a whole number of
+                        base units. Omit it to supply `quantity` directly instead.
+                    openapiContext:
+                        example: 2.5
+                name:
+                    type: string
+                    writable: false
+                    description: 'Measurement unit name, snapshotted onto the line at order time.'
+                    openapiContext:
+                        example: 'Metre'
+                baseUnitName:
+                    type: string
+                    writable: false
+                    description: 'Name of the base unit `quantity` is expressed in.'
+                    openapiContext:
+                        example: 'Item'
+                conversion:
+                    type: number
+                    writable: false
+                    description: 'Base units per one `code`. `quantity = amount * conversion`.'
+                    openapiContext:
+                        example: 1
+                precision:
+                    type: integer
+                    writable: false
+                    description: 'Smallest fraction of `code` that can be ordered, as a divisor.'
+                    openapiContext:
+                        example: 100
+
+        unitCustomPrice:
+            type: integer
+            writable: true
+            readable: false
+            description: >-
+                Unit price in cents to charge instead of the product's own price. Optional on POST —
+                omitted lines are priced from the catalogue.
+            openapiContext:
+                example: 25000
+
+        unitPrice:
+            type: integer
+            writable: false
+            description: 'Unit price actually charged, in cents. Response only; mirrors sumPrice.'
+            openapiContext:
+                example: 25000
+
+        merchantReference:
+            type: string
+            description: 'Merchant fulfilling this line. Supply with `sku` for a marketplace line; omit for an operator-sold line.'
+            openapiContext:
+                example: 'MER000001'
+
+        productOfferReference:
+            type: string
+            description: 'The specific offer to buy — distinct from `merchantReference` when a merchant holds several offers for one SKU. Optional.'
+            openapiContext:
+                example: 'offer39'
+
+        cartNote:
+            type: string
+            description: 'Free-text note carried on the line.'
+            openapiContext:
+                example: 'Deliver to gate 3'
+
+        packagingAmount:
+            type: object
+            description: >-
+                For a product sold as a package — a box, a ring, a bulk quantity — how much of the contained
+                product each package holds. Optional; omit it to order the package's configured default
+                amount, and omit the whole object for a product that is not sold as a package.
+            properties:
+                amount:
+                    type: number
+                    description: >-
+                        Amount per package, not for the whole line — ordering 3 boxes of 250 is
+                        `quantity: 3` with `amount: 250`. Must respect the package's configured minimum,
+                        maximum and step, and can only differ from the default when the package allows a
+                        variable amount.
+                    openapiContext:
+                        example: 250
+                salesUnitCode:
+                    type: string
+                    description: >-
+                        Measurement unit the amount is expressed in — a unit of the CONTAINED product, not of
+                        the package itself. Defaults to the contained product's default unit when omitted.
+                    openapiContext:
+                        example: 'KILO'
+                salesUnitName:
+                    type: string
+                    writable: false
+                    description: 'Name of the unit the amount is expressed in.'
+                    openapiContext:
+                        example: 'Kilo'
+                leadProductSku:
+                    type: string
+                    writable: false
+                    description: 'SKU of the product contained in the package.'
+                    openapiContext:
+                        example: '218_123'
+
+        productOptions:
+            type: array
+            description: >-
+                Product options selected for this line. Supplied on POST as `[{"sku": "..."}]`.
+                Options are per line, so the same product ordered twice with different options is two lines.
+            items:
+                type: object
+                properties:
+                    sku:
+                        type: string
+                        description: >-
+                            Product option SKU. The only field accepted on POST. The option must be active,
+                            offered for this line's product, and priced in the order's store and currency.
+                        openapiContext:
+                            example: 'OP_gift_wrapping'
+                    groupName:
+                        type: string
+                        writable: false
+                        description: 'Option group name snapshotted onto the line at order time.'
+                        openapiContext:
+                            example: 'Gift wrapping'
+                    value:
+                        type: string
+                        writable: false
+                        description: 'The selected option value, snapshotted at order time.'
+                        openapiContext:
+                            example: 'Premium paper'
+                    unitPrice:
+                        type: integer
+                        writable: false
+                        description: 'Option surcharge per unit, in cents.'
+                        openapiContext:
+                            example: 500
+                    sumPrice:
+                        type: integer
+                        writable: false
+                        description: "Option surcharge across all units of the line, in cents. Included in the line's `sumSubtotalAggregation`."
+                        openapiContext:
+                            example: 1000
+                    taxRate:
+                        type: number
+                        writable: false
+                        description: 'Tax rate applied to this option, in percent.'
+                        openapiContext:
+                            example: 19
+
+        shipment:
+            type: object
+            description: 'Per-line delivery override. Falls back to the order-level `shipment` when omitted.'
+            properties:
+                shipmentMethod:
+                    type: string
+                    description: 'Shipment method name for this line.'
+                    openapiContext:
+                        example: 'Express'
+                shippingAddress:
+                    type: object
+                    objectName: Address
+                    description: 'Delivery address for this line. Same shape as the order-level shipment.shippingAddress.'
+                    properties:
+                        uuid:
+                            type: string
+                            description: >-
+                                Reference to one of the customer's saved addresses; must belong to this order's
+                                customer. The other fields are ignored when set. Leave empty (not "string") to
+                                supply the address inline via the fields below instead.
+                            openapiContext: { example: '' }
+                        salutation:
+                            type: string
+                            openapiContext: { example: 'Ms', enum: ['Mr', 'Mrs', 'Dr', 'Ms', 'n/a'] }
+                        firstName:
+                            type: string
+                            openapiContext: { example: 'Sonia' }
+                        lastName:
+                            type: string
+                            openapiContext: { example: 'Wagner' }
+                        company:
+                            type: string
+                        address1:
+                            type: string
+                            description: 'Street.'
+                            openapiContext: { example: 'Hauptstrasse' }
+                        address2:
+                            type: string
+                            description: 'House number.'
+                            openapiContext: { example: '99' }
+                        address3:
+                            type: string
+                            description: 'Address addition.'
+                        zipCode:
+                            type: string
+                            openapiContext: { example: '20095' }
+                        city:
+                            type: string
+                            openapiContext: { example: 'Hamburg' }
+                        iso2Code:
+                            type: string
+                            description: 'ISO 3166-1 alpha-2 country code.'
+                            openapiContext: { example: 'DE' }
+                        phone:
+                            type: string
+                requestedDeliveryDate:
+                    type: string
+                    description: 'Requested delivery date for this line.'
+                    openapiContext:
+                        example: '2026-10-15'
+
+        # ------------------------------------------------------------------ response only
+        sumPrice:
+            type: integer
+            writable: false
+            description: 'Line price in cents before discounts.'
+            openapiContext:
+                example: 34500
+
+        taxRate:
+            type: number
+            writable: false
+            description: 'Tax rate applied to this line, in percent.'
+            openapiContext:
+                example: 19
+
+        sumTaxAmount:
+            type: integer
+            writable: false
+            description: 'Tax charged on this line, in cents.'
+            openapiContext:
+                example: 4658
+
+        refundableAmount:
+            type: integer
+            writable: false
+            description: 'Amount still refundable on this line, in cents.'
+            openapiContext:
+                example: 29176
+
+        canceledAmount:
+            type: integer
+            writable: false
+            description: 'Canceled portion of this line, in cents.'
+            openapiContext:
+                example: 0
+
+        calculatedDiscounts:
+            type: array
+            writable: false
+            description: >-
+                Rules and vouchers applied to this line. The order-level `calculatedDiscounts` reports the
+                same discounts totalled per discount.
+            items:
+                type: object
+                properties:
+                    displayName:
+                        type: string
+                        writable: false
+                        description: 'Name of the discount as configured.'
+                    description:
+                        type: string
+                        writable: false
+                        description: 'Description of the discount as configured.'
+                    voucherCode:
+                        type: string
+                        writable: false
+                        description: 'The voucher code that triggered it. Null for a cart rule.'
+                    quantity:
+                        type: integer
+                        writable: false
+                        description: >-
+                            Units the discount applied to — not how many times it was used. Always the same
+                            as this item's `quantity`.
+                    unitAmount:
+                        type: integer
+                        writable: false
+                        description: >-
+                            Discount per unit, in cents. Rounded for display — use `sumAmount` for any
+                            calculation.
+                    sumAmount:
+                        type: integer
+                        writable: false
+                        description: 'Discount for this line, in cents.'
+
+        sumSubtotalAggregation:
+            type: integer
+            writable: false
+            description: 'Line subtotal in cents.'
+            openapiContext:
+                example: 34500
+
+        sumDiscountAmountFullAggregation:
+            type: integer
+            writable: false
+            description: 'Discount applied to the line, in cents.'
+            openapiContext:
+                example: 3450
+
+        sumPriceToPayAggregation:
+            type: integer
+            writable: false
+            description: 'What the line actually costs after discounts, in cents.'
+            openapiContext:
+                example: 31050
+
+        uuid:
+            type: string
+            writable: false
+            description: >-
+                Public unique identifier for this order line item, and the value every other endpoint
+                addresses a line by — POST /orders/{orderReference}/transitions takes these in
+                `itemUuids`. The internal id is never exposed.
+            openapiContext:
+                example: '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+
+        name:
+            type: string
+            writable: false
+            description: 'Product name snapshotted onto the line at order time.'
+            openapiContext:
+                example: 'Canon PowerShot SC620'
+
+        state:
+            type: string
+            writable: false
+            description: 'Current OMS state of this item.'
+            openapiContext:
+                example: 'exported'
+
+        availableEvents:
+            type: array
+            writable: false
+            description: >-
+                Events an operator can currently trigger on this line item (events the system fires on
+                its own are not included). This is the per-line detail behind the order-level
+                `availableEvents`, which reports the union over all lines. Empty when the item
+                sits in a terminal state. Returned by GET /orders/{orderReference} only — the
+                collection endpoint omits `items` entirely.
+            openapiContext:
+                example: ['ship', 'cancel']

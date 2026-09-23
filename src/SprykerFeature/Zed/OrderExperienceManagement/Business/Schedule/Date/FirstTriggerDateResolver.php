@@ -20,9 +20,6 @@ class FirstTriggerDateResolver implements FirstTriggerDateResolverInterface
     {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function resolve(?string $startDate, string $cadenceType, ?int $cadenceValue): DateTimeImmutable
     {
         $today = new DateTimeImmutable('today');

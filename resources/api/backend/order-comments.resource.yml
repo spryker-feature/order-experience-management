@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=../../../../../src/Spryker/ApiPlatform/resources/schemas/api-resource-schema-v1.json
+
+resource:
+    name: OrderComments
+    shortName: order-comments
+    description: >-
+        Comments on a placed order, as shown in the Back Office. Returns the full thread for the
+        order; a new comment is attributed to the authenticated operator.
+
+    provider: "SprykerFeature\\Glue\\OrderExperienceManagement\\Api\\Backend\\Provider\\OrderCommentsBackendProvider"
+    processor: "SprykerFeature\\Glue\\OrderExperienceManagement\\Api\\Backend\\Processor\\OrderCommentsBackendProcessor"
+
+    # Comments for a single order are not paginated; the thread is small enough to return in full.
+    paginationEnabled: false
+
+    security: "is_granted('ROLE_BACK_OFFICE_USER')"
+
+    operations:
+        - type: GetCollection
+          description: >-
+              List the Back Office comments of one order, oldest first. An order with no comments yet
+              returns an empty collection rather than a 404.
+          uriTemplate: '/orders/{orderReference}/comments'
+          uriVariables:
+              orderReference:
+                  identifiers: [orderReference]
+          normalizationContext: { gen_id: false, skip_null_values: true }
+          openapiContext:
+              summary: "List an order's Back Office comments"
+              responses:
+                  200:
+                      description: >-
+                          The order's comments, oldest first. An order with no comments yet returns an
+                          empty `data` array — not a 404.
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+                  404:
+                      description: 'No order with this orderReference.'
+
+        - type: Post
+          description: >-
+              Append a comment to an order. The comment is attributed to the operator whose access
+              token was used; the author cannot be supplied by the client.
+          deserialize: true
+          status: 201
+          read: false
+          uriTemplate: '/orders/{orderReference}/comments'
+          uriVariables:
+              orderReference:
+                  identifiers: [orderReference]
+          normalizationContext: { gen_id: false, skip_null_values: true }
+          openapiContext:
+              summary: 'Add a Back Office comment to an order'
+              responses:
+                  201:
+                      description: 'The created comment, attributed to the authenticated operator.'
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+                  404:
+                      description: 'No order with this orderReference.'
+                  422:
+                      description: 'The message is blank, or longer than 5000 characters.'
+
+    properties:
+        orderReference:
+            type: string
+            writable: false
+            description: 'Order the comment belongs to. Taken from the path, never from the body.'
+            openapiContext:
+                example: 'DE--1234'
+
+        message:
+            type: string
+            required: true
+            description: 'The comment body. Trimmed, then required to be 1..5000 characters.'
+            openapiContext:
+                example: 'Customer asked to hold the shipment until Friday.'
+
+        username:
+            type: string
+            writable: false
+            nullable: true
+            description: >-
+                Display name of the operator who wrote the comment. Set automatically and read-only;
+                may be absent on some existing comments.
+            openapiContext:
+                example: 'Admin Spryker'
+
+        createdAt:
+            type: string
+            writable: false
+            openapiContext:
+                example: '2026-09-09 11:04:12.000000'
+
+        updatedAt:
+            type: string
+            writable: false
+            openapiContext:
+                example: '2026-09-09 11:04:12.000000'

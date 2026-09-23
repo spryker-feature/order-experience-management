@@ -9,6 +9,12 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business;
 
+use Generated\Shared\Transfer\ItemCollectionTransfer;
+use Generated\Shared\Transfer\ItemTransfer;
+use Generated\Shared\Transfer\OrderIntakeRequestTransfer;
+use Generated\Shared\Transfer\OrderIntakeResponseTransfer;
+use Generated\Shared\Transfer\OrderItemTransitionRequestTransfer;
+use Generated\Shared\Transfer\OrderItemTransitionResponseTransfer;
 use Generated\Shared\Transfer\RecurringOrderQuoteUpdateRequestTransfer;
 use Generated\Shared\Transfer\RecurringOrderQuoteUpdateResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionRequestTransfer;
@@ -146,5 +152,63 @@ class OrderExperienceManagementFacade extends AbstractFacade implements OrderExp
         return $this->getFactory()
             ->createScheduleReviewApprover()
             ->approve($requestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createOrderFromIntake(
+        OrderIntakeRequestTransfer $orderIntakeRequestTransfer
+    ): OrderIntakeResponseTransfer {
+        return $this->getFactory()
+            ->createOrderIntakeWriter()
+            ->createOrderFromIntake($orderIntakeRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ItemCollectionTransfer $itemCollectionTransfer
+     *
+     * @return array<int, array<int, string>>
+     */
+    public function getAvailableOrderItemTransitions(ItemCollectionTransfer $itemCollectionTransfer): array
+    {
+        return $this->getFactory()
+            ->createAvailableOrderItemTransitionReader()
+            ->getAvailableTransitionsByOrderItemId($itemCollectionTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ItemTransfer $itemTransfer
+     *
+     * @return array<int, string>
+     */
+    public function getAvailableOrderItemTransitionsForItem(ItemTransfer $itemTransfer): array
+    {
+        return $this->getFactory()
+            ->createAvailableOrderItemTransitionReader()
+            ->getAvailableTransitions($itemTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function applyOrderItemTransition(
+        OrderItemTransitionRequestTransfer $orderItemTransitionRequestTransfer
+    ): OrderItemTransitionResponseTransfer {
+        return $this->getFactory()
+            ->createOrderItemTransitionApplier()
+            ->applyTransition($orderItemTransitionRequestTransfer);
     }
 }

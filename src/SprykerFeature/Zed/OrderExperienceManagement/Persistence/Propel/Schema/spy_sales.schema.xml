@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="zed" xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd" namespace="Orm\Zed\Sales\Persistence" package="src.Orm.Zed.Sales.Persistence">
+
+    <table name="spy_sales_order">
+        <column name="created_at" type="TIMESTAMP" required="true" description="The timestamp when an entity was created."/>
+
+        <!-- The Backend API orders collection filters and sorts on created_at, which without this
+             index would scan the whole table on the largest table in the system. -->
+        <index name="spy_sales_order-created_at">
+            <index-column name="created_at"/>
+        </index>
+    </table>
+
+</database>

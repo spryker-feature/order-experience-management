@@ -30,6 +30,31 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Value written to `QuoteTransfer.source` by the order-intake pipeline.
+     * - Identifies an API-originated quote to consumers that discriminate by source.
+     *
+     * @api
+     *
+     * @uses \Pyz\Zed\QuoteCheckoutConnector\QuoteCheckoutConnectorConfig::getQuoteCheckoutLockExemptSources()
+     *
+     * @var string
+     */
+    public const string SOURCE_API = 'api';
+
+    /**
+     * Specification:
+     * - Returns the locale checkout errors are translated into when the caller resolved none, or
+     *   resolved one order intake carries no translations for.
+     *
+     * @api
+     */
+    public function getFallbackLocaleName(): string
+    {
+        return SharedOrderExperienceManagementConfig::LOCALE_NAME_EN_US;
+    }
+
+    /**
+     * Specification:
      * - Returns the statuses selectable in the Back Office Recurring Order Schedules filter, as [glossary key => status value].
      *
      * @api

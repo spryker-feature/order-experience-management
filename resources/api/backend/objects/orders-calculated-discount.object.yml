@@ -1,0 +1,50 @@
+# Canonical calculated discount
+object:
+    name: OrdersCalculatedDiscount
+    properties:
+        displayName:
+            type: string
+            writable: false
+            description: >-
+                Name of the discount as configured. Order-level entries are grouped by this name, so two
+                discounts sharing a display name arrive as a single entry. Per-line entries are never grouped.
+            openapiContext: { example: 'Free standard delivery' }
+
+        description:
+            type: string
+            writable: false
+            description: 'Description of the discount as configured.'
+
+        voucherCode:
+            type: string
+            writable: false
+            description: >-
+                The voucher code that triggered it. Null for a cart rule. On a grouped order-level entry it
+                reflects only one of the merged discounts.
+            openapiContext: { example: 'summer-2026' }
+
+        quantity:
+            type: integer
+            writable: false
+            description: >-
+                Ordered units the discount applied to — not how many times it was used. On
+                `items[].calculatedDiscounts`, the same as that line's `quantity`; at order level, the total
+                across every line it applied to.
+            openapiContext: { example: 2 }
+
+        unitAmount:
+            type: integer
+            writable: false
+            description: >-
+                Discount per unit, in cents. Rounded for display — use `sumAmount` for any calculation.
+                Present on `items[].calculatedDiscounts`; null at order level.
+            openapiContext: { example: 490 }
+
+        sumAmount:
+            type: integer
+            writable: false
+            description: >-
+                Discount in cents: for that line on `items[].calculatedDiscounts`, and at order level the
+                discount's total across the order, including any part of it applied to shipping or product
+                options.
+            openapiContext: { example: 490 }

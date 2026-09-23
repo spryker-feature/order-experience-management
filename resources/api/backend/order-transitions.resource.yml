@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=../../../../../src/Spryker/ApiPlatform/resources/schemas/api-resource-schema-v1.json
+
+resource:
+    name: OrderTransitions
+    shortName: order-transitions
+    description: "Fires one OMS event over a chosen set of a placed order's line items."
+
+    processor: "SprykerFeature\\Glue\\OrderExperienceManagement\\Api\\Backend\\Processor\\OrderTransitionsBackendProcessor"
+
+    security: "is_granted('ROLE_BACK_OFFICE_USER')"
+
+    operations:
+        - type: Post
+          deserialize: true
+          status: 200
+          read: false
+          uriTemplate: '/orders/{orderReference}/transitions'
+          uriVariables:
+              orderReference:
+                  identifiers: [orderReference]
+          normalizationContext: { skip_null_values: true }
+          openapiContext:
+              responses:
+                  200:
+                      description: >-
+                          Event applied to at least one item. Read `items[].outcome` to tell whether every
+                          admitted item advanced — a partial failure is still reported as 200, since some
+                          items did advance.
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+                  404:
+                      description: 'No order with this orderReference.'
+                  409:
+                      description: >-
+                          The OMS state machine is locked for one of these items — a concurrent
+                          transition is running. Retry.
+                  422:
+                      description: >-
+                          Nothing was applied — every named item was unknown, ineligible, or none was
+                          eligible. See the error message for which.
+                  500:
+                      description: 'OMS reported an internal failure; the resulting state is indeterminate.'
+
+    properties:
+        orderReference:
+            type: string
+            writable: false
+            description: 'Sales order the transition applies to. Taken from the path, never from the body.'
+            openapiContext:
+                example: 'DE--1234'
+
+        event:
+            type: string
+            required: true
+            description: >-
+                OMS event to fire. Must be currently legal for every item named in `itemUuids` —
+                read the legal set from `items[].availableEvents` on
+                GET /orders/{orderReference}, which is the same source this endpoint admits against.
+                Timeout-only events are never accepted, even where OMS would otherwise allow them.
+            openapiContext:
+                example: 'ship'
+
+        itemUuids:
+            type: array
+            readable: false
+            description: >-
+                `items[].uuid` values from GET /orders/{orderReference}. Every uuid must belong to this
+                order. OMIT to target every item of the order for which the event is currently legal.
+                Given explicitly, the list is an ASSERTION — one ineligible item rejects the whole
+                request and fires nothing. Omitted, it is a SCOPE SELECTOR — ineligible items are
+                reported as `skipped` and the eligible subset is triggered.
+            openapiContext:
+                example: ['3fa85f64-5717-4562-b3fc-2c963f66afa6', '9c1e0b2a-4f3d-4a91-8c77-1d5b6e2f0a34']
+
+        items:
+            type: array
+            objectName: OrderTransitionsItem
+            writable: false
+            description: >-
+                Returned only when the event was applied. One entry per item the request targeted — the
+                named `itemUuids` if given, otherwise every item of the order — in the order the
+                order reports them. Always complete: a targeted item is never absent, so it can never be
+                silently implied to have succeeded.
+
+        messages:
+            type: array
+            writable: false
+            description: >-
+                Additional messages reported for this event, if any — on success as well as failure, so
+                a warning is never dropped. Commonly empty.
+            items:
+                type: object
+                properties:
+                    type:
+                        type: string
+                        writable: false
+                        openapiContext: { example: 'error' }
+                    value:
+                        type: string
+                        writable: false

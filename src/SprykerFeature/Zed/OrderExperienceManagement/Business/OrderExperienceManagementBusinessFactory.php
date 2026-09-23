@@ -10,27 +10,39 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business;
 
 use Spryker\Service\Customer\CustomerServiceInterface;
+use Spryker\Service\PriceProduct\PriceProductServiceInterface;
 use Spryker\Service\Shipment\ShipmentServiceInterface;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use Spryker\Zed\Calculation\Business\CalculationFacadeInterface;
 use Spryker\Zed\Cart\Business\CartFacadeInterface;
+use Spryker\Zed\CartCode\Business\CartCodeFacadeInterface;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
 use Spryker\Zed\CompanyUnitAddress\Business\CompanyUnitAddressFacadeInterface;
 use Spryker\Zed\CompanyUser\Business\CompanyUserFacadeInterface;
 use Spryker\Zed\Customer\Business\CustomerFacadeInterface;
+use Spryker\Zed\Glossary\Business\GlossaryFacadeInterface;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 use Spryker\Zed\Locale\Business\LocaleFacadeInterface;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
+use Spryker\Zed\Merchant\Business\MerchantFacadeInterface;
 use Spryker\Zed\MerchantProduct\Business\MerchantProductFacadeInterface;
 use Spryker\Zed\Messenger\Business\MessengerFacadeInterface;
+use Spryker\Zed\Oms\Business\OmsFacadeInterface;
 use Spryker\Zed\Payment\Business\PaymentFacadeInterface;
+use Spryker\Zed\Price\Business\PriceFacadeInterface;
 use Spryker\Zed\PriceCartConnector\Business\PriceCartConnectorFacadeInterface;
+use Spryker\Zed\PriceProduct\Business\PriceProductFacadeInterface;
+use Spryker\Zed\Product\Business\ProductFacadeInterface;
 use Spryker\Zed\ProductMeasurementUnit\Business\ProductMeasurementUnitFacadeInterface;
 use Spryker\Zed\ProductOffer\Business\ProductOfferFacadeInterface;
+use Spryker\Zed\ProductOption\Business\ProductOptionFacadeInterface;
 use Spryker\Zed\ProductPackagingUnit\Business\ProductPackagingUnitFacadeInterface;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
+use Spryker\Zed\Sales\Business\SalesFacadeInterface;
 use Spryker\Zed\Shipment\Business\ShipmentFacadeInterface;
 use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
+use Spryker\Zed\Store\Business\StoreFacadeInterface;
+use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Service\OrderExperienceManagement\OrderExperienceManagementServiceInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolver;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
@@ -44,6 +56,50 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Forecast\RecurringSche
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Forecast\RecurringScheduleForecastReaderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Forecast\RecurringScheduleForecastRefresher;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Forecast\RecurringScheduleForecastRefresherInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeItemExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeItemExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakePackagingAmountExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakePackagingAmountExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeProductOptionExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeProductOptionExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeQuoteExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeQuoteExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeSalesUnitExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeSalesUnitExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeShipmentExpander;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeShipmentExpanderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeCartCodeApplier;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeCartCodeApplierInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteAssembler;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteAssemblerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteBuilder;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteBuilderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeRequestPreparer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeRequestPreparerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeWriter;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeWriterInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakeAddressResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakeAddressResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakeCustomerResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakeCustomerResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePaymentResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePaymentResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePriceResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePriceResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\ProductMeasurementSalesUnitCodeResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\ProductMeasurementSalesUnitCodeResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Translator\OrderIntakeMessageTranslator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Translator\OrderIntakeMessageTranslatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeLocaleValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeLocaleValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeRequestValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeRequestValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeStoreValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeStoreValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Mapper\RecurringOrderNotificationMailMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Mapper\RecurringOrderNotificationMailMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\Reader\RecurringScheduleBuyerReader;
@@ -223,6 +279,12 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Writer\Schedu
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Writer\ScheduleUpdaterInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Writer\ScheduleWriter;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Writer\ScheduleWriterInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\AvailableOrderItemTransitionReader;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\AvailableOrderItemTransitionReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\OrderItemTransitionApplier;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\OrderItemTransitionApplierInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\OrderItemTransitionOutcomeMapper;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Transition\OrderItemTransitionOutcomeMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
 
 /**
@@ -270,6 +332,26 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function getLocaleFacade(): LocaleFacadeInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_LOCALE);
+    }
+
+    public function getGlossaryFacade(): GlossaryFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_GLOSSARY);
+    }
+
+    public function getTranslatorFacade(): TranslatorFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_TRANSLATOR);
+    }
+
+    public function createOrderIntakeMessageTranslator(): OrderIntakeMessageTranslatorInterface
+    {
+        return new OrderIntakeMessageTranslator(
+            $this->getGlossaryFacade(),
+            $this->getTranslatorFacade(),
+            $this->getLocaleFacade(),
+            $this->getConfig(),
+        );
     }
 
     public function createRecurringScheduleItemMapper(): RecurringScheduleItemMapperInterface
@@ -451,9 +533,29 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_MERCHANT_PRODUCT);
     }
 
+    public function getProductOptionFacade(): ProductOptionFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_PRODUCT_OPTION);
+    }
+
+    public function getPriceProductFacade(): PriceProductFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_PRICE_PRODUCT);
+    }
+
+    public function getPriceProductService(): PriceProductServiceInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::SERVICE_PRICE_PRODUCT);
+    }
+
     public function getShipmentFacade(): ShipmentFacadeInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_SHIPMENT);
+    }
+
+    public function getStoreFacade(): StoreFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_STORE);
     }
 
     public function getShipmentService(): ShipmentServiceInterface
@@ -572,6 +674,11 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function getMessengerFacade(): MessengerFacadeInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_MESSENGER);
+    }
+
+    public function getProductFacade(): ProductFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_PRODUCT);
     }
 
     public function getCartFacade(): CartFacadeInterface
@@ -888,6 +995,35 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
         );
     }
 
+    public function createOrderIntakeItemExpander(): OrderIntakeItemExpanderInterface
+    {
+        return new OrderIntakeItemExpander($this->getProductFacade());
+    }
+
+    public function createOrderIntakeProductOptionExpander(): OrderIntakeProductOptionExpanderInterface
+    {
+        return new OrderIntakeProductOptionExpander($this->getProductOptionFacade());
+    }
+
+    public function createOrderIntakeSalesUnitExpander(): OrderIntakeSalesUnitExpanderInterface
+    {
+        return new OrderIntakeSalesUnitExpander($this->createProductMeasurementSalesUnitCodeResolver());
+    }
+
+    public function createOrderIntakePackagingAmountExpander(): OrderIntakePackagingAmountExpanderInterface
+    {
+        return new OrderIntakePackagingAmountExpander(
+            $this->getProductPackagingUnitFacade(),
+            $this->createProductMeasurementSalesUnitCodeResolver(),
+            $this->getProductFacade(),
+        );
+    }
+
+    public function createProductMeasurementSalesUnitCodeResolver(): ProductMeasurementSalesUnitCodeResolverInterface
+    {
+        return new ProductMeasurementSalesUnitCodeResolver($this->getProductMeasurementUnitFacade());
+    }
+
     public function createAddedItemShipmentResolver(): AddedItemShipmentResolverInterface
     {
         return new AddedItemShipmentResolver(
@@ -1135,5 +1271,171 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function getMailFacade(): MailFacadeInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_MAIL);
+    }
+
+    public function createOrderIntakeWriter(): OrderIntakeWriterInterface
+    {
+        return new OrderIntakeWriter(
+            $this->createOrderIntakeRequestPreparer(),
+            $this->createOrderIntakeQuoteBuilder(),
+            $this->createOrderIntakeCartCodeApplier(),
+            $this->getCalculationFacade(),
+            $this->createOrderIntakePaymentResolver(),
+            $this->getCheckoutFacade(),
+            $this->createOrderIntakeMessageTranslator(),
+            $this->getSalesFacade(),
+            $this->getLocaleFacade(),
+        );
+    }
+
+    public function createOrderIntakeRequestPreparer(): OrderIntakeRequestPreparerInterface
+    {
+        return new OrderIntakeRequestPreparer(
+            $this->createOrderIntakeRequestValidator(),
+            $this->createOrderIntakeStoreValidator(),
+            $this->createOrderIntakeLocaleValidator(),
+            $this->createOrderIntakeCustomerResolver(),
+            $this->createOrderIntakeAddressResolver(),
+        );
+    }
+
+    public function createOrderIntakeQuoteBuilder(): OrderIntakeQuoteBuilderInterface
+    {
+        return new OrderIntakeQuoteBuilder(
+            $this->createOrderIntakeQuoteAssembler(),
+            $this->createOrderIntakeQuoteExpander(),
+            $this->createOrderIntakeItemExpander(),
+            $this->createOrderIntakeProductOfferValidator(),
+            $this->createOrderIntakeMerchantValidator(),
+            $this->createOrderIntakeSalesUnitExpander(),
+            $this->createOrderIntakeProductOptionExpander(),
+            $this->createOrderIntakePriceResolver(),
+            $this->createOrderIntakePackagingAmountExpander(),
+            $this->createOrderIntakeShipmentExpander(),
+        );
+    }
+
+    public function createOrderIntakeStoreValidator(): OrderIntakeStoreValidatorInterface
+    {
+        return new OrderIntakeStoreValidator($this->getStoreFacade());
+    }
+
+    public function createOrderIntakeLocaleValidator(): OrderIntakeLocaleValidatorInterface
+    {
+        return new OrderIntakeLocaleValidator($this->getLocaleFacade());
+    }
+
+    public function createOrderIntakeCartCodeApplier(): OrderIntakeCartCodeApplierInterface
+    {
+        return new OrderIntakeCartCodeApplier(
+            $this->getCartCodeFacade(),
+            $this->createOrderIntakeMessageTranslator(),
+        );
+    }
+
+    public function getCartCodeFacade(): CartCodeFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_CART_CODE);
+    }
+
+    public function createOrderIntakeAddressResolver(): OrderIntakeAddressResolverInterface
+    {
+        return new OrderIntakeAddressResolver();
+    }
+
+    public function createOrderIntakeQuoteExpander(): OrderIntakeQuoteExpanderInterface
+    {
+        return new OrderIntakeQuoteExpander($this->getOrderIntakeQuoteExpanderPlugins());
+    }
+
+    public function createOrderIntakePaymentResolver(): OrderIntakePaymentResolverInterface
+    {
+        return new OrderIntakePaymentResolver($this->getPaymentFacade());
+    }
+
+    public function createOrderIntakeMerchantValidator(): OrderIntakeMerchantValidatorInterface
+    {
+        return new OrderIntakeMerchantValidator($this->getMerchantFacade());
+    }
+
+    public function getPriceFacade(): PriceFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_PRICE);
+    }
+
+    public function getMerchantFacade(): MerchantFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_MERCHANT);
+    }
+
+    /**
+     * Populated by the modules that contribute their own properties to the order intake payload
+     * (e.g. PurchasingControl, which owns `budgetUuid`).
+     *
+     * @return array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\OrderIntakeQuoteExpanderPluginInterface>
+     */
+    public function getOrderIntakeQuoteExpanderPlugins(): array
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::PLUGINS_ORDER_INTAKE_QUOTE_EXPANDER);
+    }
+
+    public function createOrderIntakeProductOfferValidator(): OrderIntakeProductOfferValidatorInterface
+    {
+        return new OrderIntakeProductOfferValidator($this->getProductOfferFacade());
+    }
+
+    public function createOrderIntakePriceResolver(): OrderIntakePriceResolverInterface
+    {
+        return new OrderIntakePriceResolver($this->getPriceProductFacade(), $this->getPriceProductService());
+    }
+
+    public function createOrderIntakeRequestValidator(): OrderIntakeRequestValidatorInterface
+    {
+        return new OrderIntakeRequestValidator();
+    }
+
+    public function createOrderIntakeCustomerResolver(): OrderIntakeCustomerResolverInterface
+    {
+        return new OrderIntakeCustomerResolver($this->getCustomerFacade(), $this->getCompanyUserFacade());
+    }
+
+    public function createOrderIntakeShipmentExpander(): OrderIntakeShipmentExpanderInterface
+    {
+        return new OrderIntakeShipmentExpander($this->getShipmentFacade());
+    }
+
+    public function createOrderIntakeQuoteAssembler(): OrderIntakeQuoteAssemblerInterface
+    {
+        return new OrderIntakeQuoteAssembler($this->getPriceFacade()->getDefaultPriceMode());
+    }
+
+    public function createOrderItemTransitionApplier(): OrderItemTransitionApplierInterface
+    {
+        return new OrderItemTransitionApplier(
+            $this->getSalesFacade(),
+            $this->getOmsFacade(),
+            $this->createAvailableOrderItemTransitionReader(),
+            $this->createOrderItemTransitionOutcomeMapper(),
+        );
+    }
+
+    public function createAvailableOrderItemTransitionReader(): AvailableOrderItemTransitionReaderInterface
+    {
+        return new AvailableOrderItemTransitionReader($this->getOmsFacade());
+    }
+
+    public function createOrderItemTransitionOutcomeMapper(): OrderItemTransitionOutcomeMapperInterface
+    {
+        return new OrderItemTransitionOutcomeMapper();
+    }
+
+    public function getOmsFacade(): OmsFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_OMS);
+    }
+
+    public function getSalesFacade(): SalesFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_SALES);
     }
 }

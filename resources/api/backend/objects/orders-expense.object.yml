@@ -1,0 +1,51 @@
+# Canonical order expense — one line per shipment or surcharge.
+object:
+    name: OrdersExpense
+    properties:
+        type:
+            type: string
+            writable: false
+            description: 'Expense type, e.g. SHIPMENT_EXPENSE_TYPE.'
+            openapiContext: { example: 'SHIPMENT_EXPENSE_TYPE' }
+
+        name:
+            type: string
+            writable: false
+            description: 'Display name, e.g. the shipment method name.'
+            openapiContext: { example: 'Standard' }
+
+        sumPrice:
+            type: integer
+            writable: false
+            description: 'Expense price in cents before discounts.'
+            openapiContext: { example: 490 }
+
+        taxRate:
+            type: number
+            writable: false
+            description: 'Tax rate applied to this expense, in percent.'
+            openapiContext: { example: 19 }
+
+        sumTaxAmount:
+            type: integer
+            writable: false
+            description: 'Tax charged on this expense, in cents.'
+            openapiContext: { example: 0 }
+
+        sumDiscountAmountAggregation:
+            type: integer
+            writable: false
+            description: 'Discount applied to this expense, in cents — a free-delivery rule shows here.'
+            openapiContext: { example: 490 }
+
+        sumPriceToPayAggregation:
+            type: integer
+            writable: false
+            description: 'What this expense actually costs after discounts, in cents.'
+            openapiContext: { example: 0 }
+
+        canceledAmount:
+            type: integer
+            writable: false
+            description: 'Canceled portion of this expense, in cents.'
+            openapiContext: { example: 0 }

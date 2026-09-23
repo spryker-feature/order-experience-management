@@ -1,0 +1,562 @@
+# yaml-language-server: $schema=../../../../../src/Spryker/ApiPlatform/resources/schemas/api-resource-schema-v1.json
+
+resource:
+    name: Orders
+    shortName: orders
+    description: 'Sales order resource for the Backend API — read, list, and create (intake) placed orders.'
+
+    provider: "SprykerFeature\\Glue\\OrderExperienceManagement\\Api\\Backend\\Provider\\OrdersBackendProvider"
+    processor: "SprykerFeature\\Glue\\OrderExperienceManagement\\Api\\Backend\\Processor\\OrdersBackendProcessor"
+
+    paginationEnabled: true
+    paginationItemsPerPage: 25
+    paginationMaximumItemsPerPage: 100
+
+    security: "is_granted('ROLE_BACK_OFFICE_USER')"
+
+    operations:
+        - type: Get
+          normalizationContext: { skip_null_values: true }
+          openapiContext:
+              responses:
+                  200:
+                      description: 'The order.'
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+                  404:
+                      description: 'No order with this orderReference.'
+        - type: GetCollection
+          description: >-
+              Retrieve a paginated order collection.
+              Filtering follows the JSON:API `filter[orders.<property>]` form; comma-separate a value
+              to match any of several. A key inside `filter[]` that does not follow that form, or that
+              addresses a property other than the documented ones, is rejected with a 400. A bare query
+              parameter outside `filter[]` is not a filter at all: it is ignored, and the unfiltered
+              collection is returned.
+              Pagination (JSON:API): `page[limit]` (default 25, max 100), `page[offset]` (default 0);
+              the pagination summary is returned as top-level `meta.pagination` with
+              `links.first/last/prev/next`.
+          normalizationContext: { skip_null_values: true }
+          openapiContext:
+              responses:
+                  200:
+                      description: >-
+                          The matching orders. A filter that matches nothing returns an empty `data`
+                          array — not a 404.
+                  400:
+                      description: >-
+                          A `filter[]` key does not follow the `filter[orders.<property>]` form, addresses
+                          an unsupported property, or carries an unparseable `createdAtFrom`/`createdAtTo`.
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+              parameters:
+                  - name: 'filter[orders.orderReference]'
+                    in: query
+                    description: 'Exact order reference. Comma-separate to look up several orders in one call.'
+                    required: false
+                    schema: { type: string }
+                  - name: 'filter[orders.customerReference]'
+                    in: query
+                    description: 'Exact customer reference. Comma-separate for several customers. Returns every order belonging to them.'
+                    required: false
+                    schema: { type: string }
+                  - name: 'filter[orders.storeName]'
+                    in: query
+                    description: 'Return only orders placed in this store.'
+                    required: false
+                    schema: { type: string }
+                  - name: 'filter[orders.itemState]'
+                    in: query
+                    description: >-
+                        Return orders that have AT LEAST ONE item in this OMS state — items advance
+                        independently, so an order holds the set of states reported in `itemStates`
+                        rather than one of its own. Comma-separate to match any of several states. An
+                        unknown state name matches nothing.
+                    required: false
+                    schema: { type: string }
+                  - name: 'filter[orders.createdAtFrom]'
+                    in: query
+                    description: 'Return orders created at or after this timestamp (inclusive). Example: 2026-01-01 00:00:00'
+                    required: false
+                    schema: { type: string }
+                  - name: 'filter[orders.createdAtTo]'
+                    in: query
+                    description: 'Return orders created at or before this timestamp (inclusive). Example: 2026-12-31 23:59:59'
+                    required: false
+                    schema: { type: string }
+                  - name: sort
+                    in: query
+                    description: 'Comma-separated sort fields; a leading "-" sorts descending. Sortable: createdAt.'
+                    required: false
+                    schema: { type: string, enum: ['createdAt', '-createdAt'] }
+                    example: '-createdAt'
+                  - name: page
+                    in: query
+                    description: >-
+                        JSON:API pagination, passed as `page[limit]` and `page[offset]` — NOT the
+                        plain `page` integer implied by the field name. Overrides
+                        `paginationEnabled`'s auto-documented "page number" default, which does not
+                        apply here.
+                    required: false
+                    schema:
+                        type: object
+                        properties:
+                            limit: { type: integer, default: 25, maximum: 100 }
+                            offset: { type: integer, default: 0 }
+        - type: Post
+          deserialize: true
+          validationGroups: ['Default', 'orders:create']
+          openapiContext:
+              responses:
+                  201:
+                      description: 'The order was placed. The response carries the created order reference and resolved items.'
+                  401:
+                      description: 'Invalid or missing credentials.'
+                  403:
+                      description: "The operator's ACL refuses this resource."
+                  422:
+                      description: >-
+                          Nothing was placed. The payload failed validation (missing or malformed fields,
+                          unknown customer, store, locale, SKU, offer, merchant, shipment or payment method,
+                          business unit the customer does not belong to, rejected cart code) or checkout
+                          refused the order (e.g. an order-value threshold). When there are several issues, each is listed in `errors`.
+
+    properties:
+        customerReference:
+            type: string
+            required: true
+            description: 'Reference of the customer the order belongs to. Must reference an existing customer — unknown references are rejected.'
+            openapiContext:
+                example: 'DE--21'
+
+        store:
+            type: string
+            required: true
+            description: 'Store the order was placed in. Required on POST.'
+            openapiContext:
+                example: 'DE'
+
+        currency:
+            type: string
+            required: true
+            description: 'ISO 4217 currency code. Required on POST.'
+            openapiContext:
+                example: 'EUR'
+
+        shipment:
+            type: object
+            objectName: OrdersShipment
+            description: >-
+                Default delivery for every item that does not override it via its own `shipment`.
+                Required on POST UNLESS every entry in `items` supplies its own `shipmentMethod` and
+                `shippingAddress`, in which case this object is never consulted and may be omitted
+                entirely.
+            properties:
+                shipmentMethod:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: >-
+                        Shipment method name applied to every item that does not override it via its own
+                        `items[].shipment.shipmentMethod`. Required on POST UNLESS every entry in `items`
+                        supplies its own, in which case the order-level one is never used and may be omitted.
+                    openapiContext:
+                        example: 'Standard'
+                shippingAddress:
+                    type: object
+                    objectName: Address
+                    writable: true
+                    readable: true
+                    description: >-
+                        Delivery address for the order. Give `uuid` to reference one of the customer's saved
+                        addresses, or the fields below to supply one inline. Individual lines can override this
+                        via `items[].shipment.shippingAddress`. Required on POST UNLESS every entry in `items`
+                        supplies its own `shipment.shippingAddress`, in which case the order-level one is never
+                        used and may be omitted.
+                    properties:
+                        uuid:
+                            type: string
+                            writable: true
+                            readable: true
+                            description: >-
+                                Reference to one of the customer's saved addresses; must belong to this order's
+                                customer. The other fields are ignored when set. Leave empty to supply the address inline via the fields below instead.
+                            openapiContext: { example: '' }
+                        salutation:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: 'Ms', enum: ['Mr', 'Mrs', 'Dr', 'Ms', 'n/a'] }
+                        firstName:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: 'Sonia' }
+                        lastName:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: 'Wagner' }
+                        company:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: '' }
+                        address1:
+                            type: string
+                            writable: true
+                            readable: true
+                            description: 'Street.'
+                            openapiContext: { example: 'Hauptstrasse' }
+                        address2:
+                            type: string
+                            writable: true
+                            readable: true
+                            description: 'House number.'
+                            openapiContext: { example: '99' }
+                        address3:
+                            type: string
+                            writable: true
+                            readable: true
+                            description: 'Address addition.'
+                            openapiContext: { example: '' }
+                        zipCode:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: '20095' }
+                        city:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: 'Hamburg' }
+                        iso2Code:
+                            type: string
+                            writable: true
+                            readable: true
+                            description: 'ISO 3166-1 alpha-2 country code.'
+                            openapiContext: { example: 'DE' }
+                        phone:
+                            type: string
+                            writable: true
+                            readable: true
+                            openapiContext: { example: '099-555-66-11' }
+                requestedDeliveryDate:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: 'Requested delivery date applied to every item that does not override it.'
+                    openapiContext:
+                        example: '2026-10-15'
+
+        paymentMethod:
+            type: string
+            required: true
+            description: >-
+                Payment method key (e.g. dummyPaymentInvoice), not the display name. For an order with no
+                payment charged, use the platform's zero-payment method key (e.g. Nopayment).
+            openapiContext:
+                example: 'dummyPaymentInvoice'
+
+        cartCodes:
+            type: array
+            writable: true
+            readable: false
+            description: >-
+                Codes to apply to the order at placement — gift cards, vouchers, or any other code a
+                registered CartCode plugin resolves. Every code must actually apply: one that is
+                unknown, inactive, or not applicable to this order rejects the whole request with 422
+                rather than being dropped. POST only; see `payments` for how much a redeemed gift card
+                actually covered.
+            openapiContext:
+                example: ['GC-1234-5678']
+
+        payments:
+            type: array
+            writable: false
+            description: >-
+                How the order was actually charged, one row per payment method used.
+            items:
+                type: object
+                properties:
+                    paymentProvider:
+                        type: string
+                        writable: false
+                        description: 'Payment provider key, e.g. DummyPayment or GiftCard.'
+                        openapiContext:
+                            example: 'DummyPayment'
+                    paymentMethod:
+                        type: string
+                        writable: false
+                        description: 'Payment method key, e.g. dummyPaymentInvoice or GiftCard.'
+                        openapiContext:
+                            example: 'dummyPaymentInvoice'
+                    amount:
+                        type: integer
+                        writable: false
+                        description: 'Amount charged to this payment method, in cents.'
+                        openapiContext:
+                            example: 3489
+                    meta:
+                        type: map
+                        writable: false
+                        description: >-
+                            Free-form payload for this payment's method-specific data — e.g. `giftCard` for a
+                            GiftCard payment, carrying the redeemed code and its value. Keyed by the
+                            `PaymentTransfer` property name; only properties actually populated for this
+                            payment appear, so most payments carry zero or one key here.
+                        openapiContext:
+                            example:
+                                giftCard:
+                                    code: 'GC-1234-5678'
+                                    value: 2000
+
+        billingAddress:
+            type: object
+            objectName: Address
+            required: true
+            description: >-
+                Billing address. Give `uuid` to reference one of the customer's saved addresses, or supply
+                `firstName`, `lastName`, `zipCode`, `city` and `iso2Code` inline.
+            properties:
+                uuid:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: >-
+                        Reference to one of the customer's saved addresses; must belong to this order's customer.
+                        The other fields are ignored when set. Leave empty (not "string") to supply the address
+                        inline via the fields below instead.
+                    openapiContext: { example: '' }
+                salutation:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: 'Ms', enum: ['Mr', 'Mrs', 'Dr', 'Ms', 'n/a'] }
+                firstName:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: 'Sonia' }
+                lastName:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: 'Wagner' }
+                company:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: '' }
+                address1:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: 'Street.'
+                    openapiContext: { example: 'Hauptstrasse' }
+                address2:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: 'House number.'
+                    openapiContext: { example: '99' }
+                address3:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: 'Address addition.'
+                    openapiContext: { example: '' }
+                zipCode:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: '20095' }
+                city:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: 'Hamburg' }
+                iso2Code:
+                    type: string
+                    writable: true
+                    readable: true
+                    description: 'ISO 3166-1 alpha-2 country code.'
+                    openapiContext: { example: 'DE' }
+                phone:
+                    type: string
+                    writable: true
+                    readable: true
+                    openapiContext: { example: '099-555-66-11' }
+
+        items:
+            type: array
+            objectName: OrdersItem
+            nullable: true
+            required: true
+            description: >-
+                Order line items. Supplied on POST; returned on GET. Omitted from the collection endpoint — use
+                `itemsCount` there, and read item detail from GET /orders/{orderReference}.
+            openapiContext:
+                example:
+                    - sku: '008_30692992'
+                      quantity: 1
+
+        # ---------------------------------------------------------------- optional on POST
+        orderCustomReference:
+            type: string
+            description: "The caller's own reference for this order — e.g. a purchase-order number or EDI document id. Shown in the Back Office. Optional."
+            openapiContext:
+                example: 'ERP-PO-99812'
+
+        companyBusinessUnitUuid:
+            type: string
+            writable: true
+            readable: true
+            description: >-
+                Business unit this order is placed for. Selects which merchant-relationship contract prices
+                apply, and is recorded on the order. Must be one this order's customer belongs to through an
+                active company user. Optional — resolved automatically when the customer belongs to exactly
+                one business unit, and required when they belong to several. Note that the business unit also
+                decides whose place-order permission is checked, so naming one whose company user lacks it
+                gets the order rejected as requiring approval.
+            openapiContext:
+                example: '5b9c6fc4-bf5d-5b53-9ca9-1916657e6fb2'
+
+        priceMode:
+            type: string
+            default: 'GROSS_MODE'
+            description: 'Whether submitted unit prices are gross or net.'
+            openapiContext:
+                schema:
+                    enum: ['GROSS_MODE', 'NET_MODE']
+
+        locale:
+            type: string
+            writable: true
+            readable: true
+            description: >-
+                Locale the order is placed in (e.g. 'de_DE') — also selects the language of the
+                order-confirmation email. Optional; a placed order without one falls back to
+                whatever locale checkout resolves by default. Must be a locale known to the
+                platform, or the order is rejected.
+            openapiContext:
+                example: 'de_DE'
+
+        customer:
+            type: object
+            objectName: OrdersCustomer
+            writable: false
+            readable: true
+            description: >-
+                Read-only snapshot of the buyer, taken when the order was placed — not a live customer lookup.
+                Nothing here is accepted on POST: the customer is named by the top-level `customerReference`
+                and the buying organisation by `companyBusinessUnitUuid`.
+            properties:
+                email:
+                    type: string
+                    writable: false
+                    readable: true
+                    description: 'Email recorded on the order. Read-only.'
+                salutation:
+                    type: string
+                    writable: false
+                    readable: true
+                    description: 'Salutation recorded on the order. Read-only.'
+                    openapiContext:
+                        enum: ['Mr', 'Mrs', 'Dr', 'Ms', 'n/a']
+                firstName:
+                    type: string
+                    writable: false
+                    readable: true
+                    description: 'First name recorded on the order. Read-only.'
+                lastName:
+                    type: string
+                    writable: false
+                    readable: true
+                    description: 'Last name recorded on the order. Read-only.'
+        # ---------------------------------------------------------------- response only (GET / POST result), never part of the POST body
+        orderReference:
+            type: string
+            identifier: true
+            writable: false
+            description: 'Spryker sales order reference (identifier).'
+            openapiContext:
+                example: 'DE--1234'
+
+        createdAt:
+            type: string
+            writable: false
+            description: 'ISO 8601 creation timestamp.'
+            openapiContext:
+                example: '2026-08-27 11:04:52'
+
+        companyUuid:
+            type: string
+            writable: false
+            description: >-
+                Company the order was placed for. Derived from `companyBusinessUnitUuid` at placement and
+                recorded on the order; absent for an order placed by a customer with no company user.
+            openapiContext:
+                example: 'b7c3f1d8-2e94-4a0b-8f61-3c5d9e7a2b40'
+
+        itemsCount:
+            type: integer
+            writable: false
+            description: 'Number of line items on the order (line count, not ordered units). Always present, even when `items` itself is omitted.'
+            openapiContext:
+                example: 137
+
+        itemStates:
+            type: array
+            writable: false
+            description: "Distinct OMS state names currently held by this order's items."
+            openapiContext:
+                example: ['paid', 'shipped']
+
+        availableEvents:
+            type: array
+            writable: false
+            description: >-
+                Events an operator can currently trigger on this order — the union over its line
+                items, since items advance independently (events the system fires on its own are not
+                included). An event listed here need not be legal for every line;
+                `items[].availableEvents` says which lines each one applies to. Empty when every
+                item is in a terminal state.
+            openapiContext:
+                example: ['ship', 'cancel']
+
+        totals:
+            type: object
+            objectName: OrdersTotals
+            writable: false
+            description: 'Order totals, in cents, using the same keys as the storefront orders API.'
+
+        expenses:
+            type: array
+            objectName: OrdersExpense
+            writable: false
+            description: 'Shipment and surcharge lines that make up `totals.expenseTotal`.'
+
+        calculatedDiscounts:
+            type: array
+            objectName: OrdersCalculatedDiscount
+            writable: false
+            description: >-
+                Rules and vouchers applied to the order, one entry per discount with its total across the
+                order — the breakdown behind `totals.discountTotal`. Per-line amounts are on
+                `items[].calculatedDiscounts`.
+
+        comments:
+            type: array
+            objectName: OrdersComment
+            writable: false
+            nullable: true
+            description: >-
+                Back Office comments on this order, oldest first — the same thread
+                GET /orders/{orderReference}/comments reports, and where comments are appended.
+                Included only on the single-order response; omitted from the order collection
+                response.

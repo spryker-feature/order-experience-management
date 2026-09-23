@@ -1,0 +1,37 @@
+object:
+    name: OrderTransitionsItem
+    properties:
+        uuid:
+            type: string
+            writable: false
+            description: 'The line item, as `items[].uuid` on GET /orders/{orderReference}.'
+            openapiContext:
+                example: '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+
+        outcome:
+            type: string
+            writable: false
+            description: >-
+                `transitioned` — the item advanced. `unchanged` — the event was admitted for this item
+                but did not advance it (a business rule refused it, or its state changed between
+                admission and trigger). `skipped` — the event was not currently legal for this item and
+                the request omitted `itemUuids`, so it was excluded rather than rejecting the whole
+                request. Only returned when the event was applied — see `result` on the parent resource
+                for a rejected request.
+            openapiContext:
+                schema:
+                    enum: ['transitioned', 'unchanged', 'skipped']
+
+        stateBefore:
+            type: string
+            writable: false
+            description: 'OMS state immediately before the trigger. Equal to `state` when nothing advanced.'
+            openapiContext:
+                example: 'exported'
+
+        state:
+            type: string
+            writable: false
+            description: 'OMS state immediately after the trigger.'
+            openapiContext:
+                example: 'shipped'

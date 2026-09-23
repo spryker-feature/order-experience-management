@@ -1,0 +1,6 @@
+post:
+    message:
+        - NotBlank: ~
+        - Length:
+              min: 1
+              max: 5000

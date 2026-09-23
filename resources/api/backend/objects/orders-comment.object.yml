@@ -1,0 +1,26 @@
+# One Back Office comment on an order — the same shape the `order-comments` resource reports, minus
+# `orderReference`, which the enclosing order already carries.
+object:
+    name: OrdersComment
+    properties:
+        message:
+            type: string
+            writable: false
+            description: 'The comment body.'
+            openapiContext: { example: 'Customer asked to hold the shipment until Friday.' }
+
+        username:
+            type: string
+            writable: false
+            description: 'Display name of the operator who wrote the comment. May be absent on some existing comments.'
+            openapiContext: { example: 'Admin Spryker' }
+
+        createdAt:
+            type: string
+            writable: false
+            openapiContext: { example: '2026-09-09 11:04:12.000000' }
+
+        updatedAt:
+            type: string
+            writable: false
+            openapiContext: { example: '2026-09-09 11:04:12.000000' }

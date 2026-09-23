@@ -37,6 +37,8 @@ suites:
                 - \SprykerTest\Zed\Company\Helper\CompanyHelper
                 - \SprykerTest\Shared\CompanyUser\Helper\CompanyUserHelper
                 - \SprykerTest\Zed\CompanyBusinessUnit\Helper\CompanyBusinessUnitHelper
+                - \SprykerTest\Zed\Merchant\Helper\MerchantHelper
+                - \SprykerTest\Zed\MerchantRelationship\Helper\MerchantRelationshipHelper
                 - \SprykerTest\Zed\CompanyRole\Helper\CompanyRoleHelper
                 - \SprykerTest\Zed\Permission\Helper\PermissionHelper
                 - \SprykerTest\Shared\Shipment\Helper\ShipmentMethodDataHelper

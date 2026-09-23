@@ -9,6 +9,12 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business;
 
+use Generated\Shared\Transfer\ItemCollectionTransfer;
+use Generated\Shared\Transfer\ItemTransfer;
+use Generated\Shared\Transfer\OrderIntakeRequestTransfer;
+use Generated\Shared\Transfer\OrderIntakeResponseTransfer;
+use Generated\Shared\Transfer\OrderItemTransitionRequestTransfer;
+use Generated\Shared\Transfer\OrderItemTransitionResponseTransfer;
 use Generated\Shared\Transfer\RecurringOrderQuoteUpdateRequestTransfer;
 use Generated\Shared\Transfer\RecurringOrderQuoteUpdateResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCollectionRequestTransfer;
@@ -33,7 +39,7 @@ interface OrderExperienceManagementFacadeInterface
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.statuses` to filter by schedule status.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.names` to search by schedule name (LIKE).
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithItems` to load schedule items and compute estimated total.
-     * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isGroupedByGroupKey` to group loaded items by their groupKey, summing quantities for items that share the same key; items with a null groupKey are never grouped.
+     * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isGroupedByGroupKey` to group loaded items by their groupKey, summing quantities for items that share the same key, items with a null groupKey are never grouped.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithHistory` to load execution history with order references and failure reasons.
      * - Uses `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.isWithCustomer` to load the customer full name via CustomerFacade.
      * - When `RecurringScheduleCriteriaTransfer.customer` is set, derives ownership filters via `PermissionAwareTrait`: checks `SeeCompanyOrdersPermissionPlugin` → adds companyId to conditions, then `SeeBusinessUnitOrdersPermissionPlugin` → adds companyBusinessUnitId, otherwise falls back to adding customerId. Omit `customer` only for trusted server-side (back-office) callers that supply their own conditions.
@@ -42,7 +48,7 @@ interface OrderExperienceManagementFacadeInterface
      * - Applies default sorting by next trigger date ascending when no sort is provided.
      * - Uses `RecurringScheduleCriteriaTransfer.pagination.{limit, offset}` to paginate results with limit and offset.
      * - Uses `RecurringScheduleCriteriaTransfer.pagination.{page, maxPerPage}` to paginate results with page and maxPerPage.
-     * - Uses `RecurringScheduleCriteriaTransfer.statusCountConditions` to additionally return per-status schedule counts in `RecurringScheduleCollectionTransfer.statusCounts`; the counts query is skipped entirely when the property is null.
+     * - Uses `RecurringScheduleCriteriaTransfer.statusCountConditions` to additionally return per-status schedule counts in `RecurringScheduleCollectionTransfer.statusCounts`, the counts query is skipped entirely when the property is null.
      * - Applies `statusCountConditions` as an independent filter set: it does not inherit `recurringScheduleConditions`, is neither paginated nor sorted, ignores `estimatedTotalMin`/`estimatedTotalMax`, and MUST NOT set the `isWith*` relation-load flags — `isWithCompany` in particular would add an INNER JOIN on `spy_company` plus a non-aggregated column to the `GROUP BY status` query.
      * - Returns `RecurringScheduleCollectionTransfer` filled with found recurring schedules.
      *
@@ -70,7 +76,7 @@ interface OrderExperienceManagementFacadeInterface
      * - Returns `isSuccessful=false` with an error message when the quote cannot be found.
      * - Returns `isSuccessful=false` with the same error message when the quote already belongs to a customer other
      *   than `RecurringOrderQuoteUpdateRequestTransfer.customer`, without persisting anything.
-     * - Sets `RecurringOrderQuoteUpdateRequestTransfer.recurringOrderSettings` on the quote; pass `null` to clear.
+     * - Sets `RecurringOrderQuoteUpdateRequestTransfer.recurringOrderSettings` on the quote, pass `null` to clear.
      * - Derives `RecurringOrderSettings.firstOrderDate` from `RecurringOrderSettings.startDate`: a future start
      *   date is used as-is, while today advances by one cadence period.
      * - Leaves `RecurringOrderSettings.firstOrderDate` as `null` when the cadence type is missing or unsupported.
@@ -116,9 +122,9 @@ interface OrderExperienceManagementFacadeInterface
     /**
      * Specification:
      * - Looks up the schedule by `RecurringScheduleEventRequestTransfer.uuid`.
-     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleEventRequestTransfer.customer` when provided, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit; otherwise scopes to `RecurringScheduleEventRequestTransfer.idCustomer` ownership.
+     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleEventRequestTransfer.customer` when provided, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit, otherwise scopes to `RecurringScheduleEventRequestTransfer.idCustomer` ownership.
      * - Returns `isSuccessful=false` when the schedule is not found or the customer is not allowed to access it.
-     * - Validates that the schedule is in `paused` state; returns `isSuccessful=false` otherwise.
+     * - Validates that the schedule is in `paused` state, returns `isSuccessful=false` otherwise.
      * - Sets `spy_recurring_schedule.next_trigger_date` to `RecurringScheduleEventRequestTransfer.nextExecutionDate`.
      * - Fires the `resume` StateMachine event.
      * - All future execution dates are computed from this new date per cadence.
@@ -132,8 +138,8 @@ interface OrderExperienceManagementFacadeInterface
     /**
      * Specification:
      * - Updates each persisted schedule in `RecurringScheduleCollectionRequestTransfer.recurringSchedules`, looked up by `RecurringScheduleTransfer.uuid`.
-     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleCollectionRequestTransfer.customer`, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit; otherwise scopes to `RecurringScheduleCollectionRequestTransfer.customer.idCustomer` ownership.
-     * - Allowed in any schedule status; does NOT fire a StateMachine event.
+     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleCollectionRequestTransfer.customer`, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit, otherwise scopes to `RecurringScheduleCollectionRequestTransfer.customer.idCustomer` ownership.
+     * - Allowed in any schedule status, does NOT fire a StateMachine event.
      * - Updates only the properties set on each `RecurringScheduleTransfer` (e.g. `name`, `cadenceType`, `cadenceValue`, `nextTriggerDate`) in a single write per schedule.
      * - Merges the `RecurringScheduleTransfer.quote` cost center / budget overrides into `spy_recurring_schedule.quote_data`.
      * - Adds an error to the response for each schedule that is not found or not accessible, identified by `ErrorTransfer.entityIdentifier` holding the requested `RecurringScheduleTransfer.uuid`, and returns the updated schedules.
@@ -148,7 +154,7 @@ interface OrderExperienceManagementFacadeInterface
      * Specification:
      * - Builds the Review Required view model for a single schedule, scoped by `RecurringScheduleCriteriaTransfer.recurringScheduleConditions.uuids` and `RecurringScheduleCriteriaTransfer.customer` (ownership).
      * - Re-validates the schedule against the current catalogue and prices at read time without persisting anything.
-     * - Runs the re-validation only while the schedule awaits review; any other status returns the schedule without review data.
+     * - Runs the re-validation only while the schedule awaits review, any other status returns the schedule without review data.
      * - Groups the schedule items into flagged and unchanged sets with the detected per-item reasons, and collects any non-item blocking errors.
      * - Provides the original and updated order totals and the per-reason summary counters shown on the page.
      * - Returns an empty review (`null` recurringSchedule) when no schedule matches the criteria.
@@ -162,10 +168,10 @@ interface OrderExperienceManagementFacadeInterface
     /**
      * Specification:
      * - Approves the reviewed changes for a schedule identified by `RecurringScheduleEventRequestTransfer.uuid`, then places the order immediately.
-     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleEventRequestTransfer.customer` when provided, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit; otherwise scopes to `RecurringScheduleEventRequestTransfer.idCustomer` ownership.
-     * - Proceeds only while the schedule awaits review; otherwise returns an unsuccessful response without any changes.
+     * - Authorizes access through the recurring schedule access filter using `RecurringScheduleEventRequestTransfer.customer` when provided, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit, otherwise scopes to `RecurringScheduleEventRequestTransfer.idCustomer` ownership.
+     * - Proceeds only while the schedule awaits review, otherwise returns an unsuccessful response without any changes.
      * - Re-baselines each item to the price the buyer accepted on the page (`RecurringScheduleEventRequestTransfer.acceptedItems`, matched by group key) and re-validates against the live catalogue.
-     * - Returns an unsuccessful response without any changes when any `RecurringScheduleEventRequestTransfer.acceptedItems.acceptedQuantity` or `RecurringScheduleEventRequestTransfer.addedItems.quantity` is below 1; a `null` accepted quantity leaves the line unchanged.
+     * - Returns an unsuccessful response without any changes when any `RecurringScheduleEventRequestTransfer.acceptedItems.acceptedQuantity` or `RecurringScheduleEventRequestTransfer.addedItems.quantity` is below 1, a `null` accepted quantity leaves the line unchanged.
      * - Applies `RecurringScheduleEventRequestTransfer.acceptedItems.acceptedQuantity` as the new standing quantity or as the next delivery quantity only, depending on `RecurringScheduleEventRequestTransfer.scope`.
      * - Returns an unsuccessful response without any changes when the live price drifted above the accepted price, so the buyer can review the new prices.
      * - Otherwise applies the changes in a single transaction: removes unpurchasable items (from this order and future executions) and writes the accepted prices as the new reference price.
@@ -177,4 +183,65 @@ interface OrderExperienceManagementFacadeInterface
     public function approveScheduleReview(
         RecurringScheduleEventRequestTransfer $requestTransfer,
     ): RecurringScheduleEventResponseTransfer;
+
+    /**
+     * Specification:
+     * - Creates a Spryker order from an external system's payload without the storefront checkout flow.
+     * - Assembles a quote from the payload, runs the checkout pre-conditions, recalculates, and places the order.
+     * - Reports rejected input as structured validation issues on the response, does not throw.
+     * - Returns the created order reference plus a mapping from each submitted line to its order item.
+     *
+     * @api
+     */
+    public function createOrderFromIntake(
+        OrderIntakeRequestTransfer $orderIntakeRequestTransfer
+    ): OrderIntakeResponseTransfer;
+
+    /**
+     * Specification:
+     * - Resolves the OMS events a client may currently fire on each of the given order items.
+     * - Reports only `manual="true"` events: events OMS raises itself when a state is entered are
+     *   excluded, because no client can fire one.
+     * - Returns event names keyed by idSalesOrderItem, an item with no id, process or state resolves
+     *   to an empty set rather than being omitted.
+     * - This is the same resolution `applyOrderItemTransition()` admits against, so an event reported
+     *   here is never rejected there.
+     *
+     * @api
+     *
+     * @return array<int, array<int, string>>
+     */
+    public function getAvailableOrderItemTransitions(ItemCollectionTransfer $itemCollectionTransfer): array;
+
+    /**
+     * Specification:
+     * - Resolves the OMS events a client may currently fire on one order item, from its current state.
+     * - Reports only `manual="true"` events, see `getAvailableOrderItemTransitions()`.
+     *
+     * @api
+     *
+     * @return array<int, string>
+     */
+    public function getAvailableOrderItemTransitionsForItem(ItemTransfer $itemTransfer): array;
+
+    /**
+     * Specification:
+     * - Fires one OMS event over a chosen set of a placed order's line items.
+     * - Checks the order exists, that every given item uuid belongs to THAT order, and that the event
+     *   is currently available for it, before anything side-effecting runs.
+     * - Treats an explicitly given `itemUuids` list as an assertion: one ineligible item rejects
+     *   the whole request and fires nothing. Treats an omitted list as a scope selector: the eligible
+     *   subset is triggered and ineligible items are reported as `skipped`.
+     * - Observes the resulting state per item by re-reading it, rather than inferring it from the
+     *   event, and reports one outcome per item in scope.
+     * - Surfaces an OMS internal failure, a lock conflict, and a trigger that advanced nothing as
+     *   distinct `result` values, never reports a bare success for any of them.
+     * - Copies OMS command messages onto the response on success as well as failure.
+     * - Does not throw for a domain outcome.
+     *
+     * @api
+     */
+    public function applyOrderItemTransition(
+        OrderItemTransitionRequestTransfer $orderItemTransitionRequestTransfer
+    ): OrderItemTransitionResponseTransfer;
 }

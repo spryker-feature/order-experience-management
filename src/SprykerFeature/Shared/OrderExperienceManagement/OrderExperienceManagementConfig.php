@@ -412,6 +412,24 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
      */
     public const string SHIPPING_ADDRESS_KEY_SEPARATOR = ':';
 
+    /**
+     * Specification:
+     * - Locale checkout errors are translated into when the caller's `Accept-Language` header, or the
+     *   locale otherwise resolved for the request, names it.
+     *
+     * @api
+     */
+    public const string LOCALE_NAME_DE_DE = 'de_DE';
+
+    /**
+     * Specification:
+     * - Locale checkout errors fall back to when the caller's locale is missing or not one order
+     *   intake carries translations for.
+     *
+     * @api
+     */
+    public const string LOCALE_NAME_EN_US = 'en_US';
+
     protected const bool DEFAULT_MEASUREMENT_UNIT_PRODUCT_ADDITION_RESTRICTED = true;
 
     protected const bool DEFAULT_PACKAGING_UNIT_PRODUCT_ADDITION_RESTRICTED = true;

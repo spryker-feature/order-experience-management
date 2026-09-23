@@ -1,0 +1,17 @@
+namespace: SprykerFeatureTest\Glue\OrderExperienceManagement
+paths:
+    tests: .
+    data: ../../../_data
+    support: _support
+    output: ../../../_output
+coverage:
+    enabled: true
+    remote: false
+    whitelist: { include: ['../../../../src/*'] }
+suites:
+    Glue:
+        path: .
+        actor: OrderExperienceManagementGlueTester
+        modules:
+            enabled:
+                - Asserts

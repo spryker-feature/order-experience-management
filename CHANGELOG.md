@@ -1,3 +1,3 @@
-# Subscription Changelog
+# OrderExperienceManagement Changelog
 
-[Release Changelog](https://github.com/spryker-feature/subscription/releases)
+[Release Changelog](https://github.com/spryker-feature/order-experience-management/releases)

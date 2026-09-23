@@ -1,0 +1,37 @@
+post:
+    customerReference:
+        - NotBlank: ~
+        - Length:
+              max: 255
+
+    store:
+        - NotBlank: ~
+        - Length:
+              max: 32
+
+    currency:
+        - NotBlank: ~
+        - Currency: ~
+
+    priceMode:
+        - Choice:
+              choices: ['GROSS_MODE', 'NET_MODE']
+
+    orderCustomReference:
+        - Length:
+              max: 255
+
+    locale:
+        - Length:
+              max: 32
+
+    paymentMethod:
+        - NotBlank: ~
+
+    billingAddress:
+        - NotBlank: ~
+
+    items:
+        - NotBlank: ~
+        - Count:
+              min: 1

@@ -1,0 +1,72 @@
+object:
+    name: OrdersTotals
+    properties:
+        subtotal:
+            type: integer
+            writable: false
+            description: 'Sum of item prices before discounts, expenses or tax, in cents.'
+            openapiContext: { example: 43322 }
+
+        expenseTotal:
+            type: integer
+            writable: false
+            description: 'Total expenses (shipment, order-threshold surcharges) in cents. See `expenses` for the breakdown.'
+            openapiContext: { example: 980 }
+
+        discountTotal:
+            type: integer
+            writable: false
+            description: 'Total discount applied across the order, in cents. See `calculatedDiscounts` for the breakdown.'
+            openapiContext: { example: 13110 }
+
+        taxTotal:
+            type: integer
+            writable: false
+            description: 'Total tax across the order, in cents. See `taxBreakdown` for the per-rate detail.'
+            openapiContext: { example: 4980 }
+
+        taxBreakdown:
+            type: array
+            writable: false
+            description: >-
+                `taxTotal` split by rate, since an order can mix rates. Reports the rate only, not a tax name.
+                Empty on the POST response — present once the order is read back.
+            items:
+                type: object
+                properties:
+                    taxRate:
+                        type: number
+                        writable: false
+                        description: 'The rate, in percent.'
+                        openapiContext: { example: 19 }
+                    taxAmount:
+                        type: integer
+                        writable: false
+                        description: 'Tax charged at this rate across the whole order, in cents.'
+                        openapiContext: { example: 4980 }
+
+        grandTotal:
+            type: integer
+            writable: false
+            description: 'subtotal - discountTotal + expenseTotal + tax. What the order was placed at, in cents.'
+            openapiContext: { example: 31192 }
+
+        canceledTotal:
+            type: integer
+            writable: false
+            description: "Value of the order's canceled items, in cents."
+            openapiContext: { example: 0 }
+
+        refundableTotal:
+            type: integer
+            writable: false
+            description: >-
+                Amount still refundable on this order, in cents — not what has already been refunded. Starts at
+                the grand total and falls as parts of the order are canceled.
+            openapiContext: { example: 31192 }
+
+        remunerationTotal:
+            type: integer
+            writable: false
+            description: 'Amount settled by remuneration rather than payment, in cents.'
+            openapiContext: { example: 0 }

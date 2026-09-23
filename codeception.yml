@@ -1,5 +1,6 @@
 namespace: SprykerFeatureTest
 include:
+    - tests/SprykerFeatureTest/Glue/OrderExperienceManagement
     - tests/SprykerFeatureTest/Zed/OrderExperienceManagement
     - tests/SprykerFeatureTest/Yves/OrderExperienceManagement
     - tests/SprykerFeatureTest/Shared/OrderExperienceManagement
