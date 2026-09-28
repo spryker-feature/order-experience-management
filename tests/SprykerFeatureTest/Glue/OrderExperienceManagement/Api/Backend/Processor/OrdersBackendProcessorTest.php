@@ -691,147 +691,6 @@ class OrdersBackendProcessorTest extends Unit
     }
 
     /**
-     * The Symfony serializer denormalizes a scalar into an object property by casting it with
-     * `(array)` ({@see \Symfony\Component\Serializer\Normalizer\AbstractNormalizer::prepareForDenormalization()}),
-     * so `"shippingAddress": "Berlin"` silently becomes an EMPTY address and the caller is told its
-     * five fields are missing — an answer that describes neither what they sent nor what is wrong
-     * with it. A list where an object belongs is the same story, and a scalar where `items` belongs
-     * is worse: the typed-collection denormalizer has no way to read it and the request 500s.
-     *
-     * This guard reads the raw body before any of that and names the offending path.
-     *
-     * @dataProvider provideMisshapenPayloads
-     */
-    public function testProcessPostRejectsAMisshapenPayloadWithTheOffendingPath(string $json, string $expectedMessage): void
-    {
-        // Arrange
-        $processor = $this->createProcessor(Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class));
-
-        // Assert
-        $this->expectException(HttpException::class);
-        $this->expectExceptionMessage($expectedMessage);
-
-        // Act
-        $processor->process(
-            new OrdersBackendResource(),
-            new Post(class: OrdersBackendResource::class),
-            [],
-            ['request' => $this->createJsonRequest($json)],
-        );
-    }
-
-    /**
-     * @return iterable<string, array{string, string}>
-     */
-    public function provideMisshapenPayloads(): iterable
-    {
-        yield 'string where the shipping address belongs' => [
-            '{"shipment":{"shipmentMethod":"Standard","shippingAddress":"Berlin"}}',
-            '"shipment.shippingAddress" must be an object.',
-        ];
-
-        yield 'list where the shipping address belongs' => [
-            '{"shipment":{"shippingAddress":["Berlin","10115"]}}',
-            '"shipment.shippingAddress" must be an object.',
-        ];
-
-        yield 'number where the billing address belongs' => [
-            '{"billingAddress":42}',
-            '"billingAddress" must be an object.',
-        ];
-
-        yield 'string where the shipment belongs' => [
-            '{"shipment":"Standard"}',
-            '"shipment" must be an object.',
-        ];
-
-        yield 'string where items belong' => [
-            '{"items":"abc"}',
-            '"items" must be an array of objects.',
-        ];
-
-        yield 'object where items belong' => [
-            '{"items":{"sku":"001"}}',
-            '"items" must be an array of objects.',
-        ];
-
-        yield 'scalar item inside items' => [
-            '{"items":["abc"]}',
-            '"items[0]" must be an object.',
-        ];
-
-        yield 'string where a per-line shipping address belongs' => [
-            '{"items":[{"sku":"001","shipment":{"shippingAddress":"Berlin"}}]}',
-            '"items[0].shipment.shippingAddress" must be an object.',
-        ];
-
-        yield 'decimal quantity' => [
-            '{"items":[{"sku":"001","quantity":2.5}]}',
-            '"items[0].quantity" must be an integer.',
-        ];
-
-        yield 'whole-number quantity sent as a float' => [
-            '{"items":[{"sku":"001","quantity":2.0}]}',
-            '"items[0].quantity" must be an integer.',
-        ];
-
-        yield 'quantity sent as a numeric string' => [
-            '{"items":[{"sku":"001","quantity":"2"}]}',
-            '"items[0].quantity" must be an integer.',
-        ];
-
-        yield 'JSON:API envelope is unwrapped before checking' => [
-            '{"data":{"type":"orders","attributes":{"billingAddress":"Berlin"}}}',
-            '"billingAddress" must be an object.',
-        ];
-    }
-
-    /**
-     * @dataProvider provideWellShapedPayloads
-     */
-    public function testProcessPostAcceptsAWellShapedPayload(string $json): void
-    {
-        // Arrange — the guard passes and the request reaches the facade, which is all this asserts;
-        // whether the VALUES are valid is OrderIntakeRequestValidator's business, not the shape guard's.
-        $wasCalled = false;
-        $facade = Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, [
-            'createOrderFromIntake' => function () use (&$wasCalled): OrderIntakeResponseTransfer {
-                $wasCalled = true;
-
-                return (new OrderIntakeResponseTransfer())->setIsSuccessful(true);
-            },
-        ]);
-
-        // Act
-        ($this->createProcessor($facade))->process(
-            new OrdersBackendResource(),
-            new Post(class: OrdersBackendResource::class),
-            [],
-            ['request' => $this->createJsonRequest($json)],
-        );
-
-        // Assert
-        $this->assertTrue($wasCalled);
-    }
-
-    /**
-     * @return iterable<string, array{string}>
-     */
-    public function provideWellShapedPayloads(): iterable
-    {
-        yield 'complete objects' => ['{"billingAddress":{"city":"Berlin"},"shipment":{"shippingAddress":{"city":"Berlin"}},"items":[{"sku":"001"}]}'];
-        yield 'integer quantity' => ['{"items":[{"sku":"001","quantity":2}]}'];
-        yield 'absent optional objects' => ['{"items":[{"sku":"001"}]}'];
-        yield 'explicit nulls' => ['{"billingAddress":null,"shipment":{"shippingAddress":null},"items":[]}'];
-
-        // An empty JSON object and the `[]` a PHP client produces for an empty associative array are
-        // the same intent — "no fields" — and both stay the incomplete-address case, not a shape error.
-        yield 'empty object and empty array both read as an empty object' => ['{"billingAddress":{},"shipment":{"shippingAddress":[]}}'];
-        yield 'non-json body is left alone' => ['<order/>'];
-        yield 'empty body is left alone' => [''];
-    }
-
-    /**
      * Only the MESSAGES of the rejected response reach the caller — the `field` each issue carries is
      * dropped by the flattening. That is fine for a message that names its own path ("… is
      * required."), but a lookup failure names a value, not a place: "Product with SKU X was not
@@ -880,11 +739,6 @@ class OrdersBackendProcessorTest extends Unit
         }
     }
 
-    protected function createJsonRequest(string $content): Request
-    {
-        return new Request([], [], [], [], [], ['CONTENT_TYPE' => 'application/json'], $content);
-    }
-
     /**
      * Stands in for {@see \Spryker\ApiPlatform\EventSubscriber\BackendAcceptLanguageLocaleSubscriber},
      * which sets this attribute on every Backend API request before any processor runs.
@@ -898,7 +752,7 @@ class OrdersBackendProcessorTest extends Unit
     }
 
     /**
-     * The real exception factory is used rather than a stub: `assertPayloadShape()` throws its
+     * The real exception factory is used rather than a stub: `processPost()` throws its
      * return value directly, so a stubbed factory returning null would fatal instead of raising the
      * `HttpException` these tests assert on.
      *

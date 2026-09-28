@@ -128,18 +128,20 @@ class OrderIntakeCustomerResolverTest extends Unit
     }
 
     /**
-     * @return iterable<string, array<int, \Generated\Shared\Transfer\CustomerTransfer|null>>
+     * @return array<string, array<int, \Generated\Shared\Transfer\CustomerTransfer|null>>
      */
-    public function providePayloadsWithoutACustomerReference(): iterable
+    public function providePayloadsWithoutACustomerReference(): array
     {
-        yield 'no customer at all' => [null];
+        return [
+            'no customer at all' => [null],
 
-        yield 'customer without a reference' => [new CustomerTransfer()];
+            'customer without a reference' => [new CustomerTransfer()],
 
-        yield 'empty reference' => [(new CustomerTransfer())->setCustomerReference('')];
+            'empty reference' => [(new CustomerTransfer())->setCustomerReference('')],
 
-        // The guest case: contact details but no identity the platform already knows.
-        yield 'email only' => [(new CustomerTransfer())->setEmail('guest@example.com')];
+            // The guest case: contact details but no identity the platform already knows.
+            'email only' => [(new CustomerTransfer())->setEmail('guest@example.com')],
+        ];
     }
 
     public function testResolveCustomerRejectsAnUnknownCustomerReference(): void
@@ -250,21 +252,23 @@ class OrderIntakeCustomerResolverTest extends Unit
     }
 
     /**
-     * @return iterable<string, array<int, array<int, \Generated\Shared\Transfer\CompanyUserTransfer>>>
+     * @return array<string, array<int, array<int, \Generated\Shared\Transfer\CompanyUserTransfer>>>
      */
-    public function provideCompanyUsersOutsideTheNamedBusinessUnit(): iterable
+    public function provideCompanyUsersOutsideTheNamedBusinessUnit(): array
     {
-        yield 'customer has no company users at all' => [[]];
+        return [
+            'customer has no company users at all' => [[]],
 
-        yield 'customer belongs only to another business unit' => [[
-            $this->createCompanyUser(static::OTHER_BUSINESS_UNIT_UUID, static::COMPANY_USER_UUID),
-        ]];
+            'customer belongs only to another business unit' => [[
+                $this->createCompanyUser(static::OTHER_BUSINESS_UNIT_UUID, static::COMPANY_USER_UUID),
+            ]],
 
-        // A company user whose business unit the hydration stack did not attach must not match the
-        // named unit by virtue of both being absent.
-        yield 'company user without a business unit' => [[
-            (new CompanyUserTransfer())->setUuid(static::COMPANY_USER_UUID),
-        ]];
+            // A company user whose business unit the hydration stack did not attach must not match the
+            // named unit by virtue of both being absent.
+            'company user without a business unit' => [[
+                (new CompanyUserTransfer())->setUuid(static::COMPANY_USER_UUID),
+            ]],
+        ];
     }
 
     /**

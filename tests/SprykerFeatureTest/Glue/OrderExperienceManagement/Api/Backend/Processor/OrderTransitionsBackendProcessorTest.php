@@ -143,16 +143,18 @@ class OrderTransitionsBackendProcessorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{string, int}>
+     * @return array<string, array{string, int}>
      */
-    public function provideFailedResultsWithTheirStatus(): iterable
+    public function provideFailedResultsWithTheirStatus(): array
     {
-        yield 'order not found' => [OrderItemTransitionApplier::RESULT_ORDER_NOT_FOUND, 404];
-        yield 'locked' => [OrderItemTransitionApplier::RESULT_LOCKED, 409];
-        yield 'ineligible' => [OrderItemTransitionApplier::RESULT_INELIGIBLE, 422];
-        yield 'unknown items' => [OrderItemTransitionApplier::RESULT_UNKNOWN_ITEMS, 422];
-        yield 'internal failure' => [OrderItemTransitionApplier::RESULT_INTERNAL_FAILURE, 500];
-        yield 'unmapped result' => ['somethingNew', 500];
+        return [
+            'order not found' => [OrderItemTransitionApplier::RESULT_ORDER_NOT_FOUND, 404],
+            'locked' => [OrderItemTransitionApplier::RESULT_LOCKED, 409],
+            'ineligible' => [OrderItemTransitionApplier::RESULT_INELIGIBLE, 422],
+            'unknown items' => [OrderItemTransitionApplier::RESULT_UNKNOWN_ITEMS, 422],
+            'internal failure' => [OrderItemTransitionApplier::RESULT_INTERNAL_FAILURE, 500],
+            'unmapped result' => ['somethingNew', 500],
+        ];
     }
 
     public function testProcessPostReportsTheFallbackMessageWhenAFailureCarriesNothingToReport(): void

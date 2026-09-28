@@ -69,33 +69,35 @@ class OrderIntakeRequestValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{callable, string}>
+     * @return array<string, array{callable, string}>
      */
-    public function provideMissingRequiredFields(): iterable
+    public function provideMissingRequiredFields(): array
     {
-        yield 'items[0].sku' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setSku(null),
-            'items[0].sku',
-        ];
+        return [
+            'items[0].sku' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setSku(null),
+                'items[0].sku',
+            ],
 
-        yield 'items[0].quantity' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(null),
-            'items[0].quantity',
-        ];
+            'items[0].quantity' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(null),
+                'items[0].quantity',
+            ],
 
-        yield 'shipment.shipmentMethod (null)' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->setShipmentMethodName(null),
-            'shipment.shipmentMethod',
-        ];
+            'shipment.shipmentMethod (null)' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->setShipmentMethodName(null),
+                'shipment.shipmentMethod',
+            ],
 
-        yield 'shipment.shipmentMethod (blank)' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->setShipmentMethodName('   '),
-            'shipment.shipmentMethod',
-        ];
+            'shipment.shipmentMethod (blank)' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->setShipmentMethodName('   '),
+                'shipment.shipmentMethod',
+            ],
 
-        yield 'shipment.shippingAddress' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->setShippingAddress(null),
-            'shipment.shippingAddress',
+            'shipment.shippingAddress' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->setShippingAddress(null),
+                'shipment.shippingAddress',
+            ],
         ];
     }
 
@@ -158,26 +160,28 @@ class OrderIntakeRequestValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{array<int, string|null>, array<int, string>}>
+     * @return array<string, array{array<int, string|null>, array<int, string>}>
      */
-    public function providePerLineShipmentMethods(): iterable
+    public function providePerLineShipmentMethods(): array
     {
-        yield 'null inherits the order-level method' => [[null], []];
+        return [
+            'null inherits the order-level method' => [[null], []],
 
-        yield 'a named method overrides it' => [['Express'], []];
+            'a named method overrides it' => [['Express'], []],
 
-        yield 'an empty string overrides it with nothing' => [[''], ['items[0].shipment.shipmentMethod']];
+            'an empty string overrides it with nothing' => [[''], ['items[0].shipment.shipmentMethod']],
 
-        yield 'whitespace reads as empty' => [['   '], ['items[0].shipment.shipmentMethod']];
+            'whitespace reads as empty' => [['   '], ['items[0].shipment.shipmentMethod']],
 
-        yield 'the second line names the second line' => [
-            ['Express', ''],
-            ['items[1].shipment.shipmentMethod'],
-        ];
+            'the second line names the second line' => [
+                ['Express', ''],
+                ['items[1].shipment.shipmentMethod'],
+            ],
 
-        yield 'every broken line is reported' => [
-            ['', 'Express', '  '],
-            ['items[0].shipment.shipmentMethod', 'items[2].shipment.shipmentMethod'],
+            'every broken line is reported' => [
+                ['', 'Express', '  '],
+                ['items[0].shipment.shipmentMethod', 'items[2].shipment.shipmentMethod'],
+            ],
         ];
     }
 
@@ -319,23 +323,25 @@ class OrderIntakeRequestValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{callable, string}>
+     * @return array<string, array{callable, string}>
      */
-    public function provideOutOfRangeItemValues(): iterable
+    public function provideOutOfRangeItemValues(): array
     {
-        yield 'zero quantity' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(0),
-            'items[0].quantity',
-        ];
+        return [
+            'zero quantity' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(0),
+                'items[0].quantity',
+            ],
 
-        yield 'negative quantity' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(-1),
-            'items[0].quantity',
-        ];
+            'negative quantity' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setQuantity(-1),
+                'items[0].quantity',
+            ],
 
-        yield 'negative unit price' => [
-            fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setUnitCustomPrice(-100),
-            'items[0].unitCustomPrice',
+            'negative unit price' => [
+                fn (OrderIntakeRequestTransfer $r) => $r->getItems()->offsetGet(0)->setUnitCustomPrice(-100),
+                'items[0].unitCustomPrice',
+            ],
         ];
     }
 
@@ -459,9 +465,9 @@ class OrderIntakeRequestValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{array<string, string>, array<int, string>}>
+     * @return array<string, array{array<string, string>, array<int, string>}>
      */
-    public function provideSingleAddressFields(): iterable
+    public function provideSingleAddressFields(): array
     {
         $required = ['firstName' => 'Ada', 'lastName' => 'Lovelace', 'zipCode' => '10115', 'city' => 'Berlin', 'iso2Code' => 'DE'];
         $optional = ['salutation' => 'Ms', 'company' => 'Analytical Engines', 'address1' => 'Julie-Wolfthorn-Strasse', 'address2' => '1', 'address3' => 'c/o Babbage', 'phone' => '+49301234567'];
@@ -471,17 +477,17 @@ class OrderIntakeRequestValidatorTest extends Unit
             array_keys($required),
         );
 
-        yield 'no fields at all' => [[], $allMissing];
+        $dataSets = ['no fields at all' => [[], $allMissing]];
 
         foreach ($required as $field => $value) {
-            yield sprintf('only %s (required)', $field) => [
+            $dataSets[sprintf('only %s (required)', $field)] = [
                 [$field => $value],
                 array_values(array_diff($allMissing, ['shipment.shippingAddress.' . $field])),
             ];
         }
 
         foreach ($optional as $field => $value) {
-            yield sprintf('only %s (optional)', $field) => [[$field => $value], $allMissing];
+            $dataSets[sprintf('only %s (optional)', $field)] = [[$field => $value], $allMissing];
         }
 
         // Adding the five required ones one at a time shortens the report by exactly one each time.
@@ -490,7 +496,7 @@ class OrderIntakeRequestValidatorTest extends Unit
         foreach ($required as $field => $value) {
             $accumulated[$field] = $value;
 
-            yield sprintf('cumulative through %s', $field) => [
+            $dataSets[sprintf('cumulative through %s', $field)] = [
                 $accumulated,
                 array_values(array_diff($allMissing, array_map(
                     static fn (string $f): string => 'shipment.shippingAddress.' . $f,
@@ -498,6 +504,8 @@ class OrderIntakeRequestValidatorTest extends Unit
                 ))),
             ];
         }
+
+        return $dataSets;
     }
 
     /**

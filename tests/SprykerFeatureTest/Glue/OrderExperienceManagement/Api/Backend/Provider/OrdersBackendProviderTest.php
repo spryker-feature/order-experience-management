@@ -11,6 +11,7 @@ namespace SprykerFeatureTest\Glue\OrderExperienceManagement\Api\Backend\Provider
 
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use Codeception\Stub;
 use Codeception\Test\Unit;
 use Generated\Api\Backend\OrdersBackendResource;
@@ -40,10 +41,12 @@ use Spryker\ApiPlatform\Exception\GlueApiException;
 use Spryker\ApiPlatform\ResponseTransform\PaginationLinksTransform;
 use Spryker\DecimalObject\Decimal;
 use Spryker\Zed\Sales\Business\SalesFacadeInterface;
+use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Exception\OrdersBackendExceptionFactory;
 use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Provider\OrdersBackendProvider;
 use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Reader\OrderCommentReaderInterface;
 use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Reader\OrderResourceReader;
 use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Reader\OrderResourceReaderInterface;
+use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Validator\OrdersPayloadShapeValidator;
 use SprykerFeature\Glue\OrderExperienceManagement\Dependency\Plugin\OrderResourceExpanderPluginInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface;
 use SprykerFeatureTest\Glue\OrderExperienceManagement\OrderExperienceManagementGlueTester;
@@ -151,6 +154,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -201,6 +206,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -622,6 +629,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1071,6 +1080,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1100,6 +1111,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1130,6 +1143,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1162,6 +1177,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         $request = new Request(['page' => ['limit' => '25', 'offset' => '0']]);
@@ -1206,6 +1223,8 @@ class OrdersBackendProviderTest extends Unit
                         ->setCreatedAt(static::COMMENT_CREATED_AT),
                 ]),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1249,6 +1268,8 @@ class OrdersBackendProviderTest extends Unit
                     },
                 ]),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         // Act
@@ -1322,6 +1343,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
 
         $request = $this->createFilterRequest([
@@ -1451,6 +1474,36 @@ class OrdersBackendProviderTest extends Unit
         $this->assertSame(['DE'], $orderConditionsTransfer->getStoreNames());
     }
 
+    public function testGivenAMisshapenPayloadWhenProvidePostThenItIsRejectedWithTheOffendingPath(): void
+    {
+        // Arrange
+        $provider = $this->createProvider(new OrderCollectionTransfer());
+        $request = new Request([], [], [], [], [], ['CONTENT_TYPE' => 'application/json'], '{"data":{"type":"orders","attributes":{"items":"abc"}}}');
+
+        // Act
+        try {
+            $provider->provide(new Post(class: OrdersBackendResource::class), [], ['request' => $request]);
+            $this->fail('A misshapen payload must be rejected before it is deserialized.');
+        } catch (GlueApiException $glueApiException) {
+            // Assert
+            $this->assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $glueApiException->getStatusCode());
+            $this->assertSame('"items" must be an array of objects.', $glueApiException->getMessage());
+        }
+    }
+
+    public function testGivenAWellShapedPayloadWhenProvidePostThenNothingIsProvided(): void
+    {
+        // Arrange
+        $provider = $this->createProvider(new OrderCollectionTransfer());
+        $request = new Request([], [], [], [], [], ['CONTENT_TYPE' => 'application/json'], '{"data":{"type":"orders","attributes":{"items":[{"sku":"001","quantity":1}]}}}');
+
+        // Act
+        $result = $provider->provide(new Post(class: OrdersBackendResource::class), [], ['request' => $request]);
+
+        // Assert
+        $this->assertNull($result);
+    }
+
     public function testGivenNoFilterParameterWhenProvideCollectionThenNoConditionsAreApplied(): void
     {
         // Arrange
@@ -1503,6 +1556,8 @@ class OrdersBackendProviderTest extends Unit
                 Stub::makeEmpty(OrderExperienceManagementFacadeInterface::class, ['getAvailableOrderItemTransitions' => []]),
                 $this->createOrderCommentReaderStub(),
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
     }
 
@@ -1531,6 +1586,8 @@ class OrdersBackendProviderTest extends Unit
                 $this->createOrderCommentReaderStub(),
                 $orderResourceExpanderPlugins,
             ),
+            new OrdersPayloadShapeValidator(),
+            new OrdersBackendExceptionFactory(),
         );
     }
 

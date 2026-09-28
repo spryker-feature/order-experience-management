@@ -72,15 +72,17 @@ class PlaceableItemMapperTest extends Unit
     }
 
     /**
-     * @return iterable<string, array<int, string>>
+     * @return array<string, array<int, string>>
      */
-    public function provideOverridePriceFields(): iterable
+    public function provideOverridePriceFields(): array
     {
-        yield 'source gross price' => ['sourceUnitGrossPrice'];
+        return [
+            'source gross price' => ['sourceUnitGrossPrice'],
 
-        yield 'source net price' => ['sourceUnitNetPrice'];
+            'source net price' => ['sourceUnitNetPrice'],
 
-        yield 'forced gross price' => ['forcedUnitGrossPrice'];
+            'forced gross price' => ['forcedUnitGrossPrice'],
+        ];
     }
 
     /**

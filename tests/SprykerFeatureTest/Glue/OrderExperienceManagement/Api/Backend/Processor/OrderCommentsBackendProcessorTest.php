@@ -134,13 +134,15 @@ class OrderCommentsBackendProcessorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{string|null}>
+     * @return array<string, array{string|null}>
      */
-    public function provideBlankMessages(): iterable
+    public function provideBlankMessages(): array
     {
-        yield 'null' => [null];
-        yield 'empty' => [''];
-        yield 'whitespace only' => ['   '];
+        return [
+            'null' => [null],
+            'empty' => [''],
+            'whitespace only' => ['   '],
+        ];
     }
 
     public function testProcessPostRejectsARequestWithoutAnActingUserWith401(): void

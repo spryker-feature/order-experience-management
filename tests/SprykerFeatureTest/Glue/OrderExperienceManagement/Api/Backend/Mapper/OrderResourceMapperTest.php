@@ -72,7 +72,9 @@ class OrderResourceMapperTest extends Unit
             ->setCreatedAt('2026-08-27 11:04:52')
             ->setCompanyUuid('b7c3f1d8-2e94-4a0b-8f61-3c5d9e7a2b40')
             ->setCompanyBusinessUnitUuid('9c1e0b2a-4f3d-4a91-8c77-1d5b6e2f0a34')
-            ->setEmail('ada@example.com');
+            ->setEmail('ada@example.com')
+            ->setCurrencyIsoCode('EUR')
+            ->setOrderCustomReference('ERP-PO-99812');
 
         // Act
         $resource = $this->orderResourceMapper->mapOrderTransferToResource($orderTransfer, [], true);
@@ -81,6 +83,8 @@ class OrderResourceMapperTest extends Unit
         $this->assertSame('DE--1234', $resource->orderReference);
         $this->assertSame('DE--1', $resource->customerReference);
         $this->assertSame('DE', $resource->store);
+        $this->assertSame('EUR', $resource->currency);
+        $this->assertSame('ERP-PO-99812', $resource->orderCustomReference);
         $this->assertSame('2026-08-27 11:04:52', $resource->createdAt);
         $this->assertSame('b7c3f1d8-2e94-4a0b-8f61-3c5d9e7a2b40', $resource->companyUuid);
         $this->assertSame('9c1e0b2a-4f3d-4a91-8c77-1d5b6e2f0a34', $resource->companyBusinessUnitUuid);

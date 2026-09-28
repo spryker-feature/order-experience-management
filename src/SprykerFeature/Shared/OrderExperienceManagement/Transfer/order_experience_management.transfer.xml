@@ -226,6 +226,8 @@
 
     <transfer name="Order">
         <property name="fkLocale" type="int"/>
+        <property name="currencyIsoCode" type="string"/>
+        <property name="orderCustomReference" type="string"/>
         <property name="companyBusinessUnitUuid" type="string"/>
         <property name="companyUuid" type="string"/>
         <property name="calculatedDiscounts" type="CalculatedDiscount[]" singular="calculatedDiscount" description="A list of discounts calculated for an item or order."/>

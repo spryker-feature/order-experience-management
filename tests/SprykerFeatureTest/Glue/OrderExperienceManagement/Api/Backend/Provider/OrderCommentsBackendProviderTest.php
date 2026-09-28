@@ -101,12 +101,14 @@ class OrderCommentsBackendProviderTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{array<string, string>}>
+     * @return array<string, array{array<string, string>}>
      */
-    public function provideUnresolvableOrderReferences(): iterable
+    public function provideUnresolvableOrderReferences(): array
     {
-        yield 'unknown order reference' => [['orderReference' => 'DE--unknown']];
-        yield 'missing order reference' => [[]];
+        return [
+            'unknown order reference' => [['orderReference' => 'DE--unknown']],
+            'missing order reference' => [[]],
+        ];
     }
 
     /**

@@ -136,12 +136,14 @@ class OrderIntakeMessageTranslatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{string|null}>
+     * @return array<string, array{string|null}>
      */
-    public function provideUnknownOrMissingLocaleNames(): iterable
+    public function provideUnknownOrMissingLocaleNames(): array
     {
-        yield 'null locale name' => [null];
-        yield 'unknown locale name' => ['fr_FR'];
+        return [
+            'null locale name' => [null],
+            'unknown locale name' => ['fr_FR'],
+        ];
     }
 
     public function testTranslateCheckoutErrorReturnsTheRawKeyWhenNoTranslationExists(): void

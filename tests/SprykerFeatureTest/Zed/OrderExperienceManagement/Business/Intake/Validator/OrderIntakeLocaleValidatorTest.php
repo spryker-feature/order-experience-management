@@ -93,13 +93,15 @@ class OrderIntakeLocaleValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{string|null}>
+     * @return array<string, array{string|null}>
      */
-    public function provideAbsentLocaleNames(): iterable
+    public function provideAbsentLocaleNames(): array
     {
-        yield 'null' => [null];
-        yield 'empty string' => [''];
-        yield 'whitespace' => ['   '];
+        return [
+            'null' => [null],
+            'empty string' => [''],
+            'whitespace' => ['   '],
+        ];
     }
 
     protected function createValidator(bool $hasLocale): OrderIntakeLocaleValidator

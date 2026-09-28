@@ -145,12 +145,14 @@ class ProductMeasurementSalesUnitCodeResolverTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{array<string>|null}>
+     * @return array<string, array{array<string>|null}>
      */
-    public function provideSalesUnitsWithoutStoreData(): iterable
+    public function provideSalesUnitsWithoutStoreData(): array
     {
-        yield 'no store relation at all' => [null];
-        yield 'a store relation naming no store' => [[]];
+        return [
+            'no store relation at all' => [null],
+            'a store relation naming no store' => [[]],
+        ];
     }
 
     public function testFindSalesUnitsByCodeReturnsEverySalesUnitSharingTheCode(): void

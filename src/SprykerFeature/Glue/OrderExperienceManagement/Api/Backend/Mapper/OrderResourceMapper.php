@@ -40,6 +40,8 @@ class OrderResourceMapper implements OrderResourceMapperInterface
         $resource->orderReference = $orderTransfer->getOrderReference();
         $resource->customerReference = $orderTransfer->getCustomerReference();
         $resource->store = $orderTransfer->getStore();
+        $resource->currency = $orderTransfer->getCurrencyIsoCode();
+        $resource->orderCustomReference = $orderTransfer->getOrderCustomReference();
         $resource->createdAt = $orderTransfer->getCreatedAt();
         $resource->totals = $this->orderTotalsMapper->mapOrderTransferToOrdersTotals($orderTransfer);
         $resource->expenses = $this->orderExpenseMapper->mapOrderTransferToOrdersExpenses($orderTransfer);

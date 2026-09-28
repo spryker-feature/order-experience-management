@@ -9,13 +9,18 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Provider;
 
+use ApiPlatform\Metadata\Operation;
+use ApiPlatform\Metadata\Post;
 use Generated\Shared\Transfer\OrderConditionsTransfer;
 use Generated\Shared\Transfer\OrderCriteriaTransfer;
 use Generated\Shared\Transfer\SortTransfer;
 use Spryker\ApiPlatform\Exception\GlueApiException;
 use Spryker\ApiPlatform\State\Provider\AbstractBackendProvider;
 use Spryker\Zed\Sales\Business\SalesFacadeInterface;
+use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Exception\OrdersBackendExceptionFactoryInterface;
 use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Reader\OrderResourceReaderInterface;
+use SprykerFeature\Glue\OrderExperienceManagement\Api\Backend\Validator\OrdersPayloadShapeValidatorInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -76,7 +81,40 @@ class OrdersBackendProvider extends AbstractBackendProvider
     public function __construct(
         protected readonly SalesFacadeInterface $salesFacade,
         protected readonly OrderResourceReaderInterface $orderResourceReader,
+        protected readonly OrdersPayloadShapeValidatorInterface $ordersPayloadShapeValidator,
+        protected readonly OrdersBackendExceptionFactoryInterface $ordersBackendExceptionFactory,
     ) {
+    }
+
+    /**
+     * @param array<string, mixed> $uriVariables
+     * @param array<string, mixed> $context
+     */
+    public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
+    {
+        if ($operation instanceof Post) {
+            $this->assertPayloadShape($context['request'] ?? null);
+        }
+
+        return parent::provide($operation, $uriVariables, $context);
+    }
+
+    /**
+     * @throws \Spryker\ApiPlatform\Exception\GlueApiException
+     */
+    protected function assertPayloadShape(mixed $request): void
+    {
+        if (!$request instanceof Request) {
+            return;
+        }
+
+        $issues = $this->ordersPayloadShapeValidator->validatePayloadShape($request);
+
+        if ($issues === []) {
+            return;
+        }
+
+        throw $this->ordersBackendExceptionFactory->createValidationException($issues);
     }
 
     protected function provideItem(): ?object

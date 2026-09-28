@@ -95,13 +95,15 @@ class OrderIntakeStoreValidatorTest extends Unit
     }
 
     /**
-     * @return iterable<string, array{string|null}>
+     * @return array<string, array{string|null}>
      */
-    public function provideAbsentStoreNames(): iterable
+    public function provideAbsentStoreNames(): array
     {
-        yield 'null' => [null];
-        yield 'empty string' => [''];
-        yield 'whitespace' => ['   '];
+        return [
+            'null' => [null],
+            'empty string' => [''],
+            'whitespace' => ['   '],
+        ];
     }
 
     protected function createValidator(?StoreTransfer $storeTransfer): OrderIntakeStoreValidator

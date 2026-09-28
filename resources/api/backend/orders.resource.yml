@@ -108,6 +108,7 @@ resource:
                             limit: { type: integer, default: 25, maximum: 100 }
                             offset: { type: integer, default: 0 }
         - type: Post
+          read: true
           deserialize: true
           validationGroups: ['Default', 'orders:create']
           openapiContext:
