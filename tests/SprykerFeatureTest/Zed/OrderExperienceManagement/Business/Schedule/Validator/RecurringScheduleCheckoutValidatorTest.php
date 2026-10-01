@@ -191,7 +191,7 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
     {
         $cadenceResolverMock = $this->createMock(CadenceResolverInterface::class);
         $cadenceResolverMock->method('isSupported')->willReturn(true);
-        $cadenceResolverMock->method('isValueRequired')->willReturn(false);
+        $cadenceResolverMock->method('isValueValid')->willReturn(true);
 
         return $cadenceResolverMock;
     }

@@ -20,6 +20,7 @@ use Generated\Shared\Transfer\RecurringOrderQuoteUpdateResponseTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
@@ -155,16 +156,127 @@ class UpdateRecurringOrderSettingsOnQuoteTest extends Unit
         );
     }
 
-    protected function updateSettingsWithStartDate(string $startDate): RecurringOrderQuoteUpdateResponseTransfer
+    /**
+     * @return array<string, array<int|null>>
+     */
+    public function unusableEveryNWeeksCadenceValueDataProvider(): array
     {
+        return [
+            'missing cadence value' => [null],
+            'zero cadence value' => [0],
+            'negative cadence value' => [-1],
+        ];
+    }
+
+    /**
+     * @dataProvider unusableEveryNWeeksCadenceValueDataProvider
+     */
+    public function testReturnsCadenceValueRequiredErrorWhenEveryNWeeksCadenceValueIsUnusable(?int $cadenceValue): void
+    {
+        // Arrange
+        $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS)
+            ->setStartDate((new DateTimeImmutable('today'))->format('Y-m-d'))
+            ->setCadenceValue($cadenceValue);
+
+        // Act
+        $responseTransfer = $this->updateSettings($recurringOrderSettingsTransfer, [new EveryNWeeksCadenceTypePlugin()]);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(
+            'recurring_orders.checkout.error.cadence_value_required',
+            $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
+        );
+    }
+
+    public function testDoesNotPersistQuoteWhenEveryNWeeksCadenceValueIsMissing(): void
+    {
+        // Arrange
         $this->tester->setDependency(
             OrderExperienceManagementDependencyProvider::PLUGINS_CADENCE_TYPE,
-            [new WeeklyCadenceTypePlugin()],
+            [new EveryNWeeksCadenceTypePlugin()],
         );
 
+        $quoteFacadeMock = $this->createMock(QuoteFacadeInterface::class);
+        $quoteFacadeMock->method('findQuoteById')
+            ->willReturn((new QuoteResponseTransfer())->setIsSuccessful(true)->setQuoteTransfer(new QuoteTransfer()));
+        $quoteFacadeMock->expects($this->never())->method('updateQuote');
+
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_QUOTE, $quoteFacadeMock);
+
+        $requestTransfer = (new RecurringOrderQuoteUpdateRequestTransfer())
+            ->setIdQuote(1)
+            ->setRecurringOrderSettings(
+                (new RecurringOrderSettingsTransfer())
+                    ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS)
+                    ->setStartDate((new DateTimeImmutable('today'))->format('Y-m-d')),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->updateRecurringOrderSettingsOnQuote($requestTransfer);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+    }
+
+    public function testAcceptsMissingCadenceValueForCadenceTypeThatDoesNotRequireOne(): void
+    {
+        // Arrange
+        $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY)
+            ->setStartDate((new DateTimeImmutable('today'))->format('Y-m-d'))
+            ->setCadenceValue(null);
+
+        // Act
+        $responseTransfer = $this->updateSettings($recurringOrderSettingsTransfer, [new WeeklyCadenceTypePlugin()]);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+        $this->assertSame(
+            (new DateTimeImmutable('today'))->modify('+7 days')->format('Y-m-d'),
+            $responseTransfer->getQuoteOrFail()->getRecurringOrderSettingsOrFail()->getFirstOrderDate(),
+        );
+    }
+
+    public function testResolvesFirstOrderDateWhenEveryNWeeksCadenceValueIsProvided(): void
+    {
+        // Arrange
+        $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS)
+            ->setStartDate((new DateTimeImmutable('today'))->format('Y-m-d'))
+            ->setCadenceValue(3);
+
+        // Act
+        $responseTransfer = $this->updateSettings($recurringOrderSettingsTransfer, [new EveryNWeeksCadenceTypePlugin()]);
+
+        // Assert
+        $this->assertSame(
+            (new DateTimeImmutable('today'))->modify('+21 days')->format('Y-m-d'),
+            $responseTransfer->getQuoteOrFail()->getRecurringOrderSettingsOrFail()->getFirstOrderDate(),
+        );
+    }
+
+    protected function updateSettingsWithStartDate(string $startDate): RecurringOrderQuoteUpdateResponseTransfer
+    {
         $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
             ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY)
             ->setStartDate($startDate);
+
+        return $this->updateSettings($recurringOrderSettingsTransfer, [new WeeklyCadenceTypePlugin()]);
+    }
+
+    /**
+     * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface> $cadenceTypePlugins
+     */
+    protected function updateSettings(
+        RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
+        array $cadenceTypePlugins,
+    ): RecurringOrderQuoteUpdateResponseTransfer {
+        $this->tester->setDependency(
+            OrderExperienceManagementDependencyProvider::PLUGINS_CADENCE_TYPE,
+            $cadenceTypePlugins,
+        );
 
         $updatedQuoteTransfer = (new QuoteTransfer())->setRecurringOrderSettings($recurringOrderSettingsTransfer);
 

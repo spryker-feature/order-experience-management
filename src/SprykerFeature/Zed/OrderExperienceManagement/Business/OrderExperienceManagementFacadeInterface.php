@@ -80,6 +80,8 @@ interface OrderExperienceManagementFacadeInterface
      * - Derives `RecurringOrderSettings.firstOrderDate` from `RecurringOrderSettings.startDate`: a future start
      *   date is used as-is, while today advances by one cadence period.
      * - Leaves `RecurringOrderSettings.firstOrderDate` as `null` when the cadence type is missing or unsupported.
+     * - Returns `isSuccessful=false` with an error message, without persisting anything, when the cadence type
+     *   requires a cadence value and `RecurringOrderSettings.cadenceValue` is missing or less than 1.
      * - Sets `RecurringOrderQuoteUpdateRequestTransfer.customer` on the quote when the quote does not already have one.
      * - Persists the updated quote.
      * - Maps errors from the quote persistence response to `RecurringOrderQuoteUpdateResponseTransfer.errors`.

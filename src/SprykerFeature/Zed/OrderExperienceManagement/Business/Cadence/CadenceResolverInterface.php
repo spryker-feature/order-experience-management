@@ -21,4 +21,6 @@ interface CadenceResolverInterface
     public function isSupported(string $cadenceType): bool;
 
     public function isValueRequired(string $cadenceType): bool;
+
+    public function isValueValid(string $cadenceType, ?int $cadenceValue): bool;
 }

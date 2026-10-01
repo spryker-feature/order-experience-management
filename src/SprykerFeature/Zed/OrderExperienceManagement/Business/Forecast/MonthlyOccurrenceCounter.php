@@ -34,7 +34,7 @@ class MonthlyOccurrenceCounter implements MonthlyOccurrenceCounterInterface
             return 0;
         }
 
-        if ($this->cadenceResolver->isValueRequired($cadenceType) && ($cadenceValue === null || $cadenceValue < 1)) {
+        if (!$this->cadenceResolver->isValueValid($cadenceType, $cadenceValue)) {
             return 0;
         }
 

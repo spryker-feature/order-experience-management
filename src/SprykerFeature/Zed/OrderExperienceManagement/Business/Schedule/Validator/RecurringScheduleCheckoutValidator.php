@@ -127,19 +127,10 @@ class RecurringScheduleCheckoutValidator implements RecurringScheduleCheckoutVal
             return static::GLOSSARY_KEY_CADENCE_REQUIRED;
         }
 
-        if (!$this->isCadenceValueValid($cadenceType, $recurringOrderSettingsTransfer->getCadenceValue())) {
+        if (!$this->cadenceResolver->isValueValid($cadenceType, $recurringOrderSettingsTransfer->getCadenceValue())) {
             return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
         }
 
         return null;
-    }
-
-    protected function isCadenceValueValid(string $cadenceType, ?int $cadenceValue): bool
-    {
-        if (!$this->cadenceResolver->isValueRequired($cadenceType)) {
-            return true;
-        }
-
-        return $cadenceValue !== null && $cadenceValue >= 1;
     }
 }

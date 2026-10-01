@@ -23,6 +23,8 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
 {
     protected const string GLOSSARY_KEY_QUOTE_NOT_FOUND = 'recurring_orders.error.quote_not_found';
 
+    protected const string GLOSSARY_KEY_CADENCE_VALUE_REQUIRED = 'recurring_orders.checkout.error.cadence_value_required';
+
     protected const string DATE_FORMAT = 'Y-m-d';
 
     public function __construct(
@@ -45,6 +47,14 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
 
         if (!$this->isQuoteOwnedByRequestCustomer($quoteTransfer, $recurringOrderQuoteUpdateRequestTransfer)) {
             return $this->createQuoteNotFoundResponse();
+        }
+
+        $validationErrorGlossaryKey = $this->validateRecurringOrderSettings(
+            $recurringOrderQuoteUpdateRequestTransfer->getRecurringOrderSettings(),
+        );
+
+        if ($validationErrorGlossaryKey !== null) {
+            return $this->createErrorResponse($validationErrorGlossaryKey);
         }
 
         $quoteTransfer = $this->applyRequestToQuote($recurringOrderQuoteUpdateRequestTransfer, $quoteTransfer);
@@ -70,9 +80,30 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
 
     protected function createQuoteNotFoundResponse(): RecurringOrderQuoteUpdateResponseTransfer
     {
+        return $this->createErrorResponse(static::GLOSSARY_KEY_QUOTE_NOT_FOUND);
+    }
+
+    protected function createErrorResponse(string $glossaryKey): RecurringOrderQuoteUpdateResponseTransfer
+    {
         return (new RecurringOrderQuoteUpdateResponseTransfer())
             ->setIsSuccessful(false)
-            ->addError((new ErrorTransfer())->setMessage(static::GLOSSARY_KEY_QUOTE_NOT_FOUND));
+            ->addError((new ErrorTransfer())->setMessage($glossaryKey));
+    }
+
+    protected function validateRecurringOrderSettings(
+        ?RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
+    ): ?string {
+        $cadenceType = $recurringOrderSettingsTransfer?->getCadenceType();
+
+        if ($cadenceType === null || !$this->cadenceResolver->isSupported($cadenceType)) {
+            return null;
+        }
+
+        if (!$this->cadenceResolver->isValueValid($cadenceType, $recurringOrderSettingsTransfer->getCadenceValue())) {
+            return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
+        }
+
+        return null;
     }
 
     protected function applyRequestToQuote(

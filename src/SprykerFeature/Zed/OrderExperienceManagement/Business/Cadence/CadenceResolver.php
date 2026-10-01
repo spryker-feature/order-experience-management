@@ -63,6 +63,15 @@ class CadenceResolver implements CadenceResolverInterface
         return $cadenceType === SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS;
     }
 
+    public function isValueValid(string $cadenceType, ?int $cadenceValue): bool
+    {
+        if (!$this->isValueRequired($cadenceType)) {
+            return true;
+        }
+
+        return $cadenceValue !== null && $cadenceValue >= 1;
+    }
+
     protected function findCadenceTypePlugin(string $cadenceType): ?CadenceTypePluginInterface
     {
         foreach ($this->cadenceTypePlugins as $cadenceTypePlugin) {
