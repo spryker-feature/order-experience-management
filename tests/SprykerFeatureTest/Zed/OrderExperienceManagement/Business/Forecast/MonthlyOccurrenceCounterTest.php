@@ -18,6 +18,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\Bi
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\MonthlyCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
+use SprykerFeatureTest\Zed\OrderExperienceManagement\ByDaysCadenceTypePluginStub;
 
 /**
  * Auto-generated group annotations
@@ -39,12 +40,67 @@ class MonthlyOccurrenceCounterTest extends Unit
 
     protected function createCounter(): MonthlyOccurrenceCounter
     {
-        return new MonthlyOccurrenceCounter(new CadenceResolver([
+        return new MonthlyOccurrenceCounter($this->createCadenceResolver([
             new WeeklyCadenceTypePlugin(),
             new BiWeeklyCadenceTypePlugin(),
             new MonthlyCadenceTypePlugin(),
             new EveryNWeeksCadenceTypePlugin(),
+            new ByDaysCadenceTypePluginStub(),
         ]));
+    }
+
+    public function testByDaysWithOneSelectedDayCountsEveryMatchingWeekDay(): void
+    {
+        // Arrange
+        $counter = $this->createCounter();
+
+        // Act
+        $occurrenceCount = $counter->count(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            null,
+            '2026-07-01',
+            new DateTimeImmutable(static::REFERENCE_DATE),
+            ['3'],
+        );
+
+        // Assert
+        $this->assertSame(5, $occurrenceCount);
+    }
+
+    public function testByDaysWithEveryDaySelectedCountsEveryDayOfTheMonth(): void
+    {
+        // Arrange
+        $counter = $this->createCounter();
+
+        // Act
+        $occurrenceCount = $counter->count(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            null,
+            '2026-07-01',
+            new DateTimeImmutable(static::REFERENCE_DATE),
+            ['1', '2', '3', '4', '5', '6', '7'],
+        );
+
+        // Assert
+        $this->assertSame(31, $occurrenceCount);
+    }
+
+    public function testByDaysWithNoSelectedDayCountsNothing(): void
+    {
+        // Arrange
+        $counter = $this->createCounter();
+
+        // Act
+        $occurrenceCount = $counter->count(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            null,
+            '2026-07-01',
+            new DateTimeImmutable(static::REFERENCE_DATE),
+            [],
+        );
+
+        // Assert
+        $this->assertSame(0, $occurrenceCount);
     }
 
     public function testWeeklyAnchoredOnFirstDayCountsFiveOccurrences(): void
@@ -215,5 +271,13 @@ class MonthlyOccurrenceCounterTest extends Unit
 
         // Assert
         $this->assertSame(0, $occurrenceCount);
+    }
+
+    /**
+     * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface> $cadenceTypePlugins
+     */
+    protected function createCadenceResolver(array $cadenceTypePlugins): CadenceResolver
+    {
+        return new CadenceResolver($cadenceTypePlugins);
     }
 }

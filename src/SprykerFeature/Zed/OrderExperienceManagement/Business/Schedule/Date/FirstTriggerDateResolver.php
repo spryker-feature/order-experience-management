@@ -20,8 +20,15 @@ class FirstTriggerDateResolver implements FirstTriggerDateResolverInterface
     {
     }
 
-    public function resolve(?string $startDate, string $cadenceType, ?int $cadenceValue): DateTimeImmutable
-    {
+    /**
+     * @param array<string> $cadenceOptions
+     */
+    public function resolve(
+        ?string $startDate,
+        string $cadenceType,
+        ?int $cadenceValue,
+        array $cadenceOptions = [],
+    ): DateTimeImmutable {
         $today = new DateTimeImmutable('today');
         $startDateTime = $this->parseStartDate($startDate) ?? $today;
 
@@ -29,7 +36,12 @@ class FirstTriggerDateResolver implements FirstTriggerDateResolverInterface
             return $startDateTime;
         }
 
-        return $this->cadenceResolver->resolveNextTriggerDateFromBase($cadenceType, $cadenceValue, $startDateTime);
+        return $this->cadenceResolver->resolveNextTriggerDateFromBase(
+            $cadenceType,
+            $cadenceValue,
+            $startDateTime,
+            $cadenceOptions,
+        );
     }
 
     protected function parseStartDate(?string $startDate): ?DateTimeImmutable

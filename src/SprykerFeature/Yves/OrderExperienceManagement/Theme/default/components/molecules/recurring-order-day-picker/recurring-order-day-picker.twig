@@ -1,0 +1,40 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-day-picker',
+} %}
+
+{% define data = {
+    field: required,
+    inputClass: '',
+    qaPrefix: 'recurring-order',
+} %}
+
+{% block body %}
+    {% block label %}
+        {{ form_label(data.field) }}
+    {% endblock %}
+
+    {% block errors %}
+        {{ form_errors(data.field) }}
+    {% endblock %}
+
+    {% block days %}
+        <div class="{{ config.name }}__days" data-qa="{{ data.qaPrefix }}-days">
+            {% for choice in data.field %}
+                {{ form_widget(choice, {
+                    attr: {
+                        class: "#{config.name}__day-input #{data.inputClass}",
+                        'data-qa': "#{data.qaPrefix}-day-input",
+                    },
+                }) }}
+                {{ form_label(choice, null, {
+                    label_attr: {
+                        class: "#{config.name}__day-label",
+                        'data-qa': "#{data.qaPrefix}-day-label",
+                    },
+                }) }}
+            {% endfor %}
+        </div>
+    {% endblock %}
+{% endblock %}

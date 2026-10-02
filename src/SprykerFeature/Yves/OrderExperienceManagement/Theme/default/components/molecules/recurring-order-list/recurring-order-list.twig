@@ -11,6 +11,7 @@
     attentionCount: 0,
     attentionStatusCounts: 0,
     statusClassMap: [],
+    weekDayGlossaryKeys: {},
     title: 'recurring_orders.list.title' | trans,
     activePage: 'recurring-orders',
 } %}
@@ -96,6 +97,17 @@
                     },
                 ] %}
 
+                {% set dayLabelsByUuid = {} %}
+                {% for schedule in data.recurringSchedules %}
+                    {% set scheduleDayLabels = [] %}
+                    {% for weekDay, glossaryKey in data.weekDayGlossaryKeys %}
+                        {% if (weekDay ~ '') in schedule.cadenceOptions %}
+                            {% set scheduleDayLabels = scheduleDayLabels | merge([glossaryKey | trans]) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% set dayLabelsByUuid = dayLabelsByUuid | merge({ (schedule.uuid): scheduleDayLabels | join(', ') }) %}
+                {% endfor %}
+
                 {% set rows = data.recurringSchedules | map(schedule => {
                     'spy_recurring_schedule.name': (schedule.name ?: schedule.uuid) | e,
                     'spy_recurring_schedule.status': {
@@ -104,7 +116,8 @@
                     },
                     'spy_recurring_schedule.next_trigger_date': schedule.status == 'cancelled' ? '—' : schedule.nextTriggerDate,
                     'spy_recurring_schedule.cadence_type': ('recurring_orders.cadence.' ~ schedule.cadenceType) | trans
-                    ~ (schedule.cadenceValue ? ' (' ~ schedule.cadenceValue ~ ')' : ''),
+                    ~ (schedule.cadenceValue ? ' (' ~ schedule.cadenceValue ~ ')' : '')
+                    ~ (dayLabelsByUuid[schedule.uuid] ? ' (' ~ dayLabelsByUuid[schedule.uuid] ~ ')' : ''),
                     'spy_recurring_schedule.actions': [{
                         url: url('recurring-orders/detail', { uuid: schedule.uuid }),
                         label: 'purchasing_control.budget.action.view',

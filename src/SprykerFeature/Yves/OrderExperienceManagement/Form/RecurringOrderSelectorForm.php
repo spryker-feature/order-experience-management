@@ -10,6 +10,7 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 use DateTimeImmutable;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Spryker\Yves\Kernel\Form\AbstractType;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -29,11 +30,15 @@ class RecurringOrderSelectorForm extends AbstractType
 
     public const string FIELD_CADENCE_VALUE = 'cadenceValue';
 
+    public const string FIELD_CADENCE_OPTIONS = 'cadenceOptions';
+
     public const string FIELD_SCHEDULE_NAME = 'scheduleName';
 
     public const string FIELD_START_DATE = 'startDate';
 
     public const string OPTION_CADENCE_TYPE_CHOICES = 'cadence_type_choices';
+
+    public const string OPTION_WEEK_DAY_CHOICES = 'week_day_choices';
 
     protected const string DATE_FORMAT = 'Y-m-d';
 
@@ -50,14 +55,22 @@ class RecurringOrderSelectorForm extends AbstractType
         $this->addScheduleNameField($builder)
             ->addCadenceTypeField($builder, $options)
             ->addCadenceValueField($builder)
+            ->addCadenceOptionsField($builder, $options)
             ->addStartDateField($builder);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => RecurringOrderSettingsTransfer::class]);
-        $resolver->setRequired([static::OPTION_CADENCE_TYPE_CHOICES]);
+        $resolver->setDefaults([
+            'data_class' => RecurringOrderSettingsTransfer::class,
+            'constraints' => [new Callback([$this, 'validateCadenceOptions'])],
+        ]);
+        $resolver->setRequired([
+            static::OPTION_CADENCE_TYPE_CHOICES,
+            static::OPTION_WEEK_DAY_CHOICES,
+        ]);
         $resolver->setAllowedTypes(static::OPTION_CADENCE_TYPE_CHOICES, 'array');
+        $resolver->setAllowedTypes(static::OPTION_WEEK_DAY_CHOICES, 'array');
     }
 
     /**
@@ -92,6 +105,48 @@ class RecurringOrderSelectorForm extends AbstractType
         ]);
 
         return $this;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    protected function addCadenceOptionsField(FormBuilderInterface $builder, array $options): static
+    {
+        $weekDayChoices = $options[static::OPTION_WEEK_DAY_CHOICES];
+
+        $builder->add(static::FIELD_CADENCE_OPTIONS, ChoiceType::class, [
+            'choices' => $weekDayChoices,
+            'label' => 'recurring_orders.checkout.days_label',
+            'required' => false,
+            'multiple' => true,
+            'expanded' => true,
+            'constraints' => [
+                new Choice(['choices' => array_values($weekDayChoices), 'multiple' => true]),
+            ],
+        ]);
+
+        return $this;
+    }
+
+    public function validateCadenceOptions(
+        ?RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
+        ExecutionContextInterface $context,
+    ): void {
+        if ($recurringOrderSettingsTransfer === null) {
+            return;
+        }
+
+        if ($recurringOrderSettingsTransfer->getCadenceType() !== SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS) {
+            return;
+        }
+
+        if ($recurringOrderSettingsTransfer->getCadenceOptions() !== []) {
+            return;
+        }
+
+        $context->buildViolation('recurring_orders.checkout.validation.days_required')
+            ->atPath(static::FIELD_CADENCE_OPTIONS)
+            ->addViolation();
     }
 
     protected function addScheduleNameField(FormBuilderInterface $builder): static

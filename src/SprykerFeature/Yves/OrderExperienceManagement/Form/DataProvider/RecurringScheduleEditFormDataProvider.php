@@ -27,6 +27,7 @@ class RecurringScheduleEditFormDataProvider
             RecurringScheduleEditForm::FIELD_NAME => $recurringScheduleTransfer->getName(),
             RecurringScheduleEditForm::FIELD_CADENCE_TYPE => $recurringScheduleTransfer->getCadenceType(),
             RecurringScheduleEditForm::FIELD_CADENCE_VALUE => $recurringScheduleTransfer->getCadenceValue(),
+            RecurringScheduleEditForm::FIELD_CADENCE_OPTIONS => array_map('strval', $recurringScheduleTransfer->getCadenceOptions()),
             RecurringScheduleEditForm::FIELD_NEXT_EXECUTION_DATE => $nextTriggerDate !== null ? new DateTime($nextTriggerDate) : null,
         ];
     }

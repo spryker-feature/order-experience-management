@@ -101,6 +101,7 @@ class RecurringScheduleController extends AbstractController
 
         return [
             'recurringSchedule' => $recurringScheduleTransfer,
+            'weekDayNames' => $this->getFactory()->createWeekDayNameMapper()->mapWeekDaysToNames(),
             'idSourceSalesOrder' => $idSourceSalesOrder,
             'sourceOrderReference' => $sourceOrderReference,
             'merchantNamesByReference' => $merchantNamesByReference,

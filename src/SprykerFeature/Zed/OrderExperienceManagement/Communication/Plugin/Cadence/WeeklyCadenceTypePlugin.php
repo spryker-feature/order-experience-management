@@ -32,10 +32,57 @@ class WeeklyCadenceTypePlugin extends AbstractPlugin implements CadenceTypePlugi
      * {@inheritDoc}
      *
      * @api
+     *
+     * @param array<string> $cadenceOptions
      */
-    public function getNextTriggerDate(DateTimeImmutable $currentTriggerDate, ?int $cadenceValue): DateTimeImmutable
-    {
+    public function getNextTriggerDate(
+        DateTimeImmutable $currentTriggerDate,
+        ?int $cadenceValue,
+        array $cadenceOptions = [],
+    ): DateTimeImmutable {
         return $currentTriggerDate->modify('+7 days');
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isValueRequired(): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isValueValid(?int $cadenceValue): bool
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function areOptionsRequired(): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param array<string> $cadenceOptions
+     */
+    public function areOptionsValid(array $cadenceOptions): bool
+    {
+        return true;
     }
 
     /**

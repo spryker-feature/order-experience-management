@@ -16,6 +16,7 @@
         <column name="name" type="VARCHAR" size="255" required="false"/>
         <column name="cadence_type" type="VARCHAR" size="32" required="true"/>
         <column name="cadence_value" type="INTEGER" required="false"/>
+        <column name="cadence_options" type="LONGVARCHAR" required="false" description="JSON-encoded list of cadence parameters owned by the cadence type. For by_days: ISO-8601 weekday numbers (1=Mon..7=Sun), ascending."/>
         <column name="first_trigger_date" type="DATE" required="true"/>
         <column name="next_trigger_date" type="DATE" required="true"/>
         <column name="notification_window_hours" type="INTEGER" required="true" defaultValue="48"/>

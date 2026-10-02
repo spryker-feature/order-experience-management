@@ -41,6 +41,7 @@ class ScheduleAdvancer implements ScheduleAdvancerInterface
             $scheduleTransfer->getCadenceTypeOrFail(),
             $scheduleTransfer->getCadenceValue(),
             $baseDate,
+            array_map('strval', $scheduleTransfer->getCadenceOptions()),
         );
 
         $this->entityManager->updateScheduleNextTriggerDate($idRecurringSchedule, $nextTriggerDate->format(static::DATE_FORMAT));

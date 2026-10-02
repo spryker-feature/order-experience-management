@@ -88,6 +88,7 @@ class MonthlyForecastCalculator implements MonthlyForecastCalculatorInterface
             $recurringScheduleForecastTransfer->getCadenceValue(),
             $recurringScheduleForecastTransfer->getNextTriggerDate(),
             $referenceDate,
+            array_map('strval', $recurringScheduleForecastTransfer->getCadenceOptions()),
         );
 
         if ($occurrenceCount === 0) {

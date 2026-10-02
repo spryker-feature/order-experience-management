@@ -20,8 +20,10 @@ use Generated\Shared\Transfer\SortTransfer;
 use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
+use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapperInterface;
 
 class RecurringScheduleTable extends AbstractTable
 {
@@ -81,8 +83,11 @@ class RecurringScheduleTable extends AbstractTable
 
     protected RecurringScheduleTableFilterTransfer $recurringScheduleTableFilterTransfer;
 
-    public function __construct(protected readonly OrderExperienceManagementFacadeInterface $orderExperienceManagementFacade)
-    {
+    public function __construct(
+        protected readonly OrderExperienceManagementFacadeInterface $orderExperienceManagementFacade,
+        protected readonly TranslatorFacadeInterface $translatorFacade,
+        protected readonly WeekDayNameMapperInterface $weekDayNameMapper,
+    ) {
         $this->recurringScheduleTableFilterTransfer = new RecurringScheduleTableFilterTransfer();
     }
 
@@ -279,13 +284,35 @@ class RecurringScheduleTable extends AbstractTable
         }
 
         $cadenceValue = $recurringScheduleTransfer->getCadenceValue();
-        $cadenceLabel = ucfirst(str_replace('_', ' ', $cadenceType));
+        $cadenceLabel = $this->translatorFacade->trans(ucfirst(str_replace('_', ' ', $cadenceType)));
 
         if ($cadenceValue !== null) {
             return sprintf('%s (%d)', $cadenceLabel, $cadenceValue);
         }
 
+        $weekDayNames = $this->formatWeekDayNames($recurringScheduleTransfer);
+
+        if ($weekDayNames !== '') {
+            return sprintf('%s (%s)', $cadenceLabel, $weekDayNames);
+        }
+
         return $cadenceLabel;
+    }
+
+    protected function formatWeekDayNames(RecurringScheduleTransfer $recurringScheduleTransfer): string
+    {
+        $cadenceOptions = array_map('strval', $recurringScheduleTransfer->getCadenceOptions());
+        $weekDayNames = [];
+
+        foreach ($this->weekDayNameMapper->mapWeekDaysToNames() as $weekDay => $weekDayName) {
+            if (!in_array((string)$weekDay, $cadenceOptions, true)) {
+                continue;
+            }
+
+            $weekDayNames[] = $this->translatorFacade->trans($weekDayName);
+        }
+
+        return implode(', ', $weekDayNames);
     }
 
     protected function formatCycleTotal(RecurringScheduleTransfer $recurringScheduleTransfer): string

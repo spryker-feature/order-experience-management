@@ -11,6 +11,7 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -42,6 +43,8 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
 
     public const string FIELD_CADENCE_VALUE = 'cadenceValue';
 
+    public const string FIELD_CADENCE_OPTIONS = 'cadenceOptions';
+
     public const string FIELD_NEXT_EXECUTION_DATE = 'nextExecutionDate';
 
     public const string OPTION_RECURRING_SCHEDULE = 'recurringSchedule';
@@ -57,6 +60,7 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
 
         $resolver->setDefaults([
             static::OPTION_RECURRING_SCHEDULE => null,
+            'constraints' => [new Callback([$this, 'validateCadenceOptions'])],
         ]);
     }
 
@@ -69,6 +73,7 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
             ->addNameField($builder)
             ->addCadenceTypeField($builder)
             ->addCadenceValueField($builder)
+            ->addCadenceOptionsField($builder)
             ->addNextExecutionDateField($builder);
 
         $this->addFormExpanderFields($builder, $options);
@@ -128,6 +133,46 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
         ]);
 
         return $this;
+    }
+
+    protected function addCadenceOptionsField(FormBuilderInterface $builder): static
+    {
+        $weekDayChoices = $this->getFactory()->createWeekDayGlossaryKeyMapper()->mapWeekDaysToChoices();
+
+        $builder->add(static::FIELD_CADENCE_OPTIONS, ChoiceType::class, [
+            'choices' => $weekDayChoices,
+            'label' => 'recurring_orders.detail.edit.days_label',
+            'required' => false,
+            'multiple' => true,
+            'expanded' => true,
+            'constraints' => [
+                new Choice(['choices' => array_values($weekDayChoices), 'multiple' => true]),
+            ],
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, mixed>|null $formData
+     */
+    public function validateCadenceOptions(?array $formData, ExecutionContextInterface $context): void
+    {
+        if ($formData === null) {
+            return;
+        }
+
+        if (($formData[static::FIELD_CADENCE_TYPE] ?? null) !== SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS) {
+            return;
+        }
+
+        if (($formData[static::FIELD_CADENCE_OPTIONS] ?? []) !== []) {
+            return;
+        }
+
+        $context->buildViolation('recurring_orders.detail.edit.validation.days_required')
+            ->atPath(static::FIELD_CADENCE_OPTIONS)
+            ->addViolation();
     }
 
     protected function addNextExecutionDateField(FormBuilderInterface $builder): static

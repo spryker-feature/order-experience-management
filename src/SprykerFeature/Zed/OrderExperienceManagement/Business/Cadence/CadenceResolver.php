@@ -11,7 +11,6 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
 
 use DateTimeImmutable;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\UnsupportedCadenceTypeException;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
 
@@ -26,22 +25,25 @@ class CadenceResolver implements CadenceResolverInterface
 
     public function resolveNextTriggerDate(RecurringScheduleTransfer $recurringScheduleTransfer): DateTimeImmutable
     {
-        $cadenceType = $recurringScheduleTransfer->getCadenceTypeOrFail();
-        $cadenceTypePlugin = $this->findCadenceTypePlugin($cadenceType);
-
-        if ($cadenceTypePlugin === null) {
-            throw new UnsupportedCadenceTypeException(
-                sprintf('No cadence type plugin registered for type "%s".', $cadenceType),
-            );
-        }
-
-        $baseDate = new DateTimeImmutable($recurringScheduleTransfer->getNextTriggerDateOrFail());
-
-        return $cadenceTypePlugin->getNextTriggerDate($baseDate, $recurringScheduleTransfer->getCadenceValue());
+        return $this->resolveNextTriggerDateFromBase(
+            $recurringScheduleTransfer->getCadenceTypeOrFail(),
+            $recurringScheduleTransfer->getCadenceValue(),
+            new DateTimeImmutable($recurringScheduleTransfer->getNextTriggerDateOrFail()),
+            $this->getScheduleCadenceOptions($recurringScheduleTransfer),
+        );
     }
 
-    public function resolveNextTriggerDateFromBase(string $cadenceType, ?int $cadenceValue, DateTimeImmutable $baseDate): DateTimeImmutable
-    {
+    /**
+     * @param array<string> $cadenceOptions
+     *
+     * @throws \SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\UnsupportedCadenceTypeException
+     */
+    public function resolveNextTriggerDateFromBase(
+        string $cadenceType,
+        ?int $cadenceValue,
+        DateTimeImmutable $baseDate,
+        array $cadenceOptions = [],
+    ): DateTimeImmutable {
         $cadenceTypePlugin = $this->findCadenceTypePlugin($cadenceType);
 
         if ($cadenceTypePlugin === null) {
@@ -50,7 +52,7 @@ class CadenceResolver implements CadenceResolverInterface
             );
         }
 
-        return $cadenceTypePlugin->getNextTriggerDate($baseDate, $cadenceValue);
+        return $cadenceTypePlugin->getNextTriggerDate($baseDate, $cadenceValue, $cadenceOptions);
     }
 
     public function isSupported(string $cadenceType): bool
@@ -60,16 +62,33 @@ class CadenceResolver implements CadenceResolverInterface
 
     public function isValueRequired(string $cadenceType): bool
     {
-        return $cadenceType === SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS;
+        return $this->findCadenceTypePlugin($cadenceType)?->isValueRequired() ?? false;
     }
 
     public function isValueValid(string $cadenceType, ?int $cadenceValue): bool
     {
-        if (!$this->isValueRequired($cadenceType)) {
-            return true;
-        }
+        return $this->findCadenceTypePlugin($cadenceType)?->isValueValid($cadenceValue) ?? false;
+    }
 
-        return $cadenceValue !== null && $cadenceValue >= 1;
+    public function areOptionsRequired(string $cadenceType): bool
+    {
+        return $this->findCadenceTypePlugin($cadenceType)?->areOptionsRequired() ?? false;
+    }
+
+    /**
+     * @param array<string> $cadenceOptions
+     */
+    public function areOptionsValid(string $cadenceType, array $cadenceOptions): bool
+    {
+        return $this->findCadenceTypePlugin($cadenceType)?->areOptionsValid($cadenceOptions) ?? false;
+    }
+
+    /**
+     * @return array<string>
+     */
+    protected function getScheduleCadenceOptions(RecurringScheduleTransfer $recurringScheduleTransfer): array
+    {
+        return array_map('strval', $recurringScheduleTransfer->getCadenceOptions());
     }
 
     protected function findCadenceTypePlugin(string $cadenceType): ?CadenceTypePluginInterface

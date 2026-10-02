@@ -19,17 +19,42 @@ use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringSchedule;
 
 class RecurringScheduleMapper
 {
+    /**
+     * @var array<string>
+     */
+    protected const array CADENCE_OPTIONS_ARRAY_KEYS = ['cadence_options', 'cadenceOptions', 'CadenceOptions'];
+
     public const string VIRTUAL_COL_COMPANY_NAME = 'company_name';
 
     public const string VIRTUAL_COL_BUSINESS_UNIT_NAME = 'business_unit_name';
 
     public const string VIRTUAL_COL_ESTIMATED_TOTAL = 'estimated_total';
 
+    public function mapRecurringScheduleTransferToRecurringScheduleEntityColumns(
+        RecurringScheduleTransfer $recurringScheduleTransfer,
+        SpyRecurringSchedule $recurringScheduleEntity,
+    ): SpyRecurringSchedule {
+        $recurringScheduleEntity->fromArray(
+            $this->withoutCadenceOptions($recurringScheduleTransfer->modifiedToArray()),
+        );
+
+        if ($this->isCadenceOptionsModified($recurringScheduleTransfer)) {
+            $recurringScheduleEntity->setCadenceOptions(
+                $this->encodeCadenceOptions($recurringScheduleTransfer->getCadenceOptions()),
+            );
+        }
+
+        return $recurringScheduleEntity;
+    }
+
     public function mapRecurringScheduleTransferToRecurringScheduleEntity(
         RecurringScheduleTransfer $recurringScheduleTransfer,
         SpyRecurringSchedule $recurringScheduleEntity,
     ): SpyRecurringSchedule {
-        $recurringScheduleEntity->fromArray($recurringScheduleTransfer->modifiedToArray());
+        $recurringScheduleEntity = $this->mapRecurringScheduleTransferToRecurringScheduleEntityColumns(
+            $recurringScheduleTransfer,
+            $recurringScheduleEntity,
+        );
 
         $recurringScheduleEntity->setFkCustomer($recurringScheduleTransfer->getIdCustomerOrFail());
         $recurringScheduleEntity->setFkCompanyUser($recurringScheduleTransfer->getIdCompanyUser());
@@ -43,7 +68,8 @@ class RecurringScheduleMapper
         SpyRecurringSchedule $recurringScheduleEntity,
         RecurringScheduleTransfer $recurringScheduleTransfer,
     ): RecurringScheduleTransfer {
-        $recurringScheduleTransfer->fromArray($recurringScheduleEntity->toArray(), true);
+        $recurringScheduleTransfer->fromArray($this->withoutCadenceOptions($recurringScheduleEntity->toArray()), true);
+        $recurringScheduleTransfer->setCadenceOptions($this->decodeCadenceOptions($recurringScheduleEntity->getCadenceOptions()));
 
         $recurringScheduleTransfer->setIdCustomer($recurringScheduleEntity->getFkCustomer());
         $recurringScheduleTransfer->setIdCompanyUser($recurringScheduleEntity->getFkCompanyUser());
@@ -122,6 +148,7 @@ class RecurringScheduleMapper
             ->setCurrencyIsoCode((string)$row[SpyRecurringScheduleTableMap::COL_CURRENCY_ISO_CODE])
             ->setCadenceType((string)$row[SpyRecurringScheduleTableMap::COL_CADENCE_TYPE])
             ->setCadenceValue($cadenceValue === null ? null : (int)$cadenceValue)
+            ->setCadenceOptions($this->decodeCadenceOptions($row[SpyRecurringScheduleTableMap::COL_CADENCE_OPTIONS] ?? null))
             ->setNextTriggerDate((string)$row[SpyRecurringScheduleTableMap::COL_NEXT_TRIGGER_DATE])
             ->setEstimatedTotal((int)$row[static::VIRTUAL_COL_ESTIMATED_TOTAL]);
     }
@@ -140,5 +167,72 @@ class RecurringScheduleMapper
         }
 
         return $collectionTransfer;
+    }
+
+    /**
+     * @param array<string, mixed> $recurringScheduleData
+     *
+     * @return array<string, mixed>
+     */
+    protected function withoutCadenceOptions(array $recurringScheduleData): array
+    {
+        foreach (static::CADENCE_OPTIONS_ARRAY_KEYS as $cadenceOptionsArrayKey) {
+            unset($recurringScheduleData[$cadenceOptionsArrayKey]);
+        }
+
+        return $recurringScheduleData;
+    }
+
+    protected function isCadenceOptionsModified(RecurringScheduleTransfer $recurringScheduleTransfer): bool
+    {
+        $recurringScheduleData = $recurringScheduleTransfer->modifiedToArray();
+
+        foreach (static::CADENCE_OPTIONS_ARRAY_KEYS as $cadenceOptionsArrayKey) {
+            if (array_key_exists($cadenceOptionsArrayKey, $recurringScheduleData)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string> $cadenceOptions
+     */
+    protected function encodeCadenceOptions(array $cadenceOptions): ?string
+    {
+        if ($cadenceOptions === []) {
+            return null;
+        }
+
+        return json_encode(array_values($cadenceOptions), JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return array<string>
+     */
+    protected function decodeCadenceOptions(?string $cadenceOptions): array
+    {
+        if ($cadenceOptions === null || $cadenceOptions === '') {
+            return [];
+        }
+
+        $decodedCadenceOptions = json_decode($cadenceOptions, true);
+
+        if (!is_array($decodedCadenceOptions)) {
+            return [];
+        }
+
+        $stringCadenceOptions = [];
+
+        foreach ($decodedCadenceOptions as $decodedCadenceOption) {
+            if (is_array($decodedCadenceOption)) {
+                continue;
+            }
+
+            $stringCadenceOptions[] = (string)$decodedCadenceOption;
+        }
+
+        return $stringCadenceOptions;
     }
 }

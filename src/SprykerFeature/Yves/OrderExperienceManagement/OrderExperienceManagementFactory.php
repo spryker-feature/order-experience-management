@@ -59,6 +59,8 @@ use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringScheduleEditForm
 use SprykerFeature\Yves\OrderExperienceManagement\FormHandler\RecurringOrderSearchFormHandler;
 use SprykerFeature\Yves\OrderExperienceManagement\Mapper\RecurringScheduleEventRequestMapper;
 use SprykerFeature\Yves\OrderExperienceManagement\Mapper\RecurringScheduleEventRequestMapperInterface;
+use SprykerFeature\Yves\OrderExperienceManagement\Mapper\WeekDayGlossaryKeyMapper;
+use SprykerFeature\Yves\OrderExperienceManagement\Mapper\WeekDayGlossaryKeyMapperInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Reader\AddedItemAddressChoicesReader;
 use SprykerFeature\Yves\OrderExperienceManagement\Reader\AddedItemAddressChoicesReaderInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Reader\AddedItemShipmentMethodReader;
@@ -121,9 +123,14 @@ class OrderExperienceManagementFactory extends AbstractFactory
         return $this->getFormFactory()->create(RecurringOrderSelectorForm::class, $data, $options);
     }
 
+    public function createWeekDayGlossaryKeyMapper(): WeekDayGlossaryKeyMapperInterface
+    {
+        return new WeekDayGlossaryKeyMapper();
+    }
+
     public function createRecurringOrderSelectorFormDataProvider(): RecurringOrderSelectorFormDataProvider
     {
-        return new RecurringOrderSelectorFormDataProvider($this->getConfig());
+        return new RecurringOrderSelectorFormDataProvider($this->getConfig(), $this->createWeekDayGlossaryKeyMapper());
     }
 
     public function createRecurringOrderResumeForm(?string $uuid = null): FormInterface

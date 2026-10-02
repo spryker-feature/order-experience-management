@@ -46,6 +46,12 @@ use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Service\OrderExperienceManagement\OrderExperienceManagementServiceInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolver;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsReader;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Checker\RecurringOrderPreConditionChecker;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Checker\RecurringOrderPreConditionCheckerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Forecast\MonthlyForecastCalculator;
@@ -374,6 +380,21 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
         return new CadenceResolver(
             $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::PLUGINS_CADENCE_TYPE),
         );
+    }
+
+    public function createWeekDayOptionsReader(): WeekDayOptionsReaderInterface
+    {
+        return new WeekDayOptionsReader();
+    }
+
+    public function createWeekDayOptionsValidator(): WeekDayOptionsValidatorInterface
+    {
+        return new WeekDayOptionsValidator();
+    }
+
+    public function createWeekDayTriggerDateCalculator(): WeekDayTriggerDateCalculatorInterface
+    {
+        return new WeekDayTriggerDateCalculator($this->createWeekDayOptionsReader());
     }
 
     public function createMonthlyForecastCalculator(): MonthlyForecastCalculatorInterface

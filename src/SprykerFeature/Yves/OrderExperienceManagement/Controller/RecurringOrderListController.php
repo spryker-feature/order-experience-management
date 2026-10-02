@@ -65,6 +65,7 @@ class RecurringOrderListController extends AbstractRecurringOrderController
                 'attentionCount' => array_sum($attentionStatusCounts),
                 'attentionStatusCounts' => $attentionStatusCounts,
                 'statusClassMap' => $this->getFactory()->getConfig()->getStatusBadgeClassMap(),
+                'weekDayGlossaryKeys' => $this->getFactory()->createWeekDayGlossaryKeyMapper()->mapWeekDaysToGlossaryKeys(),
             ],
             [],
             '@OrderExperienceManagement/views/recurring-order-list/recurring-order-list.twig',

@@ -458,3 +458,31 @@ recurring_orders.review.product-discontinued.message,"This product is discontinu
 recurring_orders.review.product-discontinued.message,"Dieses Produkt wurde eingestellt. Wählen Sie einen Ersatz aus, damit es in Ihrer Bestellung bleibt.",de_DE
 recurring_orders.review.substitute.sold-by,Sold by,en_US
 recurring_orders.review.substitute.sold-by,Verkauft durch,de_DE
+recurring_orders.cadence.by_days,By days,en_US
+recurring_orders.cadence.by_days,Nach Tagen,de_DE
+recurring_orders.checkout.days_label,Days,en_US
+recurring_orders.checkout.days_label,Tage,de_DE
+recurring_orders.checkout.validation.days_required,Select at least one day.,en_US
+recurring_orders.checkout.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
+recurring_orders.checkout.error.days_required,Select at least one day.,en_US
+recurring_orders.checkout.error.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
+recurring_orders.day.monday,Monday,en_US
+recurring_orders.day.monday,Montag,de_DE
+recurring_orders.day.tuesday,Tuesday,en_US
+recurring_orders.day.tuesday,Dienstag,de_DE
+recurring_orders.day.wednesday,Wednesday,en_US
+recurring_orders.day.wednesday,Mittwoch,de_DE
+recurring_orders.day.thursday,Thursday,en_US
+recurring_orders.day.thursday,Donnerstag,de_DE
+recurring_orders.day.friday,Friday,en_US
+recurring_orders.day.friday,Freitag,de_DE
+recurring_orders.day.saturday,Saturday,en_US
+recurring_orders.day.saturday,Samstag,de_DE
+recurring_orders.day.sunday,Sunday,en_US
+recurring_orders.day.sunday,Sonntag,de_DE
+recurring_orders.detail.sidebar.days,Days,en_US
+recurring_orders.detail.sidebar.days,Tage,de_DE
+recurring_orders.detail.edit.days_label,Days,en_US
+recurring_orders.detail.edit.days_label,Tage,de_DE
+recurring_orders.detail.edit.validation.days_required,Select at least one day.,en_US
+recurring_orders.detail.edit.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE

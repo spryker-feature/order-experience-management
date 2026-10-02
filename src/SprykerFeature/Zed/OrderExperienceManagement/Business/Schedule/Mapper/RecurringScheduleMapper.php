@@ -49,7 +49,8 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
         $recurringOrderSettings = $quoteTransfer->getRecurringOrderSettings();
         $cadenceType = $recurringOrderSettings?->getCadenceType() ?? SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY;
         $cadenceValue = $this->resolveCadenceValue($cadenceType, $recurringOrderSettings?->getCadenceValue());
-        $firstTriggerDate = $this->resolveFirstTriggerDate($recurringOrderSettings, $cadenceType, $cadenceValue);
+        $cadenceOptions = $this->resolveCadenceOptions($cadenceType, $recurringOrderSettings?->getCadenceOptions() ?? []);
+        $firstTriggerDate = $this->resolveFirstTriggerDate($recurringOrderSettings, $cadenceType, $cadenceValue, $cadenceOptions);
 
         return (new RecurringScheduleTransfer())
             ->setIdCustomer($quoteTransfer->getCustomerOrFail()->getIdCustomerOrFail())
@@ -58,6 +59,7 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
             ->setName($recurringOrderSettings?->getScheduleName() ?? $checkoutResponseTransfer->getSaveOrder()?->getOrderReference())
             ->setCadenceType($cadenceType)
             ->setCadenceValue($cadenceValue)
+            ->setCadenceOptions($cadenceOptions)
             ->setFirstTriggerDate($firstTriggerDate)
             ->setNextTriggerDate($firstTriggerDate)
             ->setPaymentMethod($this->resolvePaymentMethod($quoteTransfer))
@@ -92,6 +94,12 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
                     $requestedRecurringScheduleTransfer->getCadenceValue(),
                 ),
             );
+            $recurringScheduleTransfer->setCadenceOptions(
+                $this->resolveCadenceOptions(
+                    $requestedRecurringScheduleTransfer->getCadenceType(),
+                    $requestedRecurringScheduleTransfer->getCadenceOptions(),
+                ),
+            );
         }
 
         if ($requestedRecurringScheduleTransfer->getNextTriggerDate() !== null) {
@@ -103,20 +111,44 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
 
     protected function resolveCadenceValue(string $cadenceType, ?int $cadenceValue): ?int
     {
-        if ($cadenceType !== SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS) {
+        if (!$this->cadenceResolver->isValueRequired($cadenceType)) {
             return null;
         }
 
         return $cadenceValue;
     }
 
+    /**
+     * @param \ArrayObject<int, string>|array<string> $cadenceOptions
+     *
+     * @return array<string>
+     */
+    protected function resolveCadenceOptions(string $cadenceType, iterable $cadenceOptions): array
+    {
+        if (!$this->cadenceResolver->areOptionsRequired($cadenceType)) {
+            return [];
+        }
+
+        $resolvedCadenceOptions = [];
+
+        foreach ($cadenceOptions as $cadenceOption) {
+            $resolvedCadenceOptions[] = (string)$cadenceOption;
+        }
+
+        return $resolvedCadenceOptions;
+    }
+
+    /**
+     * @param array<string> $cadenceOptions
+     */
     protected function resolveFirstTriggerDate(
         ?RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
         string $cadenceType,
         ?int $cadenceValue,
+        array $cadenceOptions = [],
     ): string {
         return $this->firstTriggerDateResolver
-            ->resolve($recurringOrderSettingsTransfer?->getStartDate(), $cadenceType, $cadenceValue)
+            ->resolve($recurringOrderSettingsTransfer?->getStartDate(), $cadenceType, $cadenceValue, $cadenceOptions)
             ->format(static::DATE_FORMAT);
     }
 

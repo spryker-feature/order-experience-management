@@ -19,6 +19,8 @@ class EveryNWeeksCadenceTypePlugin extends AbstractPlugin implements CadenceType
 {
     protected const string DISPLAY_KEY = 'recurring_orders.cadence.every_n_weeks';
 
+    protected const int MINIMUM_INTERVAL_IN_WEEKS = 1;
+
     /**
      * {@inheritDoc}
      *
@@ -34,17 +36,64 @@ class EveryNWeeksCadenceTypePlugin extends AbstractPlugin implements CadenceType
      *
      * @api
      *
-     * @throws \InvalidArgumentException
+     * @param array<string> $cadenceOptions
+     *
+     * @throws \SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\InvalidCadenceValueException
      */
-    public function getNextTriggerDate(DateTimeImmutable $currentTriggerDate, ?int $cadenceValue): DateTimeImmutable
-    {
-        if ($cadenceValue === null || $cadenceValue < 1) {
+    public function getNextTriggerDate(
+        DateTimeImmutable $currentTriggerDate,
+        ?int $cadenceValue,
+        array $cadenceOptions = [],
+    ): DateTimeImmutable {
+        if (!$this->isValueValid($cadenceValue)) {
             throw new InvalidCadenceValueException(
                 sprintf('Cadence type "%s" requires a positive integer cadence value.', $this->getName()),
             );
         }
 
         return $currentTriggerDate->modify(sprintf('+%d weeks', $cadenceValue));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isValueRequired(): bool
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function isValueValid(?int $cadenceValue): bool
+    {
+        return $cadenceValue !== null && $cadenceValue >= static::MINIMUM_INTERVAL_IN_WEEKS;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function areOptionsRequired(): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param array<string> $cadenceOptions
+     */
+    public function areOptionsValid(array $cadenceOptions): bool
+    {
+        return true;
     }
 
     /**

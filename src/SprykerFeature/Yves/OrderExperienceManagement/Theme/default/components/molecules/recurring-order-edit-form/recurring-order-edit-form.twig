@@ -9,10 +9,12 @@
     form: required,
     editUrl: '',
     cadenceTypeEveryNWeeks: '',
+    cadenceTypeByDays: '',
 } %}
 
 {% define attributes  = {
     'data-cadence-type-every-n-weeks': data.cadenceTypeEveryNWeeks,
+    'data-cadence-type-by-days': data.cadenceTypeByDays,
 }%}
 
 {% block body %}
@@ -72,6 +74,16 @@
                         'data-qa': 'recurring-order-edit-cadence-value-input',
                     },
                 }) }}
+            {% elseif fieldName == 'cadenceOptions' %}
+                <div class="form__field col col--sm-12 {{ embed.configJsName }}__days-wrapper">
+                    {% include molecule('recurring-order-day-picker', 'OrderExperienceManagement') with {
+                        data: {
+                            field: field,
+                            inputClass: embed.configJsName ~ '__day-input',
+                            qaPrefix: 'recurring-order-edit',
+                        },
+                    } only %}
+                </div>
             {% elseif fieldName == 'nextExecutionDate' %}
                 {{ form_row(field, {
                     rowAttr: {

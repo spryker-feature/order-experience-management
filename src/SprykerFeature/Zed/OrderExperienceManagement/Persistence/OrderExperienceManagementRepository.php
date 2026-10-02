@@ -303,6 +303,7 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
                 SpyRecurringScheduleTableMap::COL_CURRENCY_ISO_CODE,
                 SpyRecurringScheduleTableMap::COL_CADENCE_TYPE,
                 SpyRecurringScheduleTableMap::COL_CADENCE_VALUE,
+                SpyRecurringScheduleTableMap::COL_CADENCE_OPTIONS,
                 SpyRecurringScheduleTableMap::COL_NEXT_TRIGGER_DATE,
                 RecurringScheduleMapper::VIRTUAL_COL_ESTIMATED_TOTAL,
             ])

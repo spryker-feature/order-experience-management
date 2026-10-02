@@ -87,6 +87,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             'Bi-weekly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BI_WEEKLY,
             'Monthly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY,
             'Every N weeks' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS,
+            'By days' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
         ];
     }
 

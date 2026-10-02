@@ -85,6 +85,8 @@ class RecurringOrderDetailController extends AbstractRecurringOrderController
                 'quote' => $quoteTransfer,
                 'editForm' => $editForm->createView(),
                 'cadenceTypeEveryNWeeks' => $config->getCadenceTypeEveryNWeeks(),
+                'cadenceTypeByDays' => $config->getCadenceTypeByDays(),
+                'weekDayGlossaryKeys' => $this->getFactory()->createWeekDayGlossaryKeyMapper()->mapWeekDaysToGlossaryKeys(),
                 'statusClassMap' => $config->getStatusBadgeClassMap(),
                 'itemFlagLabelMap' => $config->getItemFlagLabelMap(),
                 'itemFlagBadgeMap' => $config->getItemFlagBadgeMap(),

@@ -38,7 +38,19 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             'recurring_orders.cadence.bi_weekly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BI_WEEKLY,
             'recurring_orders.cadence.monthly' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY,
             'recurring_orders.cadence.every_n_weeks' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS,
+            'recurring_orders.cadence.by_days' => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
         ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the cadence type value that requires a set of weekdays.
+     *
+     * @api
+     */
+    public function getCadenceTypeByDays(): string
+    {
+        return SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS;
     }
 
     /**

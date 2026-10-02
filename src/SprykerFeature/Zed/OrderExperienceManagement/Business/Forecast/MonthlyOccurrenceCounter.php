@@ -20,11 +20,15 @@ class MonthlyOccurrenceCounter implements MonthlyOccurrenceCounterInterface
     {
     }
 
+    /**
+     * @param array<string> $cadenceOptions
+     */
     public function count(
         ?string $cadenceType,
         ?int $cadenceValue,
         ?string $anchorDate,
-        DateTimeImmutable $referenceDate
+        DateTimeImmutable $referenceDate,
+        array $cadenceOptions = []
     ): int {
         if ($cadenceType === null || $anchorDate === null) {
             return 0;
@@ -38,6 +42,10 @@ class MonthlyOccurrenceCounter implements MonthlyOccurrenceCounterInterface
             return 0;
         }
 
+        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $cadenceOptions)) {
+            return 0;
+        }
+
         $nextMonthStart = $referenceDate->modify('first day of next month')->setTime(0, 0, 0);
 
         $occurrenceDate = (new DateTimeImmutable($anchorDate))->setTime(0, 0, 0);
@@ -46,7 +54,12 @@ class MonthlyOccurrenceCounter implements MonthlyOccurrenceCounterInterface
 
         while ($occurrenceDate < $nextMonthStart && $iterations < static::MAX_ITERATIONS) {
             $occurrenceCount++;
-            $occurrenceDate = $this->cadenceResolver->resolveNextTriggerDateFromBase($cadenceType, $cadenceValue, $occurrenceDate);
+            $occurrenceDate = $this->cadenceResolver->resolveNextTriggerDateFromBase(
+                $cadenceType,
+                $cadenceValue,
+                $occurrenceDate,
+                $cadenceOptions,
+            );
             $iterations++;
         }
 

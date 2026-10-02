@@ -8,10 +8,12 @@
 {% define data = {
     form: required,
     cadenceTypeEveryNWeeks: '',
+    cadenceTypeByDays: '',
 } %}
 
 {% define attributes  = {
     'data-cadence-type-every-n-weeks': data.cadenceTypeEveryNWeeks,
+    'data-cadence-type-by-days': data.cadenceTypeByDays,
 }%}
 
 {% block body %}
@@ -65,6 +67,16 @@
                         },
                         rowAttr: {class: "#{config.name}__field #{fieldLayoutClass} #{embed.configJsName}__value-wrapper"},
                     }) }}
+                {% elseif fieldName == 'cadenceOptions' %}
+                    <div class="{{ config.name }}__field {{ fieldLayoutClass }} {{ embed.configJsName }}__days-wrapper">
+                        {% include molecule('recurring-order-day-picker', 'OrderExperienceManagement') with {
+                            data: {
+                                field: field,
+                                inputClass: embed.configJsName ~ '__day-input',
+                                qaPrefix: 'recurring-order',
+                            },
+                        } only %}
+                    </div>
                 {% elseif fieldName == 'startDate' %}
                     {% set tooltipId = "#{embed.configName}__start-date-tooltip" %}
                     <div class="{{ config.name }}__field {{ fieldLayoutClass }}">

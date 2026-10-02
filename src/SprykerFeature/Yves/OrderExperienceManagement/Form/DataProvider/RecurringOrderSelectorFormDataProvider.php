@@ -10,12 +10,15 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form\DataProvider;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSelectorForm;
+use SprykerFeature\Yves\OrderExperienceManagement\Mapper\WeekDayGlossaryKeyMapperInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class RecurringOrderSelectorFormDataProvider
 {
-    public function __construct(protected readonly OrderExperienceManagementConfig $config)
-    {
+    public function __construct(
+        protected readonly OrderExperienceManagementConfig $config,
+        protected readonly WeekDayGlossaryKeyMapperInterface $weekDayGlossaryKeyMapper,
+    ) {
     }
 
     public function getData(QuoteTransfer $quoteTransfer): RecurringOrderSettingsTransfer
@@ -40,6 +43,7 @@ class RecurringOrderSelectorFormDataProvider
     {
         return [
             RecurringOrderSelectorForm::OPTION_CADENCE_TYPE_CHOICES => $this->config->getSupportedCadenceTypes(),
+            RecurringOrderSelectorForm::OPTION_WEEK_DAY_CHOICES => $this->weekDayGlossaryKeyMapper->mapWeekDaysToChoices(),
         ];
     }
 }

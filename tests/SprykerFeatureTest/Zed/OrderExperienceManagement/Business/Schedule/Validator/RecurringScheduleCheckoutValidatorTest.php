@@ -172,6 +172,29 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
         );
     }
 
+    public function testValidateCheckoutRejectsByDaysScheduleWithoutAnySelectedDay(): void
+    {
+        // Arrange
+        $quoteTransfer = (new QuoteTransfer())->setRecurringOrderSettings(
+            (new RecurringOrderSettingsTransfer())
+                ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+                ->setCadenceOptions([])
+                ->setStartDate((new DateTimeImmutable('+7 days'))->format(static::DATE_FORMAT)),
+        );
+
+        $validator = new RecurringScheduleCheckoutValidator(
+            $this->createOrderExperienceManagementServiceMock(),
+            $this->createCadenceResolverMockRejectingOptions(),
+        );
+
+        // Act
+        $checkoutErrorTransfer = $validator->validateCheckout($quoteTransfer);
+
+        // Assert
+        $this->assertNotNull($checkoutErrorTransfer);
+        $this->assertSame('recurring_orders.checkout.error.days_required', $checkoutErrorTransfer->getMessage());
+    }
+
     protected function createPluginCheckoutErrorTransfer(): CheckoutErrorTransfer
     {
         return (new CheckoutErrorTransfer())
@@ -192,6 +215,17 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
         $cadenceResolverMock = $this->createMock(CadenceResolverInterface::class);
         $cadenceResolverMock->method('isSupported')->willReturn(true);
         $cadenceResolverMock->method('isValueValid')->willReturn(true);
+        $cadenceResolverMock->method('areOptionsValid')->willReturn(true);
+
+        return $cadenceResolverMock;
+    }
+
+    protected function createCadenceResolverMockRejectingOptions(): CadenceResolverInterface
+    {
+        $cadenceResolverMock = $this->createMock(CadenceResolverInterface::class);
+        $cadenceResolverMock->method('isSupported')->willReturn(true);
+        $cadenceResolverMock->method('isValueValid')->willReturn(true);
+        $cadenceResolverMock->method('areOptionsValid')->willReturn(false);
 
         return $cadenceResolverMock;
     }

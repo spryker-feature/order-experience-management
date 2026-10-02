@@ -80,6 +80,7 @@ class RecurringScheduleEventRequestMapper implements RecurringScheduleEventReque
             ->setName($formData[RecurringScheduleEditForm::FIELD_NAME] ?? null)
             ->setCadenceType($formData[RecurringScheduleEditForm::FIELD_CADENCE_TYPE] ?? null)
             ->setCadenceValue($this->toInt($formData[RecurringScheduleEditForm::FIELD_CADENCE_VALUE] ?? null))
+            ->setCadenceOptions(array_map('strval', $formData[RecurringScheduleEditForm::FIELD_CADENCE_OPTIONS] ?? []))
             ->setNextTriggerDate($nextExecutionDate instanceof DateTimeInterface ? $nextExecutionDate->format(static::DATE_FORMAT) : null);
 
         $baseFields = [
@@ -87,6 +88,7 @@ class RecurringScheduleEventRequestMapper implements RecurringScheduleEventReque
             RecurringScheduleEditForm::FIELD_NAME,
             RecurringScheduleEditForm::FIELD_CADENCE_TYPE,
             RecurringScheduleEditForm::FIELD_CADENCE_VALUE,
+            RecurringScheduleEditForm::FIELD_CADENCE_OPTIONS,
             RecurringScheduleEditForm::FIELD_NEXT_EXECUTION_DATE,
         ];
 

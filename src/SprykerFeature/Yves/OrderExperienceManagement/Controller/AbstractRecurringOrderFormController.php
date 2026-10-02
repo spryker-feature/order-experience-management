@@ -30,12 +30,17 @@ abstract class AbstractRecurringOrderFormController extends AbstractController
 
     protected const string VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS = 'cadenceTypeEveryNWeeks';
 
+    protected const string VIEW_PARAM_CADENCE_TYPE_BY_DAYS = 'cadenceTypeByDays';
+
+    protected const string VIEW_PARAM_WEEK_DAY_GLOSSARY_KEYS = 'weekDayGlossaryKeys';
+
     protected function createFormView(FormInterface $form): View
     {
         return $this->view(
             [
                 static::VIEW_PARAM_FORM => $form->createView(),
                 static::VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS => $this->getFactory()->getConfig()->getCadenceTypeEveryNWeeks(),
+                static::VIEW_PARAM_CADENCE_TYPE_BY_DAYS => $this->getFactory()->getConfig()->getCadenceTypeByDays(),
             ],
             [],
             static::FORM_TEMPLATE,
@@ -48,6 +53,8 @@ abstract class AbstractRecurringOrderFormController extends AbstractController
             [
                 static::VIEW_PARAM_RECURRING_ORDER_SETTINGS => $recurringOrderSettingsTransfer,
                 static::VIEW_PARAM_CADENCE_TYPE_EVERY_N_WEEKS => $this->getFactory()->getConfig()->getCadenceTypeEveryNWeeks(),
+                static::VIEW_PARAM_CADENCE_TYPE_BY_DAYS => $this->getFactory()->getConfig()->getCadenceTypeByDays(),
+                static::VIEW_PARAM_WEEK_DAY_GLOSSARY_KEYS => $this->getFactory()->createWeekDayGlossaryKeyMapper()->mapWeekDaysToGlossaryKeys(),
             ],
             [],
             static::CONFIRMED_TEMPLATE,

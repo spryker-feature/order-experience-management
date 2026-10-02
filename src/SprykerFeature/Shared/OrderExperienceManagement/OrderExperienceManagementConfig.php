@@ -46,6 +46,89 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
 
     /**
      * Specification:
+     * - Cadence type that triggers a recurring order on each selected day of the week.
+     * - Requires at least one weekday in the cadence options.
+     *
+     * @api
+     */
+    public const string CADENCE_TYPE_BY_DAYS = 'by_days';
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Monday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_MONDAY = 1;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Tuesday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_TUESDAY = 2;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Wednesday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_WEDNESDAY = 3;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Thursday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_THURSDAY = 4;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Friday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_FRIDAY = 5;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Saturday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_SATURDAY = 6;
+
+    /**
+     * Specification:
+     * - ISO-8601 number of Sunday, as returned by date('N').
+     *
+     * @api
+     */
+    public const int DAY_SUNDAY = 7;
+
+    /**
+     * Specification:
+     * - Weekdays selectable for the by-days cadence, in Monday-to-Sunday display order.
+     *
+     * @api
+     *
+     * @var array<int>
+     */
+    public const array SUPPORTED_WEEK_DAYS = [
+        self::DAY_MONDAY,
+        self::DAY_TUESDAY,
+        self::DAY_WEDNESDAY,
+        self::DAY_THURSDAY,
+        self::DAY_FRIDAY,
+        self::DAY_SATURDAY,
+        self::DAY_SUNDAY,
+    ];
+
+    /**
+     * Specification:
      * - Schedule status indicating a newly created schedule not yet activated by the buyer.
      *
      * @api

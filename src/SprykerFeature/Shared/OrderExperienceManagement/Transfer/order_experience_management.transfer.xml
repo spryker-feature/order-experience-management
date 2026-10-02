@@ -13,6 +13,7 @@
         <property name="name" type="string"/>
         <property name="cadenceType" type="string"/>
         <property name="cadenceValue" type="int"/>
+        <property name="cadenceOptions" type="string[]" singular="cadenceOption"/>
         <property name="firstTriggerDate" type="string"/>
         <property name="nextTriggerDate" type="string"/>
         <property name="nextTriggerDateAfterSkip" type="string"/>
@@ -85,6 +86,7 @@
         <property name="currencyIsoCode" type="string"/>
         <property name="cadenceType" type="string"/>
         <property name="cadenceValue" type="int"/>
+        <property name="cadenceOptions" type="string[]" singular="cadenceOption"/>
         <property name="nextTriggerDate" type="string"/>
         <property name="estimatedTotal" type="int"/>
         <property name="plannedTotal" type="int"/>
@@ -178,6 +180,7 @@
     <transfer name="RecurringOrderSettings" strict="true">
         <property name="cadenceType" type="string"/>
         <property name="cadenceValue" type="int"/>
+        <property name="cadenceOptions" type="string[]" singular="cadenceOption"/>
         <property name="scheduleName" type="string"/>
         <property name="startDate" type="string"/>
         <property name="firstOrderDate" type="string"/>

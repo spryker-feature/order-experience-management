@@ -16,8 +16,11 @@ use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 use Spryker\Zed\Locale\Business\LocaleFacadeInterface;
 use Spryker\Zed\Merchant\Business\MerchantFacadeInterface;
 use Spryker\Zed\Sales\Business\SalesFacadeInterface;
+use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\DataProvider\RecurringScheduleTableFilterFormDataProvider;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\RecurringScheduleTableFilterForm;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapper;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\AdvanceScheduleCommandPlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\CompletePlacementCommandPlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\NotifyBuyerCommandPlugin;
@@ -43,7 +46,21 @@ class OrderExperienceManagementCommunicationFactory extends AbstractCommunicatio
 {
     public function createRecurringScheduleTable(): RecurringScheduleTable
     {
-        return new RecurringScheduleTable($this->getFacade());
+        return new RecurringScheduleTable(
+            $this->getFacade(),
+            $this->getTranslatorFacade(),
+            $this->createWeekDayNameMapper(),
+        );
+    }
+
+    public function getTranslatorFacade(): TranslatorFacadeInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_TRANSLATOR);
+    }
+
+    public function createWeekDayNameMapper(): WeekDayNameMapperInterface
+    {
+        return new WeekDayNameMapper();
     }
 
     public function createRecurringScheduleTableFilterForm(Request $request): FormInterface

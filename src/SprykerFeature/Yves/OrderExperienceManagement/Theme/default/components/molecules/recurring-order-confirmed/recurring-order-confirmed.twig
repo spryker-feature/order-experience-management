@@ -7,9 +7,19 @@
 {% define data = {
     recurringOrderSettings: required,
     cadenceTypeEveryNWeeks: required,
+    cadenceTypeByDays: '',
+    weekDayGlossaryKeys: {},
 } %}
 
 {% block body %}
+    {% set selectedWeekDays = data.recurringOrderSettings.cadenceOptions | default([]) %}
+    {% set selectedDayLabels = [] %}
+    {% for weekDay, glossaryKey in data.weekDayGlossaryKeys %}
+        {% if (weekDay ~ '') in selectedWeekDays %}
+            {% set selectedDayLabels = selectedDayLabels | merge([glossaryKey | trans]) %}
+        {% endif %}
+    {% endfor %}
+
     {% set items = [
         {
             label: 'recurring_orders.checkout.cadence_label' | trans,
@@ -20,6 +30,11 @@
             label: 'recurring_orders.checkout.cadence_value_label' | trans,
             value: data.recurringOrderSettings.cadenceValue,
             enabled: data.recurringOrderSettings.cadenceType == data.cadenceTypeEveryNWeeks and data.recurringOrderSettings.cadenceValue,
+        },
+        {
+            label: 'recurring_orders.checkout.days_label' | trans,
+            value: selectedDayLabels | join(', '),
+            enabled: data.recurringOrderSettings.cadenceType == data.cadenceTypeByDays and selectedDayLabels is not empty,
         },
         {
             label: 'recurring_orders.checkout.schedule_name_label' | trans,

@@ -9,6 +9,7 @@
     statusClassMap: required,
     quote: data.quote,
     editModalTriggerClassName: '',
+    weekDayGlossaryKeys: {},
     withBudgetSummary: false,
 } %}
 
@@ -67,6 +68,22 @@
                         ({{ data.schedule.cadenceValue }})
                     {% endif %}
                 </dd>
+            {% endblock %}
+
+            {% block cadenceDays %}
+                {% set selectedDayLabels = [] %}
+                {% for weekDay, glossaryKey in data.weekDayGlossaryKeys %}
+                    {% if (weekDay ~ '') in data.schedule.cadenceOptions %}
+                        {% set selectedDayLabels = selectedDayLabels | merge([glossaryKey | trans]) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if selectedDayLabels is not empty %}
+                    <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.days' | trans }}</dt>
+                    <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-cadence-days">
+                        {{ selectedDayLabels | join(', ') }}
+                    </dd>
+                {% endif %}
             {% endblock %}
 
             {% block status %}

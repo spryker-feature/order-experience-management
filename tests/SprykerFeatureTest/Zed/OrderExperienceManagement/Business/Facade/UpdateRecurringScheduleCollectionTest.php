@@ -16,6 +16,12 @@ use Generated\Shared\Transfer\RecurringScheduleCollectionRequestTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\BiWeeklyCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\ByDaysCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\MonthlyCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
 
 /**
@@ -48,6 +54,14 @@ class UpdateRecurringScheduleCollectionTest extends Unit
         parent::setUp();
 
         $this->tester->ensureRecurringScheduleTablesAreEmpty();
+
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::PLUGINS_CADENCE_TYPE, [
+            new WeeklyCadenceTypePlugin(),
+            new BiWeeklyCadenceTypePlugin(),
+            new MonthlyCadenceTypePlugin(),
+            new EveryNWeeksCadenceTypePlugin(),
+            new ByDaysCadenceTypePlugin(),
+        ]);
     }
 
     public function testUpdatesNameCadenceAndNextTriggerDate(): void
@@ -196,6 +210,71 @@ class UpdateRecurringScheduleCollectionTest extends Unit
         // Assert
         $this->assertCount(0, $responseTransfer->getErrors());
         $this->assertCount(0, $responseTransfer->getRecurringSchedules());
+    }
+
+    public function testUpdatesCadenceOptionsAndReadsThemBack(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+
+        $requestTransfer = $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+            ->setCadenceOptions(['1', '4']));
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->updateRecurringScheduleCollection($requestTransfer);
+
+        // Assert
+        $this->assertCount(0, $responseTransfer->getErrors());
+
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByUuid($recurringScheduleTransfer->getUuidOrFail());
+
+        $this->assertSame(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            $recurringScheduleEntity->getCadenceType(),
+        );
+        $this->assertSame('["1","4"]', $recurringScheduleEntity->getCadenceOptions());
+        $this->assertNull($recurringScheduleEntity->getCadenceValue());
+
+        $this->assertSame(['1', '4'], $responseTransfer->getRecurringSchedules()->offsetGet(0)->getCadenceOptions());
+    }
+
+    public function testSwitchingAwayFromByDaysClearsCadenceOptions(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+
+        $this->tester->getFacade()->updateRecurringScheduleCollection(
+            $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+                ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+                ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+                ->setCadenceOptions(['1', '4'])),
+        );
+
+        // Act
+        $this->tester->getFacade()->updateRecurringScheduleCollection(
+            $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+                ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+                ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY)),
+        );
+
+        // Assert
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByUuid($recurringScheduleTransfer->getUuidOrFail());
+
+        $this->assertSame(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+            $recurringScheduleEntity->getCadenceType(),
+        );
+        $this->assertNull($recurringScheduleEntity->getCadenceOptions());
     }
 
     /**

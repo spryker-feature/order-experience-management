@@ -27,6 +27,8 @@
     retryForm: required,
     editForm: required,
     cadenceTypeEveryNWeeks: '',
+    cadenceTypeByDays: '',
+    weekDayGlossaryKeys: {},
     title: '',
     activePage: '',
 }%}
@@ -177,6 +179,7 @@
                             quote: data.quote,
                             editModalTriggerClassName: editModalTriggerClassName,
                             withBudgetSummary: true,
+                            weekDayGlossaryKeys: data.weekDayGlossaryKeys,
                         },
                     } only %}
                 {% endblock %}
@@ -205,6 +208,7 @@
                 resumeForm: data.resumeForm,
                 editForm: data.editForm,
                 cadenceTypeEveryNWeeks: data.cadenceTypeEveryNWeeks,
+                cadenceTypeByDays: data.cadenceTypeByDays,
                 resumeUrl: url('recurring-order/resume', {uuid: data.schedule.uuid}),
                 editUrl: url('recurring-order/edit', {uuid: data.schedule.uuid}),
                 skipModalTriggerClassName: skipModalTriggerClassName,

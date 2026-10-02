@@ -13,10 +13,14 @@ use DateTimeImmutable;
 
 interface MonthlyOccurrenceCounterInterface
 {
+    /**
+     * @param array<string> $cadenceOptions
+     */
     public function count(
         ?string $cadenceType,
         ?int $cadenceValue,
         ?string $anchorDate,
-        DateTimeImmutable $referenceDate
+        DateTimeImmutable $referenceDate,
+        array $cadenceOptions = []
     ): int;
 }

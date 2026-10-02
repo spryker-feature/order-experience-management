@@ -13,5 +13,13 @@ use DateTimeImmutable;
 
 interface FirstTriggerDateResolverInterface
 {
-    public function resolve(?string $startDate, string $cadenceType, ?int $cadenceValue): DateTimeImmutable;
+    /**
+     * @param array<string> $cadenceOptions
+     */
+    public function resolve(
+        ?string $startDate,
+        string $cadenceType,
+        ?int $cadenceValue,
+        array $cadenceOptions = [],
+    ): DateTimeImmutable;
 }

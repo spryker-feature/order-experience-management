@@ -189,6 +189,7 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
         $container = $this->addMerchantFacade($container);
         $container = $this->addGlossaryFacade($container);
         $container = $this->addLocaleFacade($container);
+        $container = $this->addTranslatorFacade($container);
 
         return $container;
     }

@@ -375,11 +375,17 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
             return $recurringScheduleTransfer;
         }
 
-        $recurringScheduleEntity->fromArray($recurringScheduleTransfer->modifiedToArray());
+        $recurringScheduleMapper = $this->getFactory()->createRecurringScheduleMapper();
+
+        $recurringScheduleEntity = $recurringScheduleMapper->mapRecurringScheduleTransferToRecurringScheduleEntityColumns(
+            $recurringScheduleTransfer,
+            $recurringScheduleEntity,
+        );
         $recurringScheduleEntity->save();
 
-        return $this->getFactory()
-            ->createRecurringScheduleMapper()
-            ->mapRecurringScheduleEntityToRecurringScheduleTransfer($recurringScheduleEntity, $recurringScheduleTransfer);
+        return $recurringScheduleMapper->mapRecurringScheduleEntityToRecurringScheduleTransfer(
+            $recurringScheduleEntity,
+            $recurringScheduleTransfer,
+        );
     }
 }

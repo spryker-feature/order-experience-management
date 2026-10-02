@@ -14,9 +14,11 @@ use DateTimeImmutable;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\InvalidCadenceValueException;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\BiWeeklyCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\ByDaysCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\MonthlyCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
+use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\OrderExperienceManagementBusinessTester;
 
 /**
@@ -140,5 +142,144 @@ class CadenceTypePluginsTest extends Unit
     public function testEveryNWeeksPluginReturnsDisplayKey(): void
     {
         $this->assertSame('recurring_orders.cadence.every_n_weeks', (new EveryNWeeksCadenceTypePlugin())->getDisplayKey());
+    }
+
+    /**
+     * @dataProvider provideOptionIgnoringPlugins
+     */
+    public function testPluginsWithoutOptionsIgnoreCadenceOptions(
+        CadenceTypePluginInterface $cadenceTypePlugin,
+        ?int $cadenceValue
+    ): void {
+        // Arrange
+        $base = new DateTimeImmutable('2026-07-15');
+
+        // Act
+        $withoutOptions = $cadenceTypePlugin->getNextTriggerDate($base, $cadenceValue);
+        $withOptions = $cadenceTypePlugin->getNextTriggerDate($base, $cadenceValue, ['1', '4']);
+
+        // Assert
+        $this->assertSame($withoutOptions->format('Y-m-d'), $withOptions->format('Y-m-d'));
+    }
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    public function provideOptionIgnoringPlugins(): array
+    {
+        return [
+            'weekly' => [new WeeklyCadenceTypePlugin(), null],
+            'bi-weekly' => [new BiWeeklyCadenceTypePlugin(), null],
+            'monthly' => [new MonthlyCadenceTypePlugin(), null],
+            'every n weeks' => [new EveryNWeeksCadenceTypePlugin(), 3],
+        ];
+    }
+
+    public function testByDaysPluginReturnsCorrectName(): void
+    {
+        // Arrange
+        $cadenceTypePlugin = new ByDaysCadenceTypePlugin();
+
+        // Act
+        $name = $cadenceTypePlugin->getName();
+
+        // Assert
+        $this->assertSame(OrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS, $name);
+    }
+
+    public function testByDaysPluginReturnsCorrectDisplayKey(): void
+    {
+        // Arrange
+        $cadenceTypePlugin = new ByDaysCadenceTypePlugin();
+
+        // Act
+        $displayKey = $cadenceTypePlugin->getDisplayKey();
+
+        // Assert
+        $this->assertSame('recurring_orders.cadence.by_days', $displayKey);
+    }
+
+    /**
+     * @dataProvider provideCadenceTypeShapes
+     */
+    public function testPluginDeclaresWhichCadenceParametersItTakes(
+        CadenceTypePluginInterface $cadenceTypePlugin,
+        bool $expectedIsValueRequired,
+        bool $expectedAreOptionsRequired
+    ): void {
+        // Act
+        $isValueRequired = $cadenceTypePlugin->isValueRequired();
+        $areOptionsRequired = $cadenceTypePlugin->areOptionsRequired();
+
+        // Assert
+        $this->assertSame($expectedIsValueRequired, $isValueRequired);
+        $this->assertSame($expectedAreOptionsRequired, $areOptionsRequired);
+    }
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    public function provideCadenceTypeShapes(): array
+    {
+        return [
+            'weekly takes neither' => [new WeeklyCadenceTypePlugin(), false, false],
+            'bi-weekly takes neither' => [new BiWeeklyCadenceTypePlugin(), false, false],
+            'monthly takes neither' => [new MonthlyCadenceTypePlugin(), false, false],
+            'every n weeks takes a value' => [new EveryNWeeksCadenceTypePlugin(), true, false],
+            'by days takes options' => [new ByDaysCadenceTypePlugin(), false, true],
+        ];
+    }
+
+    /**
+     * @dataProvider provideParameterlessPlugins
+     */
+    public function testPluginsWithoutParametersAcceptAnyValueAndOptions(
+        CadenceTypePluginInterface $cadenceTypePlugin
+    ): void {
+        // Act
+        $isValueValid = $cadenceTypePlugin->isValueValid(null);
+        $areOptionsValid = $cadenceTypePlugin->areOptionsValid([]);
+
+        // Assert
+        $this->assertTrue($isValueValid);
+        $this->assertTrue($areOptionsValid);
+    }
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    public function provideParameterlessPlugins(): array
+    {
+        return [
+            'weekly' => [new WeeklyCadenceTypePlugin()],
+            'bi-weekly' => [new BiWeeklyCadenceTypePlugin()],
+            'monthly' => [new MonthlyCadenceTypePlugin()],
+        ];
+    }
+
+    /**
+     * @dataProvider provideEveryNWeeksValueValidity
+     */
+    public function testEveryNWeeksPluginAcceptsOnlyAPositiveInterval(?int $cadenceValue, bool $expectedIsValid): void
+    {
+        // Act
+        $isValid = (new EveryNWeeksCadenceTypePlugin())->isValueValid($cadenceValue);
+
+        // Assert
+        $this->assertSame($expectedIsValid, $isValid);
+    }
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    public function provideEveryNWeeksValueValidity(): array
+    {
+        return [
+            'one week' => [1, true],
+            'several weeks' => [6, true],
+            'missing interval' => [null, false],
+            'zero would never advance the schedule' => [0, false],
+            'negative interval' => [-1, false],
+        ];
     }
 }
