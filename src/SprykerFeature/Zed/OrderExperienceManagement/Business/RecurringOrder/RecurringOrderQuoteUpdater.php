@@ -25,6 +25,8 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
 
     protected const string GLOSSARY_KEY_CADENCE_VALUE_REQUIRED = 'recurring_orders.checkout.error.cadence_value_required';
 
+    protected const string GLOSSARY_KEY_CADENCE_DAYS_REQUIRED = 'recurring_orders.checkout.error.days_required';
+
     protected const string DATE_FORMAT = 'Y-m-d';
 
     public function __construct(
@@ -103,6 +105,10 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
             return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
         }
 
+        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $recurringOrderSettingsTransfer->getCadenceOptions())) {
+            return static::GLOSSARY_KEY_CADENCE_DAYS_REQUIRED;
+        }
+
         return null;
     }
 
@@ -134,7 +140,12 @@ class RecurringOrderQuoteUpdater implements RecurringOrderQuoteUpdaterInterface
         }
 
         return $this->firstTriggerDateResolver
-            ->resolve($recurringOrderSettingsTransfer->getStartDate(), $cadenceType, $recurringOrderSettingsTransfer->getCadenceValue())
+            ->resolve(
+                $recurringOrderSettingsTransfer->getStartDate(),
+                $cadenceType,
+                $recurringOrderSettingsTransfer->getCadenceValue(),
+                $recurringOrderSettingsTransfer->getCadenceOptions(),
+            )
             ->format(static::DATE_FORMAT);
     }
 

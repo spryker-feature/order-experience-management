@@ -389,7 +389,7 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
 
     public function createWeekDayOptionsValidator(): WeekDayOptionsValidatorInterface
     {
-        return new WeekDayOptionsValidator();
+        return new WeekDayOptionsValidator($this->getConfig());
     }
 
     public function createWeekDayTriggerDateCalculator(): WeekDayTriggerDateCalculatorInterface

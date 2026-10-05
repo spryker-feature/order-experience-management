@@ -111,7 +111,7 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
 
     /**
      * Specification:
-     * - Weekdays selectable for the by-days cadence, in Monday-to-Sunday display order.
+     * - Default weekdays selectable for the by-days cadence, in Monday-to-Sunday display order.
      *
      * @api
      *
@@ -126,6 +126,22 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
         self::DAY_SATURDAY,
         self::DAY_SUNDAY,
     ];
+
+    /**
+     * Specification:
+     * - Returns the weekdays a buyer may select for the by-days cadence, in display order.
+     * - Entries are ISO-8601 weekday numbers as returned by date('N').
+     * - A project narrows and/or reorders the list by overriding this method; the storefront renders
+     *   the day picker in exactly this order and rejects any day outside the list.
+     *
+     * @api
+     *
+     * @return array<int>
+     */
+    public function getSupportedWeekDays(): array
+    {
+        return static::SUPPORTED_WEEK_DAYS;
+    }
 
     /**
      * Specification:

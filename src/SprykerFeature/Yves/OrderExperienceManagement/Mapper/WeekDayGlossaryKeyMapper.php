@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Yves\OrderExperienceManagement\Mapper;
 
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class WeekDayGlossaryKeyMapper implements WeekDayGlossaryKeyMapperInterface
 {
@@ -26,12 +27,26 @@ class WeekDayGlossaryKeyMapper implements WeekDayGlossaryKeyMapperInterface
         SharedOrderExperienceManagementConfig::DAY_SUNDAY => 'recurring_orders.day.sunday',
     ];
 
+    public function __construct(protected readonly OrderExperienceManagementConfig $config)
+    {
+    }
+
     /**
      * @return array<int, string>
      */
     public function mapWeekDaysToGlossaryKeys(): array
     {
-        return static::WEEK_DAY_GLOSSARY_KEYS;
+        $weekDayGlossaryKeys = [];
+
+        foreach ($this->config->getSupportedWeekDays() as $weekDay) {
+            if (!isset(static::WEEK_DAY_GLOSSARY_KEYS[$weekDay])) {
+                continue;
+            }
+
+            $weekDayGlossaryKeys[$weekDay] = static::WEEK_DAY_GLOSSARY_KEYS[$weekDay];
+        }
+
+        return $weekDayGlossaryKeys;
     }
 
     /**
@@ -41,7 +56,7 @@ class WeekDayGlossaryKeyMapper implements WeekDayGlossaryKeyMapperInterface
     {
         $weekDayChoices = [];
 
-        foreach (static::WEEK_DAY_GLOSSARY_KEYS as $weekDay => $glossaryKey) {
+        foreach ($this->mapWeekDaysToGlossaryKeys() as $weekDay => $glossaryKey) {
             $weekDayChoices[$glossaryKey] = (string)$weekDay;
         }
 

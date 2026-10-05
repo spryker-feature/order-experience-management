@@ -480,8 +480,6 @@ recurring_orders.day.saturday,Saturday,en_US
 recurring_orders.day.saturday,Samstag,de_DE
 recurring_orders.day.sunday,Sunday,en_US
 recurring_orders.day.sunday,Sonntag,de_DE
-recurring_orders.detail.sidebar.days,Days,en_US
-recurring_orders.detail.sidebar.days,Tage,de_DE
 recurring_orders.detail.edit.days_label,Days,en_US
 recurring_orders.detail.edit.days_label,Tage,de_DE
 recurring_orders.detail.edit.validation.days_required,Select at least one day.,en_US

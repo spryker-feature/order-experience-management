@@ -60,7 +60,7 @@ class OrderExperienceManagementCommunicationFactory extends AbstractCommunicatio
 
     public function createWeekDayNameMapper(): WeekDayNameMapperInterface
     {
-        return new WeekDayNameMapper();
+        return new WeekDayNameMapper($this->getConfig());
     }
 
     public function createRecurringScheduleTableFilterForm(Request $request): FormInterface

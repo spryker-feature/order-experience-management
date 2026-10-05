@@ -105,10 +105,10 @@ cart.voucher.apply.non_applicable,"Ihr Gutscheincode ist für diesen Warenkorb n
 cart.giftcard.apply.successful,"Ihr Geschenkgutschein wurde angewendet"
 cart.giftcard.apply.failed,"Geschenkgutschein konnte nicht angewendet werden"
 "By days","Nach Tagen"
-"Monday","Montag"
-"Tuesday","Dienstag"
-"Wednesday","Mittwoch"
-"Thursday","Donnerstag"
-"Friday","Freitag"
-"Saturday","Samstag"
-"Sunday","Sonntag"
+Monday,Montag
+Tuesday,Dienstag
+Wednesday,Mittwoch
+Thursday,Donnerstag
+Friday,Freitag
+Saturday,Samstag
+Sunday,Sonntag

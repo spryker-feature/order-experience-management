@@ -11,6 +11,7 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Cadence;
 
 use Codeception\Test\Unit;
 use DateTimeImmutable;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsReader;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\InvalidCadenceOptionsException;
@@ -109,5 +110,20 @@ class WeekDayTriggerDateCalculatorTest extends Unit
     protected function createCalculator(): WeekDayTriggerDateCalculator
     {
         return new WeekDayTriggerDateCalculator(new WeekDayOptionsReader());
+    }
+
+    public function testSearchesAFullWeekEvenWhenOnlyOneWeekDayIsSelected(): void
+    {
+        // Arrange
+        $baseDate = new DateTimeImmutable(static::BASE_WEDNESDAY);
+
+        // Act
+        $nextTriggerDate = $this->createCalculator()->calculateNextTriggerDate(
+            $baseDate,
+            [(string)SharedOrderExperienceManagementConfig::DAY_TUESDAY],
+        );
+
+        // Assert
+        $this->assertSame(6, (int)$baseDate->diff($nextTriggerDate)->format('%a'));
     }
 }

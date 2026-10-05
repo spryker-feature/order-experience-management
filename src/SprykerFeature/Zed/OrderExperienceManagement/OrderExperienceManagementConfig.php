@@ -502,4 +502,17 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     {
         return $this->getSharedConfig()->isPackagingUnitProductAdditionRestricted();
     }
+
+    /**
+     * Specification:
+     * - Returns the weekdays selectable for the by-days cadence, in display order.
+     *
+     * @api
+     *
+     * @return array<int>
+     */
+    public function getSupportedWeekDays(): array
+    {
+        return $this->getSharedConfig()->getSupportedWeekDays();
+    }
 }

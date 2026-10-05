@@ -68,7 +68,7 @@
             {% elseif fieldName == 'cadenceValue' %}
                 {{ form_row(field, {
                     rowAttr: {
-                        class: embed.configName ~ '__value-wrapper ' ~ 'form__field col col--sm-12'
+                        class: embed.configJsName ~ '__value-wrapper ' ~ 'form__field col col--sm-12'
                     },
                     attr: {
                         'data-qa': 'recurring-order-edit-cadence-value-input',

@@ -9,10 +9,14 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
 
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class WeekDayOptionsValidator implements WeekDayOptionsValidatorInterface
 {
+    public function __construct(protected readonly OrderExperienceManagementConfig $orderExperienceManagementConfig)
+    {
+    }
+
     /**
      * @param array<string> $cadenceOptions
      */
@@ -22,12 +26,14 @@ class WeekDayOptionsValidator implements WeekDayOptionsValidatorInterface
             return false;
         }
 
+        $supportedWeekDays = $this->orderExperienceManagementConfig->getSupportedWeekDays();
+
         foreach ($cadenceOptions as $cadenceOption) {
             if (!is_numeric($cadenceOption)) {
                 return false;
             }
 
-            if (!in_array((int)$cadenceOption, SharedOrderExperienceManagementConfig::SUPPORTED_WEEK_DAYS, true)) {
+            if (!in_array((int)$cadenceOption, $supportedWeekDays, true)) {
                 return false;
             }
         }

@@ -125,7 +125,7 @@ class OrderExperienceManagementFactory extends AbstractFactory
 
     public function createWeekDayGlossaryKeyMapper(): WeekDayGlossaryKeyMapperInterface
     {
-        return new WeekDayGlossaryKeyMapper();
+        return new WeekDayGlossaryKeyMapper($this->getConfig());
     }
 
     public function createRecurringOrderSelectorFormDataProvider(): RecurringOrderSelectorFormDataProvider

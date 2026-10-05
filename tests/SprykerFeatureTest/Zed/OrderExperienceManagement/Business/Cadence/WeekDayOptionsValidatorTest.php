@@ -12,6 +12,7 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Cadence;
 use Codeception\Test\Unit;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 /**
  * Auto-generated group annotations
@@ -34,7 +35,7 @@ class WeekDayOptionsValidatorTest extends Unit
     public function testAreWeekDaysValid(array $cadenceOptions, bool $expectedIsValid): void
     {
         // Act
-        $isValid = (new WeekDayOptionsValidator())->areWeekDaysValid($cadenceOptions);
+        $isValid = $this->createValidator()->areWeekDaysValid($cadenceOptions);
 
         // Assert
         $this->assertSame($expectedIsValid, $isValid);
@@ -62,9 +63,58 @@ class WeekDayOptionsValidatorTest extends Unit
         $cadenceOptions = array_map('strval', SharedOrderExperienceManagementConfig::SUPPORTED_WEEK_DAYS);
 
         // Act
-        $isValid = (new WeekDayOptionsValidator())->areWeekDaysValid($cadenceOptions);
+        $isValid = $this->createValidator()->areWeekDaysValid($cadenceOptions);
 
         // Assert
         $this->assertTrue($isValid);
+    }
+
+    /**
+     * A project may narrow the selectable weekdays; a day outside that list is a valid ISO weekday
+     * but not something a buyer is allowed to pick.
+     */
+    public function testRejectsAWeekDayTheProjectDoesNotOffer(): void
+    {
+        // Arrange
+        $validator = $this->createValidator([
+            SharedOrderExperienceManagementConfig::DAY_MONDAY,
+            SharedOrderExperienceManagementConfig::DAY_FRIDAY,
+        ]);
+
+        // Act
+        $isValid = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_TUESDAY]);
+
+        // Assert
+        $this->assertFalse($isValid);
+    }
+
+    public function testAcceptsAWeekDayTheProjectOffers(): void
+    {
+        // Arrange
+        $validator = $this->createValidator([
+            SharedOrderExperienceManagementConfig::DAY_MONDAY,
+            SharedOrderExperienceManagementConfig::DAY_FRIDAY,
+        ]);
+
+        // Act
+        $isValid = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_FRIDAY]);
+
+        // Assert
+        $this->assertTrue($isValid);
+    }
+
+    /**
+     * @param array<int>|null $supportedWeekDays
+     */
+    protected function createValidator(?array $supportedWeekDays = null): WeekDayOptionsValidator
+    {
+        if ($supportedWeekDays === null) {
+            return new WeekDayOptionsValidator(new OrderExperienceManagementConfig());
+        }
+
+        $configMock = $this->createMock(OrderExperienceManagementConfig::class);
+        $configMock->method('getSupportedWeekDays')->willReturn($supportedWeekDays);
+
+        return new WeekDayOptionsValidator($configMock);
     }
 }

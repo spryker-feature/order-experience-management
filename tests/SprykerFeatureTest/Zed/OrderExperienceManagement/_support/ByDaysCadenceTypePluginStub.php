@@ -15,6 +15,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptions
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculator;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class ByDaysCadenceTypePluginStub implements CadenceTypePluginInterface
 {
@@ -55,7 +56,7 @@ class ByDaysCadenceTypePluginStub implements CadenceTypePluginInterface
      */
     public function areOptionsValid(array $cadenceOptions): bool
     {
-        return (new WeekDayOptionsValidator())->areWeekDaysValid($cadenceOptions);
+        return (new WeekDayOptionsValidator(new OrderExperienceManagementConfig()))->areWeekDaysValid($cadenceOptions);
     }
 
     public function getDisplayKey(): string

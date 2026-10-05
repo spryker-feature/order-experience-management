@@ -61,16 +61,6 @@
             {% endblock %}
 
             {% block cadence %}
-                <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.cadence' | trans }}</dt>
-                <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-cadence">
-                    {{ ('recurring_orders.cadence.' ~ data.schedule.cadenceType) | trans }}
-                    {% if data.schedule.cadenceValue %}
-                        ({{ data.schedule.cadenceValue }})
-                    {% endif %}
-                </dd>
-            {% endblock %}
-
-            {% block cadenceDays %}
                 {% set selectedDayLabels = [] %}
                 {% for weekDay, glossaryKey in data.weekDayGlossaryKeys %}
                     {% if (weekDay ~ '') in data.schedule.cadenceOptions %}
@@ -78,12 +68,16 @@
                     {% endif %}
                 {% endfor %}
 
-                {% if selectedDayLabels is not empty %}
-                    <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.days' | trans }}</dt>
-                    <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-cadence-days">
-                        {{ selectedDayLabels | join(', ') }}
-                    </dd>
-                {% endif %}
+                <dt class="{{ definitionListKeyClassName }}">{{ 'recurring_orders.detail.sidebar.cadence' | trans }}</dt>
+                <dd class="{{ definitionListValueClassName }}" data-qa="recurring-order-cadence">
+                    {{ ('recurring_orders.cadence.' ~ data.schedule.cadenceType) | trans }}
+                    {% if data.schedule.cadenceValue %}
+                        ({{ data.schedule.cadenceValue }})
+                    {% endif %}
+                    {% if selectedDayLabels is not empty %}
+                        ({{ selectedDayLabels | join(', ') }})
+                    {% endif %}
+                </dd>
             {% endblock %}
 
             {% block status %}

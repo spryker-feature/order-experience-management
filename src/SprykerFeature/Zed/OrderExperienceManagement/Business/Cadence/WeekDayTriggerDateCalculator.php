@@ -17,6 +17,8 @@ class WeekDayTriggerDateCalculator implements WeekDayTriggerDateCalculatorInterf
 {
     protected const string ISO_WEEK_DAY_FORMAT = 'N';
 
+    protected const int DAYS_IN_WEEK = 7;
+
     protected const int FIRST_OFFSET_IN_DAYS = 1;
 
     public function __construct(protected readonly WeekDayOptionsReaderInterface $weekDayOptionsReader)
@@ -41,9 +43,7 @@ class WeekDayTriggerDateCalculator implements WeekDayTriggerDateCalculatorInterf
             );
         }
 
-        $lastOffsetInDays = count(SharedOrderExperienceManagementConfig::SUPPORTED_WEEK_DAYS);
-
-        for ($offsetInDays = static::FIRST_OFFSET_IN_DAYS; $offsetInDays <= $lastOffsetInDays; $offsetInDays++) {
+        for ($offsetInDays = static::FIRST_OFFSET_IN_DAYS; $offsetInDays <= static::DAYS_IN_WEEK; $offsetInDays++) {
             $candidateDate = $currentTriggerDate->modify(sprintf('+%d days', $offsetInDays));
 
             if (in_array((int)$candidateDate->format(static::ISO_WEEK_DAY_FORMAT), $weekDays, true)) {

@@ -105,10 +105,10 @@ cart.voucher.apply.non_applicable,"Your voucher code is not applicable to this c
 cart.giftcard.apply.successful,"Your gift card code has been applied"
 cart.giftcard.apply.failed,"The gift card is not applicable"
 "By days","By days"
-"Monday","Monday"
-"Tuesday","Tuesday"
-"Wednesday","Wednesday"
-"Thursday","Thursday"
-"Friday","Friday"
-"Saturday","Saturday"
-"Sunday","Sunday"
+Monday,Monday
+Tuesday,Tuesday
+Wednesday,Wednesday
+Thursday,Thursday
+Friday,Friday
+Saturday,Saturday
+Sunday,Sunday

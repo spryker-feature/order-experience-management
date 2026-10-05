@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper;
 
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 class WeekDayNameMapper implements WeekDayNameMapperInterface
 {
@@ -26,11 +27,25 @@ class WeekDayNameMapper implements WeekDayNameMapperInterface
         SharedOrderExperienceManagementConfig::DAY_SUNDAY => 'Sunday',
     ];
 
+    public function __construct(protected readonly OrderExperienceManagementConfig $config)
+    {
+    }
+
     /**
      * @return array<int, string>
      */
     public function mapWeekDaysToNames(): array
     {
-        return static::WEEK_DAY_NAMES;
+        $weekDayNames = [];
+
+        foreach ($this->config->getSupportedWeekDays() as $weekDay) {
+            if (!isset(static::WEEK_DAY_NAMES[$weekDay])) {
+                continue;
+            }
+
+            $weekDayNames[$weekDay] = static::WEEK_DAY_NAMES[$weekDay];
+        }
+
+        return $weekDayNames;
     }
 }

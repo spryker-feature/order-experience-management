@@ -20,6 +20,7 @@ use Generated\Shared\Transfer\RecurringOrderQuoteUpdateResponseTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\ByDaysCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
@@ -253,6 +254,45 @@ class UpdateRecurringOrderSettingsOnQuoteTest extends Unit
         // Assert
         $this->assertSame(
             (new DateTimeImmutable('today'))->modify('+21 days')->format('Y-m-d'),
+            $responseTransfer->getQuoteOrFail()->getRecurringOrderSettingsOrFail()->getFirstOrderDate(),
+        );
+    }
+
+    public function testReturnsDaysRequiredErrorWhenByDaysCadenceOptionsAreMissing(): void
+    {
+        // Arrange
+        $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+            ->setStartDate((new DateTimeImmutable('today'))->format('Y-m-d'));
+
+        // Act
+        $responseTransfer = $this->updateSettings($recurringOrderSettingsTransfer, [new ByDaysCadenceTypePlugin()]);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(
+            'recurring_orders.checkout.error.days_required',
+            $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
+        );
+    }
+
+    public function testResolvesFirstOrderDateFromSelectedWeekDaysWhenStartDateIsToday(): void
+    {
+        // Arrange
+        $today = new DateTimeImmutable('today');
+
+        $recurringOrderSettingsTransfer = (new RecurringOrderSettingsTransfer())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+            ->setStartDate($today->format('Y-m-d'))
+            ->setCadenceOptions([$today->format('N')]);
+
+        // Act
+        $responseTransfer = $this->updateSettings($recurringOrderSettingsTransfer, [new ByDaysCadenceTypePlugin()]);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+        $this->assertSame(
+            $today->modify('+7 days')->format('Y-m-d'),
             $responseTransfer->getQuoteOrFail()->getRecurringOrderSettingsOrFail()->getFirstOrderDate(),
         );
     }
