@@ -40,8 +40,8 @@ abstract class AbstractPriceDriftChecker implements PriceDriftCheckerInterface
     protected function resolveReferencePriceByMode(RecurringScheduleItemTransfer $recurringScheduleItemTransfer, string $priceMode): ?int
     {
         $price = $priceMode === static::PRICE_MODE_NET
-            ? $recurringScheduleItemTransfer->getReferenceNetPrice()
-            : $recurringScheduleItemTransfer->getReferenceGrossPrice();
+            ? $recurringScheduleItemTransfer->getNextDeliveryNetPrice() ?? $recurringScheduleItemTransfer->getReferenceNetPrice()
+            : $recurringScheduleItemTransfer->getNextDeliveryGrossPrice() ?? $recurringScheduleItemTransfer->getReferenceGrossPrice();
 
         return $this->castPriceToInt($price);
     }

@@ -306,8 +306,8 @@ recurring_orders.review.invalid_form,The request could not be processed. Please 
 recurring_orders.review.invalid_form,Die Anfrage konnte nicht verarbeitet werden. Bitte überprüfen Sie sie und versuchen Sie es erneut.,de_DE
 recurring_orders.review.modal.accepted_prices,Accepted price changes,en_US
 recurring_orders.review.modal.accepted_prices,Akzeptierte Preisänderungen,de_DE
-recurring_orders.review.modal.body,Removing unavailable items and accepting updated prices will affect this order and all future executions of this schedule. These changes will become the new reference state for the recurring order going forward.,en_US
-recurring_orders.review.modal.body,Das Entfernen nicht verfügbarer Artikel und das Akzeptieren aktualisierter Preise wirken sich auf diese Bestellung und alle zukünftigen Ausführungen dieses Zeitplans aus. Diese Änderungen werden zum neuen Referenzzustand der wiederkehrenden Bestellung.,de_DE
+recurring_orders.review.modal.body,Removing unavailable items and accepting updated prices will be applied as you choose below: to this order only, or to this and all future executions of this schedule.,en_US
+recurring_orders.review.modal.body,Das Entfernen nicht verfügbarer Artikel und das Akzeptieren aktualisierter Preise werden so angewendet, wie Sie unten wählen: nur auf diese Bestellung oder auf diese und alle zukünftigen Ausführungen dieses Zeitplans.,de_DE
 recurring_orders.review.modal.headline,Confirm order and apply changes,en_US
 recurring_orders.review.modal.headline,Bestellung bestätigen und Änderungen übernehmen,de_DE
 recurring_orders.review.modal.new_total,New order total,en_US

@@ -48,7 +48,7 @@ class OccurrenceScheduleReviewScopeStrategy implements ScheduleReviewScopeStrate
         array $groupKeysByIdRecurringScheduleItem,
         bool $isNetMode,
     ): void {
-        $recurringScheduleItemTransfers = $this->scheduleReviewPriceApplier->reBaselineAcceptedPrices(
+        $recurringScheduleItemTransfers = $this->scheduleReviewPriceApplier->applyOccurrencePrices(
             $acceptedPricesByGroupKey,
             $groupKeysByIdRecurringScheduleItem,
             $isNetMode,

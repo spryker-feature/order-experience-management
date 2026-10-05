@@ -104,8 +104,8 @@ class RecurringScheduleItemExpander extends AbstractRecurringScheduleExpander im
         RecurringScheduleItemTransfer $recurringScheduleItemTransfer,
     ): int {
         $unitPrice = $recurringScheduleTransfer->getPriceMode() === static::PRICE_MODE_NET
-            ? (int)$recurringScheduleItemTransfer->getReferenceNetPrice()
-            : (int)$recurringScheduleItemTransfer->getReferenceGrossPrice();
+            ? (int)($recurringScheduleItemTransfer->getNextDeliveryNetPrice() ?? $recurringScheduleItemTransfer->getReferenceNetPrice())
+            : (int)($recurringScheduleItemTransfer->getNextDeliveryGrossPrice() ?? $recurringScheduleItemTransfer->getReferenceGrossPrice());
 
         $quantity = $recurringScheduleItemTransfer->getNextDeliveryQuantity() ?? (int)$recurringScheduleItemTransfer->getQuantity();
 

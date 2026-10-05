@@ -11,12 +11,17 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement;
 
 use Codeception\Actor;
 use Codeception\Stub;
+use Generated\Shared\Transfer\CartChangeTransfer;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateHistory;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineProcessQuery;
 use Spryker\Zed\Mail\Business\MailFacadeInterface;
+use Spryker\Zed\PriceCartConnector\Business\PriceCartConnectorFacadeInterface;
+use Spryker\Zed\ProductPackagingUnit\Business\ProductPackagingUnitFacadeInterface;
 use Spryker\Zed\StateMachine\Business\StateMachineFacadeInterface;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\ScheduleValidator\PriceScheduleValidatorPlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\ScheduleValidatorPluginInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
@@ -66,6 +71,55 @@ class OrderExperienceManagementBusinessTester extends Actor
         ?int $currentPrice = null,
     ): ScheduleValidatorPluginInterface {
         return new FixedScheduleValidatorPlugin($sku, $isPurchasable, $reviewReason, $currentPrice);
+    }
+
+    /**
+     * @param array<string, array<int, int>> $priceMapByKey Current catalog [unitGrossPrice, unitNetPrice] keyed by group key.
+     */
+    public function createPriceScheduleValidatorPlugin(array $priceMapByKey): ScheduleValidatorPluginInterface
+    {
+        $priceCartConnectorFacade = Stub::makeEmpty(PriceCartConnectorFacadeInterface::class, [
+            'addPriceToItems' => static function (CartChangeTransfer $cartChangeTransfer) use ($priceMapByKey): CartChangeTransfer {
+                foreach ($cartChangeTransfer->getItems() as $itemTransfer) {
+                    $key = $itemTransfer->getGroupKey() ?? $itemTransfer->getBundleItemIdentifier() ?? $itemTransfer->getSku();
+
+                    if (!isset($priceMapByKey[$key])) {
+                        continue;
+                    }
+
+                    [$unitGrossPrice, $unitNetPrice] = $priceMapByKey[$key];
+                    $itemTransfer->setUnitGrossPrice($unitGrossPrice)->setUnitNetPrice($unitNetPrice);
+                }
+
+                return $cartChangeTransfer;
+            },
+        ]);
+        $productPackagingUnitFacade = Stub::makeEmpty(ProductPackagingUnitFacadeInterface::class, [
+            'setCustomAmountPrice' => static fn (CartChangeTransfer $cartChangeTransfer): CartChangeTransfer => $cartChangeTransfer,
+        ]);
+
+        $businessFactory = new class ($priceCartConnectorFacade, $productPackagingUnitFacade) extends OrderExperienceManagementBusinessFactory {
+            public function __construct(
+                protected PriceCartConnectorFacadeInterface $priceCartConnectorFacade,
+                protected ProductPackagingUnitFacadeInterface $productPackagingUnitFacade,
+            ) {
+            }
+
+            public function getPriceCartConnectorFacade(): PriceCartConnectorFacadeInterface
+            {
+                return $this->priceCartConnectorFacade;
+            }
+
+            public function getProductPackagingUnitFacade(): ProductPackagingUnitFacadeInterface
+            {
+                return $this->productPackagingUnitFacade;
+            }
+        };
+
+        $priceScheduleValidatorPlugin = new PriceScheduleValidatorPlugin();
+        $priceScheduleValidatorPlugin->setBusinessFactory($businessFactory);
+
+        return $priceScheduleValidatorPlugin;
     }
 
     public function pinMailFacadeDependency(): void

@@ -76,6 +76,8 @@
         <column name="product_name" type="VARCHAR" size="255" required="false"/>
         <column name="quantity" type="INTEGER" required="true"/>
         <column name="next_delivery_quantity" type="INTEGER" required="false"/>
+        <column name="next_delivery_gross_price" type="INTEGER" required="false"/>
+        <column name="next_delivery_net_price" type="INTEGER" required="false"/>
         <column name="reference_gross_price" type="INTEGER" required="true"/>
         <column name="reference_net_price" type="INTEGER" required="true"/>
         <column name="merchant_reference" type="VARCHAR" size="255" required="false"/>

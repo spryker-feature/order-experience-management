@@ -121,6 +121,41 @@ class PriceScheduleValidatorPluginTest extends Unit
         $this->assertCount(0, $resultTransfer->getItemReviews());
     }
 
+    public function testDoesNotFlagCommonProductWhenPendingNextDeliveryPriceCoversCurrentPrice(): void
+    {
+        // Arrange
+        $recurringScheduleItemTransfer = $this->createGroupedScheduleItem(static::SKU_COMMON, static::GROUP_KEY_COMMON, 1000, 1000)
+            ->setNextDeliveryGrossPrice(1500)
+            ->setNextDeliveryNetPrice(1500);
+        $recurringScheduleTransfer = $this->createScheduleTransfer([$recurringScheduleItemTransfer]);
+        $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [1500, 1500]]);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertTrue($resultTransfer->getIsValid());
+        $this->assertCount(0, $resultTransfer->getItemReviews());
+    }
+
+    public function testFlagsCommonProductAgainstNextDeliveryPriceWhenCurrentPriceExceedsIt(): void
+    {
+        // Arrange
+        $recurringScheduleItemTransfer = $this->createGroupedScheduleItem(static::SKU_COMMON, static::GROUP_KEY_COMMON, 1000, 1000)
+            ->setNextDeliveryGrossPrice(1500)
+            ->setNextDeliveryNetPrice(1500);
+        $recurringScheduleTransfer = $this->createScheduleTransfer([$recurringScheduleItemTransfer]);
+        $plugin = $this->createPlugin([static::GROUP_KEY_COMMON => [1800, 1800]]);
+
+        // Act
+        $resultTransfer = $plugin->validate($recurringScheduleTransfer, $this->buildPlaceableQuote($recurringScheduleTransfer), $this->createValidResult());
+
+        // Assert
+        $this->assertFalse($resultTransfer->getIsValid());
+        $this->assertCount(1, $resultTransfer->getItemReviews());
+        $this->assertSame(1500, $resultTransfer->getItemReviews()->offsetGet(0)->getPreviousPrice());
+    }
+
     public function testFlagsCommonProductWhenCurrentPriceUnavailable(): void
     {
         // Arrange
