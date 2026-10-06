@@ -69,10 +69,6 @@ class WeekDayOptionsValidatorTest extends Unit
         $this->assertTrue($isValid);
     }
 
-    /**
-     * A project may narrow the selectable weekdays; a day outside that list is a valid ISO weekday
-     * but not something a buyer is allowed to pick.
-     */
     public function testRejectsAWeekDayTheProjectDoesNotOffer(): void
     {
         // Arrange

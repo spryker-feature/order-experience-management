@@ -106,10 +106,6 @@ class CadenceResolverTest extends Unit
         $this->assertTrue($isValid);
     }
 
-    /**
-     * A cadence type nobody registered a plugin for has no contract to validate against, so the
-     * resolver fails closed rather than waving the value through.
-     */
     public function testValidationFailsClosedForAnUnregisteredCadenceType(): void
     {
         // Arrange
