@@ -17,6 +17,7 @@ use Generated\Shared\Transfer\RecurringScheduleCollectionResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleConditionsTransfer;
 use Generated\Shared\Transfer\RecurringScheduleCriteriaTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\RecurringScheduleMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReaderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Quote\RecurringScheduleQuoteDataMergerInterface;
@@ -26,6 +27,10 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
 {
     protected const string GLOSSARY_KEY_SCHEDULE_NOT_FOUND = 'recurring_orders.detail.edit.error.schedule_not_found';
 
+    protected const string GLOSSARY_KEY_CADENCE_VALUE_REQUIRED = 'recurring_orders.detail.edit.error.cadence_value_required';
+
+    protected const string GLOSSARY_KEY_CADENCE_DAYS_REQUIRED = 'recurring_orders.detail.edit.error.days_required';
+
     protected const string PARAMETER_UUID = '%uuid%';
 
     public function __construct(
@@ -33,6 +38,7 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
         protected RecurringScheduleQuoteDataMergerInterface $recurringScheduleQuoteDataMerger,
         protected RecurringScheduleMapperInterface $recurringScheduleMapper,
         protected OrderExperienceManagementEntityManagerInterface $entityManager,
+        protected CadenceResolverInterface $cadenceResolver,
     ) {
     }
 
@@ -66,6 +72,18 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
                 continue;
             }
 
+            $validationErrorGlossaryKey = $this->validateRequestedCadence($requestedScheduleTransfer);
+
+            if ($validationErrorGlossaryKey !== null) {
+                $recurringScheduleCollectionResponseTransfer->addError(
+                    (new ErrorTransfer())
+                        ->setMessage($validationErrorGlossaryKey)
+                        ->setEntityIdentifier($uuid),
+                );
+
+                continue;
+            }
+
             $updateScheduleTransfer = $this->applyQuoteOverride(
                 $this->recurringScheduleMapper->mapRequestedRecurringScheduleToRecurringSchedule(
                     $requestedScheduleTransfer,
@@ -82,6 +100,25 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
         }
 
         return $recurringScheduleCollectionResponseTransfer;
+    }
+
+    protected function validateRequestedCadence(RecurringScheduleTransfer $requestedScheduleTransfer): ?string
+    {
+        $cadenceType = $requestedScheduleTransfer->getCadenceType();
+
+        if ($cadenceType === null || !$this->cadenceResolver->isSupported($cadenceType)) {
+            return null;
+        }
+
+        if (!$this->cadenceResolver->isValueValid($cadenceType, $requestedScheduleTransfer->getCadenceValue())) {
+            return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
+        }
+
+        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $requestedScheduleTransfer->getCadenceOptions())) {
+            return static::GLOSSARY_KEY_CADENCE_DAYS_REQUIRED;
+        }
+
+        return null;
     }
 
     /**

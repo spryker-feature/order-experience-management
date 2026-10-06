@@ -482,5 +482,9 @@ recurring_orders.day.sunday,Sunday,en_US
 recurring_orders.day.sunday,Sonntag,de_DE
 recurring_orders.detail.edit.days_label,Days,en_US
 recurring_orders.detail.edit.days_label,Tage,de_DE
+recurring_orders.detail.edit.error.cadence_value_required,Please choose an interval for the recurring order.,en_US
+recurring_orders.detail.edit.error.cadence_value_required,Bitte wählen Sie ein Intervall für die wiederkehrende Bestellung aus.,de_DE
+recurring_orders.detail.edit.error.days_required,Select at least one day.,en_US
+recurring_orders.detail.edit.error.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
 recurring_orders.detail.edit.validation.days_required,Select at least one day.,en_US
 recurring_orders.detail.edit.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE

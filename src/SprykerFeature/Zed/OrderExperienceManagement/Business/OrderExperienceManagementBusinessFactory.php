@@ -1255,6 +1255,7 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createRecurringScheduleQuoteDataMerger(),
             $this->createRecurringScheduleMapper(),
             $this->getEntityManager(),
+            $this->createCadenceResolver(),
         );
     }
 

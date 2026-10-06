@@ -44,7 +44,17 @@ class RecurringScheduleSkipPreviewExpander implements RecurringScheduleExpanderI
             return;
         }
 
-        if (!$this->cadenceResolver->isSupported($recurringScheduleTransfer->getCadenceTypeOrFail())) {
+        $cadenceType = $recurringScheduleTransfer->getCadenceTypeOrFail();
+
+        if (!$this->cadenceResolver->isSupported($cadenceType)) {
+            return;
+        }
+
+        if (!$this->cadenceResolver->isValueValid($cadenceType, $recurringScheduleTransfer->getCadenceValue())) {
+            return;
+        }
+
+        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $recurringScheduleTransfer->getCadenceOptions())) {
             return;
         }
 

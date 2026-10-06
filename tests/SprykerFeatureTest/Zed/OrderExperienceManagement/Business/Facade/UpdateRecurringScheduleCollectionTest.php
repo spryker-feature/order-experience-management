@@ -36,7 +36,6 @@ class UpdateRecurringScheduleCollectionTest extends Unit
 {
     protected const string UPDATED_NAME = 'Updated recurring order name';
 
-    // A cadence value is persisted only for the "every N weeks" type; other types resolve it to null.
     protected const string UPDATED_CADENCE_TYPE = SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS;
 
     protected const int UPDATED_CADENCE_VALUE = 3;
@@ -289,6 +288,80 @@ class UpdateRecurringScheduleCollectionTest extends Unit
             'review required' => [SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED],
             'failed' => [SharedOrderExperienceManagementConfig::STATUS_FAILED],
         ];
+    }
+
+    public function testReturnsCadenceValueRequiredErrorWhenEveryNWeeksIntervalIsMissing(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+
+        $requestTransfer = $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setName(static::UPDATED_NAME)
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS)
+            ->setCadenceValue(null));
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->updateRecurringScheduleCollection($requestTransfer);
+
+        // Assert
+        $this->assertCount(0, $responseTransfer->getRecurringSchedules());
+        $this->assertSame(
+            'recurring_orders.detail.edit.error.cadence_value_required',
+            $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
+        );
+    }
+
+    public function testDoesNotPersistScheduleWhenEveryNWeeksIntervalIsMissing(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+
+        $requestTransfer = $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setName(static::UPDATED_NAME)
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS)
+            ->setCadenceValue(null));
+
+        // Act
+        $this->tester->getFacade()->updateRecurringScheduleCollection($requestTransfer);
+
+        // Assert
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByIdRecurringSchedule($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
+
+        $this->assertNotNull($recurringScheduleEntity);
+        $this->assertSame($recurringScheduleTransfer->getName(), $recurringScheduleEntity->getName());
+    }
+
+    public function testReturnsDaysRequiredErrorWhenByDaysSelectionIsMissing(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+
+        $requestTransfer = $this->createRequest($idCustomer, (new RecurringScheduleTransfer())
+            ->setUuid($recurringScheduleTransfer->getUuidOrFail())
+            ->setCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS)
+            ->setCadenceOptions([]));
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->updateRecurringScheduleCollection($requestTransfer);
+
+        // Assert
+        $this->assertCount(0, $responseTransfer->getRecurringSchedules());
+        $this->assertSame(
+            'recurring_orders.detail.edit.error.days_required',
+            $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
+        );
     }
 
     protected function createRequest(
