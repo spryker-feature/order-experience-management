@@ -63,7 +63,7 @@ interface OrderExperienceManagementEntityManagerInterface
 
     public function updateNextDeliveryQuantityToZeroByConfiguredBundleGroupKey(int $idRecurringSchedule, string $configuredBundleGroupKey): void;
 
-    public function updateNextDeliveryQuantitiesToNull(int $idRecurringSchedule): void;
+    public function updateNextDeliveryValuesToNull(int $idRecurringSchedule): void;
 
     public function updateScheduleNextTriggerDate(int $idRecurringSchedule, string $nextTriggerDate): void;
 

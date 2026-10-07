@@ -101,6 +101,40 @@ class CompletePlacementCommandTest extends Unit
         $this->assertNull($recurringScheduleItemEntity->getNextDeliveryQuantity());
     }
 
+    public function testRunResetsNextDeliveryPricesAfterPlacement(): void
+    {
+        // Arrange
+        $this->tester->setDependency(OrderExperienceManagementDependencyProvider::PLUGINS_CADENCE_TYPE, [new WeeklyCadenceTypePlugin()]);
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+            RecurringScheduleTransfer::NEXT_TRIGGER_DATE => static::NEXT_TRIGGER_DATE,
+        ]);
+        $idRecurringSchedule = $recurringScheduleTransfer->getIdRecurringScheduleOrFail();
+
+        $this->tester->haveRecurringScheduleItem($idRecurringSchedule, [
+            RecurringScheduleItemTransfer::SKU => 'sku-a',
+            RecurringScheduleItemTransfer::QUANTITY => 1,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+            RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+            RecurringScheduleItemTransfer::NEXT_DELIVERY_NET_PRICE => 700,
+        ]);
+
+        // Act
+        $this->createCommand()->run(
+            (new StateMachineItemTransfer())->setIdentifier($idRecurringSchedule),
+        );
+
+        // Assert
+        $recurringScheduleItemEntity = SpyRecurringScheduleItemQuery::create()
+            ->filterByFkRecurringSchedule($idRecurringSchedule)
+            ->findOne();
+
+        $this->assertNull($recurringScheduleItemEntity->getNextDeliveryGrossPrice());
+        $this->assertNull($recurringScheduleItemEntity->getNextDeliveryNetPrice());
+        $this->assertSame(500, $recurringScheduleItemEntity->getReferenceGrossPrice());
+    }
+
     public function testRunDeletesScheduleItemsWithZeroQuantity(): void
     {
         // Arrange

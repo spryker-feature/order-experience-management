@@ -173,6 +173,10 @@ class ScheduleReviewBuilder implements ScheduleReviewBuilderInterface
             $isNetMode
                 ? $recurringScheduleItemTransfer->setReferenceNetPrice($acceptedPrice)
                 : $recurringScheduleItemTransfer->setReferenceGrossPrice($acceptedPrice);
+
+            $recurringScheduleItemTransfer
+                ->setNextDeliveryNetPrice(null)
+                ->setNextDeliveryGrossPrice(null);
         }
 
         return $recurringScheduleTransfer;

@@ -10,12 +10,15 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule;
 
 use DateTimeImmutable;
+use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
 class ScheduleAdvancer implements ScheduleAdvancerInterface
 {
+    use TransactionTrait;
+
     protected const string DATE_FORMAT = 'Y-m-d';
 
     public function __construct(
@@ -44,8 +47,15 @@ class ScheduleAdvancer implements ScheduleAdvancerInterface
             array_map('strval', $scheduleTransfer->getCadenceOptions()),
         );
 
+        $this->getTransactionHandler()->handleTransaction(function () use ($idRecurringSchedule, $nextTriggerDate): void {
+            $this->executeAdvanceTransaction($idRecurringSchedule, $nextTriggerDate);
+        });
+    }
+
+    protected function executeAdvanceTransaction(int $idRecurringSchedule, DateTimeImmutable $nextTriggerDate): void
+    {
         $this->entityManager->updateScheduleNextTriggerDate($idRecurringSchedule, $nextTriggerDate->format(static::DATE_FORMAT));
-        $this->entityManager->updateNextDeliveryQuantitiesToNull($idRecurringSchedule);
+        $this->entityManager->updateNextDeliveryValuesToNull($idRecurringSchedule);
         $this->entityManager->deleteRecurringScheduleItemsWithZeroQuantity($idRecurringSchedule);
     }
 }

@@ -425,6 +425,112 @@ class GetRecurringScheduleCollectionTest extends Unit
         $this->assertSame(1300, $scheduleTransfer->getEstimatedTotal());
     }
 
+    public function testUsesPendingNextDeliveryPriceForItemTotalAndFlagsTheItemAsOneTime(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+        ]);
+
+        $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 2,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+            RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setIsWithItems(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $scheduleTransfer = $collectionTransfer->getRecurringSchedules()->offsetGet(0);
+        $itemTransfer = $scheduleTransfer->getItems()->offsetGet(0);
+
+        $this->assertSame(1600, $itemTransfer->getItemTotal());
+        $this->assertSame(1600, $scheduleTransfer->getEstimatedTotal());
+        $this->assertContains(SharedOrderExperienceManagementConfig::ITEM_FLAG_ONE_TIME, $itemTransfer->getFlags());
+    }
+
+    /**
+     * addFlag() does not deduplicate, so a line with both a one-time quantity and a one-time price must still
+     * carry the flag exactly once rather than render two identical badges.
+     */
+    public function testFlagsItemOnceWhenBothNextDeliveryQuantityAndPriceArePending(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+        ]);
+
+        $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 2,
+            RecurringScheduleItemTransfer::NEXT_DELIVERY_QUANTITY => 5,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+            RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setIsWithItems(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $itemTransfer = $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getItems()->offsetGet(0);
+
+        $this->assertSame([SharedOrderExperienceManagementConfig::ITEM_FLAG_ONE_TIME], $itemTransfer->getFlags());
+        $this->assertSame(4000, $itemTransfer->getItemTotal());
+    }
+
+    public function testDoesNotFlagOneTimeWhenNoNextDeliveryPriceOrQuantityIsPending(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+        ]);
+
+        $this->tester->haveRecurringScheduleItem($recurringScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 2,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->setIsWithItems(true),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $scheduleTransfer = $collectionTransfer->getRecurringSchedules()->offsetGet(0);
+        $itemTransfer = $scheduleTransfer->getItems()->offsetGet(0);
+
+        $this->assertSame(1000, $itemTransfer->getItemTotal());
+        $this->assertNotContains(SharedOrderExperienceManagementConfig::ITEM_FLAG_ONE_TIME, $itemTransfer->getFlags());
+    }
+
     public function testLoadsHistoryWhenIsWithHistory(): void
     {
         // Arrange

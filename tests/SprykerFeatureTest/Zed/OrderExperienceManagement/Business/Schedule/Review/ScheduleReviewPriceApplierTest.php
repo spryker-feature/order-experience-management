@@ -119,4 +119,77 @@ class ScheduleReviewPriceApplierTest extends Unit
         // Assert
         $this->assertSame([], $recurringScheduleItemTransfers);
     }
+
+    public function testReBaseliningClearsAnyPendingNextDeliveryPrice(): void
+    {
+        // Act
+        $recurringScheduleItemTransfers = (new ScheduleReviewPriceApplier())->reBaselineAcceptedPrices(
+            [static::GROUP_KEY_A => static::ACCEPTED_PRICE],
+            [static::ID_ITEM_FIRST => static::GROUP_KEY_A],
+            static::GROSS_MODE,
+        );
+
+        // Assert
+        $modifiedValues = $recurringScheduleItemTransfers[static::ID_ITEM_FIRST]->modifiedToArray();
+        $this->assertArrayHasKey('next_delivery_gross_price', $modifiedValues);
+        $this->assertArrayHasKey('next_delivery_net_price', $modifiedValues);
+        $this->assertNull($modifiedValues['next_delivery_gross_price']);
+        $this->assertNull($modifiedValues['next_delivery_net_price']);
+    }
+
+    public function testAppliesOccurrencePriceToEveryRowOfTheGroupInGrossMode(): void
+    {
+        // Arrange
+        $acceptedPricesByGroupKey = [static::GROUP_KEY_A => static::ACCEPTED_PRICE];
+        $groupKeysByIdRecurringScheduleItem = [
+            static::ID_ITEM_FIRST => static::GROUP_KEY_A,
+            static::ID_ITEM_SECOND => static::GROUP_KEY_A,
+        ];
+
+        // Act
+        $recurringScheduleItemTransfers = (new ScheduleReviewPriceApplier())->applyOccurrencePrices(
+            $acceptedPricesByGroupKey,
+            $groupKeysByIdRecurringScheduleItem,
+            static::GROSS_MODE,
+        );
+
+        // Assert
+        $this->assertSame([static::ID_ITEM_FIRST, static::ID_ITEM_SECOND], array_keys($recurringScheduleItemTransfers));
+
+        foreach ($recurringScheduleItemTransfers as $idRecurringScheduleItem => $recurringScheduleItemTransfer) {
+            $this->assertSame($idRecurringScheduleItem, $recurringScheduleItemTransfer->getIdRecurringScheduleItem());
+            $this->assertSame(static::ACCEPTED_PRICE, $recurringScheduleItemTransfer->getNextDeliveryGrossPrice());
+            $this->assertNull($recurringScheduleItemTransfer->getNextDeliveryNetPrice());
+            $this->assertNull($recurringScheduleItemTransfer->getReferenceGrossPrice());
+            $this->assertNull($recurringScheduleItemTransfer->getReferenceNetPrice());
+        }
+    }
+
+    public function testAppliesOccurrenceNetPriceInNetMode(): void
+    {
+        // Act
+        $recurringScheduleItemTransfers = (new ScheduleReviewPriceApplier())->applyOccurrencePrices(
+            [static::GROUP_KEY_A => static::ACCEPTED_PRICE],
+            [static::ID_ITEM_FIRST => static::GROUP_KEY_A],
+            static::NET_MODE,
+        );
+
+        // Assert
+        $this->assertSame(static::ACCEPTED_PRICE, $recurringScheduleItemTransfers[static::ID_ITEM_FIRST]->getNextDeliveryNetPrice());
+        $this->assertNull($recurringScheduleItemTransfers[static::ID_ITEM_FIRST]->getNextDeliveryGrossPrice());
+        $this->assertNull($recurringScheduleItemTransfers[static::ID_ITEM_FIRST]->getReferenceNetPrice());
+    }
+
+    public function testAppliesNoOccurrencePricesWithoutAcceptedPrices(): void
+    {
+        // Act
+        $recurringScheduleItemTransfers = (new ScheduleReviewPriceApplier())->applyOccurrencePrices(
+            [],
+            [static::ID_ITEM_FIRST => static::GROUP_KEY_A],
+            static::GROSS_MODE,
+        );
+
+        // Assert
+        $this->assertSame([], $recurringScheduleItemTransfers);
+    }
 }

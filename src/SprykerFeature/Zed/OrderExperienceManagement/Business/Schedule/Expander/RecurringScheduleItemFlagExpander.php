@@ -36,7 +36,7 @@ class RecurringScheduleItemFlagExpander implements RecurringScheduleExpanderInte
     protected function applyItemFlags(RecurringScheduleTransfer $recurringScheduleTransfer): void
     {
         foreach ($recurringScheduleTransfer->getItems() as $recurringScheduleItemTransfer) {
-            if (!$this->isOneTimeItem($recurringScheduleItemTransfer)) {
+            if (!$this->isOneTimeItem($recurringScheduleItemTransfer) && !$this->hasOneTimePrice($recurringScheduleItemTransfer)) {
                 continue;
             }
 
@@ -50,5 +50,11 @@ class RecurringScheduleItemFlagExpander implements RecurringScheduleExpanderInte
 
         return $nextDeliveryQuantity !== null
             && $nextDeliveryQuantity !== $recurringScheduleItemTransfer->getQuantity();
+    }
+
+    protected function hasOneTimePrice(RecurringScheduleItemTransfer $recurringScheduleItemTransfer): bool
+    {
+        return $recurringScheduleItemTransfer->getNextDeliveryGrossPrice() !== null
+            || $recurringScheduleItemTransfer->getNextDeliveryNetPrice() !== null;
     }
 }

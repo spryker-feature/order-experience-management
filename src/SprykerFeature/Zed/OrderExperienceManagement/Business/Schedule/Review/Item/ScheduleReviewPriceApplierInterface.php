@@ -22,4 +22,16 @@ interface ScheduleReviewPriceApplierInterface
         array $groupKeysByIdRecurringScheduleItem,
         bool $isNetMode,
     ): array;
+
+    /**
+     * @param array<string, int> $acceptedPricesByGroupKey
+     * @param array<int, string> $groupKeysByIdRecurringScheduleItem
+     *
+     * @return array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer> Next-delivery price changes keyed by recurring schedule item ID.
+     */
+    public function applyOccurrencePrices(
+        array $acceptedPricesByGroupKey,
+        array $groupKeysByIdRecurringScheduleItem,
+        bool $isNetMode,
+    ): array;
 }

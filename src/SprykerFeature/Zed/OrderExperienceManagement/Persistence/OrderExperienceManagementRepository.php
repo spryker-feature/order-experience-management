@@ -406,10 +406,12 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
     protected function getCycleTotalExpression(): string
     {
         return sprintf(
-            'SUM(CASE WHEN %s = \'%s\' THEN %s ELSE %s END * COALESCE(%s, %s))',
+            'SUM(CASE WHEN %s = \'%s\' THEN COALESCE(%s, %s) ELSE COALESCE(%s, %s) END * COALESCE(%s, %s))',
             SpyRecurringScheduleTableMap::COL_PRICE_MODE,
             static::PRICE_MODE_NET,
+            SpyRecurringScheduleItemTableMap::COL_NEXT_DELIVERY_NET_PRICE,
             SpyRecurringScheduleItemTableMap::COL_REFERENCE_NET_PRICE,
+            SpyRecurringScheduleItemTableMap::COL_NEXT_DELIVERY_GROSS_PRICE,
             SpyRecurringScheduleItemTableMap::COL_REFERENCE_GROSS_PRICE,
             SpyRecurringScheduleItemTableMap::COL_NEXT_DELIVERY_QUANTITY,
             SpyRecurringScheduleItemTableMap::COL_QUANTITY,

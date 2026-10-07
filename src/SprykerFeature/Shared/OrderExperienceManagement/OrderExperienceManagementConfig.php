@@ -327,7 +327,7 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
 
     /**
      * Specification:
-     * - Per-item display flag: the item is delivered only in the next order (a "just this order" quantity), not as part of the standing schedule.
+     * - Per-item display flag: the item's quantity or price applies to the next order only (a "just this order" change), not to the standing schedule.
      *
      * @api
      */

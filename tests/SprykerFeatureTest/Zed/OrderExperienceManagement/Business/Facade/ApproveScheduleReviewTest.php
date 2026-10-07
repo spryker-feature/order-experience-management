@@ -518,7 +518,7 @@ class ApproveScheduleReviewTest extends Unit
         $this->assertSame(5, $itemTransfers[0]->getNextDeliveryQuantity());
     }
 
-    public function testApprovesAndRebaselinesAcceptedPriceWithOccurrenceScope(): void
+    public function testRecordsAcceptedPriceAsNextDeliveryPriceWithOccurrenceScope(): void
     {
         // Arrange
         [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
@@ -549,7 +549,229 @@ class ApproveScheduleReviewTest extends Unit
 
         $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
         $this->assertCount(1, $itemTransfers);
-        $this->assertSame(800, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertSame(500, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertSame(800, $itemTransfers[0]->getNextDeliveryGrossPrice());
+        $this->assertNull($itemTransfers[0]->getNextDeliveryNetPrice());
+    }
+
+    public function testRecordsAcceptedPriceAsNextDeliveryNetPriceWithOccurrenceScopeInNetMode(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(
+            SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
+            [
+                [
+                    RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                    RecurringScheduleItemTransfer::QUANTITY => 1,
+                    RecurringScheduleItemTransfer::REFERENCE_NET_PRICE => 500,
+                    RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+                ],
+            ],
+            static::PRICE_MODE_NET,
+        );
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_OCCURRENCE)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(800),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertCount(1, $itemTransfers);
+        $this->assertSame(500, $itemTransfers[0]->getReferenceNetPrice());
+        $this->assertSame(800, $itemTransfers[0]->getNextDeliveryNetPrice());
+        $this->assertNull($itemTransfers[0]->getNextDeliveryGrossPrice());
+    }
+
+    public function testRecordsNextDeliveryPriceAndQuantityWhenBothAreAcceptedWithOccurrenceScope(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [
+                RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                RecurringScheduleItemTransfer::QUANTITY => 1,
+                RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+                RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+            ],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_OCCURRENCE)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(800)
+                    ->setAcceptedQuantity(5),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertCount(1, $itemTransfers);
+        $this->assertSame(500, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertSame(800, $itemTransfers[0]->getNextDeliveryGrossPrice());
+        $this->assertSame(1, $itemTransfers[0]->getQuantity());
+        $this->assertSame(5, $itemTransfers[0]->getNextDeliveryQuantity());
+    }
+
+    public function testClearsPendingNextDeliveryPriceWhenAcceptedPriceAppliedWithStandingScope(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [
+                RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                RecurringScheduleItemTransfer::QUANTITY => 1,
+                RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+                RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+                RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+            ],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_STANDING)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(900),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertCount(1, $itemTransfers);
+        $this->assertSame(900, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertNull($itemTransfers[0]->getNextDeliveryGrossPrice());
+        $this->assertNull($itemTransfers[0]->getNextDeliveryNetPrice());
+    }
+
+    public function testReturnsPricesChangedWhenCurrentPriceExceedsPendingNextDeliveryPrice(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [
+                RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                RecurringScheduleItemTransfer::QUANTITY => 1,
+                RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+                RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+                RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+            ],
+        ]);
+        $this->tester->setScheduleValidatorPlugins([
+            $this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [900, 900]]),
+        ]);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_OCCURRENCE);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(static::ERROR_MESSAGE_PRICES_CHANGED, $responseTransfer->getErrors()->offsetGet(0)->getMessage());
+    }
+
+    public function testApprovesFurtherPriceRiseWhenOneTimePriceIsAlreadyPendingWithOccurrenceScope(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [
+                RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                RecurringScheduleItemTransfer::QUANTITY => 1,
+                RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+                RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+                RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+            ],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+        $this->tester->setScheduleValidatorPlugins([
+            $this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [900, 900]]),
+        ]);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_OCCURRENCE)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(900),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertSame(500, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertSame(900, $itemTransfers[0]->getNextDeliveryGrossPrice());
+    }
+
+    public function testApprovesFurtherPriceRiseWhenOneTimePriceIsAlreadyPendingWithStandingScope(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [
+                RecurringScheduleItemTransfer::SKU => static::SKU_A,
+                RecurringScheduleItemTransfer::QUANTITY => 1,
+                RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+                RecurringScheduleItemTransfer::NEXT_DELIVERY_GROSS_PRICE => 800,
+                RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A,
+            ],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+        $this->tester->setScheduleValidatorPlugins([
+            $this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [900, 900]]),
+        ]);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_STANDING)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(900),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertSame(900, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertNull($itemTransfers[0]->getNextDeliveryGrossPrice());
     }
 
     public function testReturnsScopeRequiredErrorWhenQuantityChangedWithoutScope(): void

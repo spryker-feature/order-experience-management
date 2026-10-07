@@ -37,6 +37,10 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
 
     protected const string COLUMN_NEXT_DELIVERY_QUANTITY = 'NextDeliveryQuantity';
 
+    protected const string COLUMN_NEXT_DELIVERY_GROSS_PRICE = 'NextDeliveryGrossPrice';
+
+    protected const string COLUMN_NEXT_DELIVERY_NET_PRICE = 'NextDeliveryNetPrice';
+
     protected const string COLUMN_QUANTITY = 'Quantity';
 
     protected const int NEXT_DELIVERY_QUANTITY_SKIP = 0;
@@ -336,12 +340,16 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
             ->save();
     }
 
-    public function updateNextDeliveryQuantitiesToNull(int $idRecurringSchedule): void
+    public function updateNextDeliveryValuesToNull(int $idRecurringSchedule): void
     {
         $this->getFactory()
             ->createRecurringScheduleItemQuery()
             ->filterByFkRecurringSchedule($idRecurringSchedule)
-            ->update([static::COLUMN_NEXT_DELIVERY_QUANTITY => null]);
+            ->update([
+                static::COLUMN_NEXT_DELIVERY_QUANTITY => null,
+                static::COLUMN_NEXT_DELIVERY_GROSS_PRICE => null,
+                static::COLUMN_NEXT_DELIVERY_NET_PRICE => null,
+            ]);
     }
 
     public function updateScheduleNextTriggerDate(int $idRecurringSchedule, string $nextTriggerDate): void

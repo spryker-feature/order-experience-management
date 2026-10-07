@@ -46,6 +46,8 @@
         <property name="productName" type="string"/>
         <property name="quantity" type="int"/>
         <property name="nextDeliveryQuantity" type="int"/>
+        <property name="nextDeliveryGrossPrice" type="int"/>
+        <property name="nextDeliveryNetPrice" type="int"/>
         <property name="referenceGrossPrice" type="int"/>
         <property name="referenceNetPrice" type="int"/>
         <property name="merchantReference" type="string"/>
