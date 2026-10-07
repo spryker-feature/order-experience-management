@@ -16,6 +16,7 @@ use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\StateMachineItemTransfer;
 use Orm\Zed\OrderExperienceManagement\Persistence\Map\SpyRecurringScheduleTableMap;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringSchedule;
+use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 
 class RecurringScheduleMapper
 {
@@ -29,6 +30,10 @@ class RecurringScheduleMapper
     public const string VIRTUAL_COL_BUSINESS_UNIT_NAME = 'business_unit_name';
 
     public const string VIRTUAL_COL_ESTIMATED_TOTAL = 'estimated_total';
+
+    public function __construct(protected readonly UtilEncodingServiceInterface $utilEncodingService)
+    {
+    }
 
     public function mapRecurringScheduleTransferToRecurringScheduleEntityColumns(
         RecurringScheduleTransfer $recurringScheduleTransfer,
@@ -205,7 +210,7 @@ class RecurringScheduleMapper
             return null;
         }
 
-        return json_encode(array_values($cadenceOptions), JSON_THROW_ON_ERROR);
+        return $this->utilEncodingService->encodeJson($cadenceOptions);
     }
 
     /**
@@ -217,7 +222,7 @@ class RecurringScheduleMapper
             return [];
         }
 
-        $decodedCadenceOptions = json_decode($cadenceOptions, true);
+        $decodedCadenceOptions = $this->utilEncodingService->decodeJson($cadenceOptions, true);
 
         if (!is_array($decodedCadenceOptions)) {
             return [];

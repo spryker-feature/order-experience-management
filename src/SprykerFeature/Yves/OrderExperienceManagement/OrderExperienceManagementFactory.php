@@ -56,6 +56,8 @@ use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderResumeForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSearchForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSelectorForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringScheduleEditForm;
+use SprykerFeature\Yves\OrderExperienceManagement\Formatter\WeekDayLabelFormatter;
+use SprykerFeature\Yves\OrderExperienceManagement\Formatter\WeekDayLabelFormatterInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\FormHandler\RecurringOrderSearchFormHandler;
 use SprykerFeature\Yves\OrderExperienceManagement\Mapper\RecurringScheduleEventRequestMapper;
 use SprykerFeature\Yves\OrderExperienceManagement\Mapper\RecurringScheduleEventRequestMapperInterface;
@@ -95,6 +97,8 @@ use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderQuoteUpd
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderQuoteUpdaterInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderScheduleResumeUpdater;
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderScheduleResumeUpdaterInterface;
+use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceOptionsValidator;
+use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceOptionsValidatorInterface;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -230,6 +234,19 @@ class OrderExperienceManagementFactory extends AbstractFactory
     public function getCustomerClient(): CustomerClientInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::CLIENT_CUSTOMER);
+    }
+
+    public function createWeekDayLabelFormatter(): WeekDayLabelFormatterInterface
+    {
+        return new WeekDayLabelFormatter(
+            $this->createWeekDayGlossaryKeyMapper(),
+            $this->getGlossaryStorageClient(),
+        );
+    }
+
+    public function createCadenceOptionsValidator(): CadenceOptionsValidatorInterface
+    {
+        return new CadenceOptionsValidator();
     }
 
     public function getGlossaryStorageClient(): GlossaryStorageClientInterface

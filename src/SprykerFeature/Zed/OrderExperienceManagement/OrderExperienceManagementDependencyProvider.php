@@ -134,6 +134,14 @@ class OrderExperienceManagementDependencyProvider extends AbstractBundleDependen
 
     public const string PLUGINS_ORDER_INTAKE_QUOTE_EXPANDER = 'PLUGINS_ORDER_INTAKE_QUOTE_EXPANDER';
 
+    public function providePersistenceLayerDependencies(Container $container): Container
+    {
+        $container = parent::providePersistenceLayerDependencies($container);
+        $container = $this->addUtilEncodingService($container);
+
+        return $container;
+    }
+
     public function provideBusinessLayerDependencies(Container $container): Container
     {
         $container = parent::provideBusinessLayerDependencies($container);

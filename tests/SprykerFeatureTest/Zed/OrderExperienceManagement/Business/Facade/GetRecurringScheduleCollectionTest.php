@@ -571,6 +571,38 @@ class GetRecurringScheduleCollectionTest extends Unit
         }
     }
 
+    public function testFiltersByTheOnSpecificDaysCadenceType(): void
+    {
+        // Arrange
+        $customer = $this->tester->haveCustomer();
+        $idCustomer = (int)$customer->getIdCustomer();
+
+        $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            RecurringScheduleTransfer::CADENCE_OPTIONS => ['2', '7'],
+        ]);
+        $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+        ]);
+
+        $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addCustomerId($idCustomer)
+                    ->addCadenceType(SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS),
+            );
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getRecurringScheduleCollection($criteriaTransfer);
+
+        // Assert
+        $this->assertCount(1, $collectionTransfer->getRecurringSchedules());
+        $this->assertSame(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            $collectionTransfer->getRecurringSchedules()->offsetGet(0)->getCadenceType(),
+        );
+    }
+
     public function testFiltersByNextTriggerDateRange(): void
     {
         // Arrange

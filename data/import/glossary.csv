@@ -458,8 +458,8 @@ recurring_orders.review.product-discontinued.message,"This product is discontinu
 recurring_orders.review.product-discontinued.message,"Dieses Produkt wurde eingestellt. Wählen Sie einen Ersatz aus, damit es in Ihrer Bestellung bleibt.",de_DE
 recurring_orders.review.substitute.sold-by,Sold by,en_US
 recurring_orders.review.substitute.sold-by,Verkauft durch,de_DE
-recurring_orders.cadence.by_days,By days,en_US
-recurring_orders.cadence.by_days,Nach Tagen,de_DE
+recurring_orders.cadence.by_days,On specific days,en_US
+recurring_orders.cadence.by_days,An bestimmten Tagen,de_DE
 recurring_orders.checkout.days_label,Days,en_US
 recurring_orders.checkout.days_label,Tage,de_DE
 recurring_orders.checkout.validation.days_required,Select at least one day.,en_US

@@ -15,7 +15,9 @@ use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleItemQuery;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateHistoryQuery;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery;
+use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
+use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDependencyProvider;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleForecastMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleHistoryMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleItemMapper;
@@ -40,7 +42,12 @@ class OrderExperienceManagementPersistenceFactory extends AbstractPersistenceFac
 
     public function createRecurringScheduleMapper(): RecurringScheduleMapper
     {
-        return new RecurringScheduleMapper();
+        return new RecurringScheduleMapper($this->getUtilEncodingService());
+    }
+
+    public function getUtilEncodingService(): UtilEncodingServiceInterface
+    {
+        return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::SERVICE_UTIL_ENCODING);
     }
 
     public function createRecurringScheduleItemMapper(): RecurringScheduleItemMapper

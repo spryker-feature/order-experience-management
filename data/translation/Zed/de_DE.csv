@@ -104,7 +104,7 @@ cart.voucher.apply.successful,"Ihr Gutscheincode wurde angewendet"
 cart.voucher.apply.non_applicable,"Ihr Gutscheincode ist für diesen Warenkorb nicht gültig"
 cart.giftcard.apply.successful,"Ihr Geschenkgutschein wurde angewendet"
 cart.giftcard.apply.failed,"Geschenkgutschein konnte nicht angewendet werden"
-"By days","Nach Tagen"
+"By days","An bestimmten Tagen"
 Monday,Montag
 Tuesday,Dienstag
 Wednesday,Mittwoch

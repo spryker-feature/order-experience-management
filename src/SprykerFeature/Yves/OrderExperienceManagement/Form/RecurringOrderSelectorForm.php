@@ -10,7 +10,6 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 use DateTimeImmutable;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Spryker\Yves\Kernel\Form\AbstractType;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -24,6 +23,9 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
+/**
+ * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementFactory getFactory()
+ */
 class RecurringOrderSelectorForm extends AbstractType
 {
     public const string FIELD_CADENCE_TYPE = 'cadenceType';
@@ -63,7 +65,9 @@ class RecurringOrderSelectorForm extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => RecurringOrderSettingsTransfer::class,
-            'constraints' => [new Callback([$this, 'validateCadenceOptions'])],
+            'constraints' => [
+                new Callback([$this->getFactory()->createCadenceOptionsValidator(), 'validateCheckoutCadenceOptions']),
+            ],
         ]);
         $resolver->setRequired([
             static::OPTION_CADENCE_TYPE_CHOICES,
@@ -126,27 +130,6 @@ class RecurringOrderSelectorForm extends AbstractType
         ]);
 
         return $this;
-    }
-
-    public function validateCadenceOptions(
-        ?RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
-        ExecutionContextInterface $context,
-    ): void {
-        if ($recurringOrderSettingsTransfer === null) {
-            return;
-        }
-
-        if ($recurringOrderSettingsTransfer->getCadenceType() !== SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS) {
-            return;
-        }
-
-        if ($recurringOrderSettingsTransfer->getCadenceOptions() !== []) {
-            return;
-        }
-
-        $context->buildViolation('recurring_orders.checkout.validation.days_required')
-            ->atPath(static::FIELD_CADENCE_OPTIONS)
-            ->addViolation();
     }
 
     protected function addScheduleNameField(FormBuilderInterface $builder): static

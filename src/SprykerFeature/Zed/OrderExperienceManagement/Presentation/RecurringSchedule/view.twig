@@ -7,15 +7,6 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Schedule Details' | trans } %}
         {% block widget_content %}
-            {% set selectedDayNames = [] %}
-            {% for weekDay, weekDayName in weekDayNames %}
-                {% if (weekDay ~ '') in recurringSchedule.cadenceOptions %}
-                    {% set selectedDayNames = selectedDayNames | merge([weekDayName | trans]) %}
-                {% endif %}
-            {% endfor %}
-            {% set frequency = (recurringSchedule.cadenceType | replace({'_': ' '}) | capitalize | trans)
-                ~ (recurringSchedule.cadenceValue ? ' (' ~ recurringSchedule.cadenceValue ~ ')' : '')
-                ~ (selectedDayNames is not empty ? ' (' ~ selectedDayNames | join(', ') ~ ')' : '') %}
             {% set detailRows = [
                 { label: 'Name', value: recurringSchedule.name, qa: 'name' },
                 { label: 'Company', value: recurringSchedule.companyName, qa: 'company' },

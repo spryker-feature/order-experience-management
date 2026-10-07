@@ -19,6 +19,8 @@ use Spryker\Zed\Sales\Business\SalesFacadeInterface;
 use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\DataProvider\RecurringScheduleTableFilterFormDataProvider;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\RecurringScheduleTableFilterForm;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\CadenceLabelFormatter;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\CadenceLabelFormatterInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\AdvanceScheduleCommandPlugin;
@@ -48,14 +50,21 @@ class OrderExperienceManagementCommunicationFactory extends AbstractCommunicatio
     {
         return new RecurringScheduleTable(
             $this->getFacade(),
-            $this->getTranslatorFacade(),
-            $this->createWeekDayNameMapper(),
+            $this->createCadenceLabelFormatter(),
         );
     }
 
     public function getTranslatorFacade(): TranslatorFacadeInterface
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::FACADE_TRANSLATOR);
+    }
+
+    public function createCadenceLabelFormatter(): CadenceLabelFormatterInterface
+    {
+        return new CadenceLabelFormatter(
+            $this->getTranslatorFacade(),
+            $this->createWeekDayNameMapper(),
+        );
     }
 
     public function createWeekDayNameMapper(): WeekDayNameMapperInterface

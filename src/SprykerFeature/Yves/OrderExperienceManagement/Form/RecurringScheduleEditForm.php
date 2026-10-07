@@ -11,7 +11,6 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Form;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -60,7 +59,9 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
 
         $resolver->setDefaults([
             static::OPTION_RECURRING_SCHEDULE => null,
-            'constraints' => [new Callback([$this, 'validateCadenceOptions'])],
+            'constraints' => [
+                new Callback([$this->getFactory()->createCadenceOptionsValidator(), 'validateScheduleEditCadenceOptions']),
+            ],
         ]);
     }
 
@@ -151,28 +152,6 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
         ]);
 
         return $this;
-    }
-
-    /**
-     * @param array<string, mixed>|null $formData
-     */
-    public function validateCadenceOptions(?array $formData, ExecutionContextInterface $context): void
-    {
-        if ($formData === null) {
-            return;
-        }
-
-        if (($formData[static::FIELD_CADENCE_TYPE] ?? null) !== SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS) {
-            return;
-        }
-
-        if (($formData[static::FIELD_CADENCE_OPTIONS] ?? []) !== []) {
-            return;
-        }
-
-        $context->buildViolation('recurring_orders.detail.edit.validation.days_required')
-            ->atPath(static::FIELD_CADENCE_OPTIONS)
-            ->addViolation();
     }
 
     protected function addNextExecutionDateField(FormBuilderInterface $builder): static
