@@ -29,7 +29,7 @@ interface CadenceTypePluginInterface
      * Specification:
      * - Computes the next trigger date from the given base date.
      * - Uses cadenceValue for interval-based types (e.g. every_n_weeks).
-     * - Uses cadenceOptions for types parameterized by a set of values (e.g. by_days); the meaning of
+     * - Uses cadenceOptions for types parameterized by a set of values (e.g. by_days), the meaning of
      *   the entries is defined by the implementing cadence type.
      *
      * @api
@@ -45,7 +45,7 @@ interface CadenceTypePluginInterface
     /**
      * Specification:
      * - Returns whether this cadence type is parameterized by a numeric cadence value.
-     * - A type that returns `false` stores no cadence value; consumers clear it when the type is selected.
+     * - A type that returns `false` stores no cadence value, consumers clear it when the type is selected.
      *
      * @api
      */
@@ -63,7 +63,7 @@ interface CadenceTypePluginInterface
     /**
      * Specification:
      * - Returns whether this cadence type is parameterized by a set of cadence options.
-     * - A type that returns `false` stores no cadence options; consumers clear them when the type is selected.
+     * - A type that returns `false` stores no cadence options, consumers clear them when the type is selected.
      *
      * @api
      */
