@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin;
 
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 
 /**
  * Defines a single recurring-order cadence type (e.g. weekly, monthly, every_n_weeks).
@@ -44,41 +45,17 @@ interface CadenceTypePluginInterface
 
     /**
      * Specification:
-     * - Returns whether this cadence type is parameterized by a numeric cadence value.
-     * - A type that returns `false` stores no cadence value, consumers clear it when the type is selected.
-     *
-     * @api
-     */
-    public function isValueRequired(): bool;
-
-    /**
-     * Specification:
-     * - Returns whether the given cadence value is acceptable for this cadence type.
-     * - A type that is not parameterized by a value accepts any value, including `null`.
-     *
-     * @api
-     */
-    public function isValueValid(?int $cadenceValue): bool;
-
-    /**
-     * Specification:
-     * - Returns whether this cadence type is parameterized by a set of cadence options.
-     * - A type that returns `false` stores no cadence options, consumers clear them when the type is selected.
-     *
-     * @api
-     */
-    public function areOptionsRequired(): bool;
-
-    /**
-     * Specification:
-     * - Returns whether the given cadence options are acceptable for this cadence type.
-     * - A type that is not parameterized by options accepts any options, including an empty array.
+     * - Returns whether the given cadence parameters are acceptable for this cadence type.
+     * - On failure the response carries the glossary key describing what is missing or invalid.
+     * - The response also reports the cadence fields this type is parameterized by, as
+     *   `OrderExperienceManagementConfig::CADENCE_FIELD_*` values, consumers clear every field absent
+     *   from that list when the type is selected.
      *
      * @api
      *
      * @param array<string> $cadenceOptions
      */
-    public function areOptionsValid(array $cadenceOptions): bool;
+    public function isCadenceValid(?int $cadenceValue, array $cadenceOptions): CadenceValidationResponseTransfer;
 
     /**
      * Specification:

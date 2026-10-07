@@ -310,7 +310,7 @@ class UpdateRecurringScheduleCollectionTest extends Unit
         // Assert
         $this->assertCount(0, $responseTransfer->getRecurringSchedules());
         $this->assertSame(
-            'recurring_orders.detail.edit.error.cadence_value_required',
+            'recurring_orders.cadence.validation.value_required',
             $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
         );
     }
@@ -359,7 +359,7 @@ class UpdateRecurringScheduleCollectionTest extends Unit
         // Assert
         $this->assertCount(0, $responseTransfer->getRecurringSchedules());
         $this->assertSame(
-            'recurring_orders.detail.edit.error.days_required',
+            'recurring_orders.cadence.validation.days_required',
             $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
         );
     }

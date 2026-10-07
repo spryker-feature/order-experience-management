@@ -66,7 +66,7 @@ class RecurringOrderSelectorForm extends AbstractType
         $resolver->setDefaults([
             'data_class' => RecurringOrderSettingsTransfer::class,
             'constraints' => [
-                new Callback([$this->getFactory()->createCadenceOptionsValidator(), 'validateCheckoutCadenceOptions']),
+                new Callback([$this->getFactory()->createCadenceFormValidator(), 'validateCheckoutCadence']),
             ],
         ]);
         $resolver->setRequired([

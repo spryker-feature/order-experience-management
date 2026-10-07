@@ -12,6 +12,7 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Communication\Plugin\
 use Codeception\Test\Unit;
 use DateTimeImmutable;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig;
+use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\InvalidCadenceValueException;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\BiWeeklyCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\ByDaysCadenceTypePlugin;
@@ -201,19 +202,21 @@ class CadenceTypePluginsTest extends Unit
 
     /**
      * @dataProvider provideCadenceTypeShapes
+     *
+     * @param array<string> $expectedRequiredCadenceFields
      */
     public function testPluginDeclaresWhichCadenceParametersItTakes(
         CadenceTypePluginInterface $cadenceTypePlugin,
-        bool $expectedIsValueRequired,
-        bool $expectedAreOptionsRequired
+        array $expectedRequiredCadenceFields
     ): void {
         // Act
-        $isValueRequired = $cadenceTypePlugin->isValueRequired();
-        $areOptionsRequired = $cadenceTypePlugin->areOptionsRequired();
+        $cadenceValidationResponseTransfer = $cadenceTypePlugin->isCadenceValid(null, []);
 
         // Assert
-        $this->assertSame($expectedIsValueRequired, $isValueRequired);
-        $this->assertSame($expectedAreOptionsRequired, $areOptionsRequired);
+        $this->assertSame(
+            $expectedRequiredCadenceFields,
+            $cadenceValidationResponseTransfer->getRequiredCadenceFields(),
+        );
     }
 
     /**
@@ -222,11 +225,17 @@ class CadenceTypePluginsTest extends Unit
     public function provideCadenceTypeShapes(): array
     {
         return [
-            'weekly takes neither' => [new WeeklyCadenceTypePlugin(), false, false],
-            'bi-weekly takes neither' => [new BiWeeklyCadenceTypePlugin(), false, false],
-            'monthly takes neither' => [new MonthlyCadenceTypePlugin(), false, false],
-            'every n weeks takes a value' => [new EveryNWeeksCadenceTypePlugin(), true, false],
-            'by days takes options' => [new ByDaysCadenceTypePlugin(), false, true],
+            'weekly takes neither' => [new WeeklyCadenceTypePlugin(), []],
+            'bi-weekly takes neither' => [new BiWeeklyCadenceTypePlugin(), []],
+            'monthly takes neither' => [new MonthlyCadenceTypePlugin(), []],
+            'every n weeks takes a value' => [
+                new EveryNWeeksCadenceTypePlugin(),
+                [SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_VALUE],
+            ],
+            'by days takes options' => [
+                new ByDaysCadenceTypePlugin(),
+                [SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_OPTIONS],
+            ],
         ];
     }
 
@@ -237,12 +246,10 @@ class CadenceTypePluginsTest extends Unit
         CadenceTypePluginInterface $cadenceTypePlugin
     ): void {
         // Act
-        $isValueValid = $cadenceTypePlugin->isValueValid(null);
-        $areOptionsValid = $cadenceTypePlugin->areOptionsValid([]);
+        $cadenceValidationResponseTransfer = $cadenceTypePlugin->isCadenceValid(null, []);
 
         // Assert
-        $this->assertTrue($isValueValid);
-        $this->assertTrue($areOptionsValid);
+        $this->assertTrue($cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     /**
@@ -263,10 +270,10 @@ class CadenceTypePluginsTest extends Unit
     public function testEveryNWeeksPluginAcceptsOnlyAPositiveInterval(?int $cadenceValue, bool $expectedIsValid): void
     {
         // Act
-        $isValid = (new EveryNWeeksCadenceTypePlugin())->isValueValid($cadenceValue);
+        $cadenceValidationResponseTransfer = (new EveryNWeeksCadenceTypePlugin())->isCadenceValid($cadenceValue, []);
 
         // Assert
-        $this->assertSame($expectedIsValid, $isValid);
+        $this->assertSame($expectedIsValid, $cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     /**

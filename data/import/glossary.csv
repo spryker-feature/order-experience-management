@@ -448,8 +448,6 @@ recurring_orders.review.substitute.unavailable,unavailable,en_US
 recurring_orders.review.substitute.unavailable,nicht verfügbar,de_DE
 recurring_orders.checkout.error.not_eligible,This cart cannot be placed as a recurring order.,en_US
 recurring_orders.checkout.error.not_eligible,Dieser Warenkorb kann nicht als wiederkehrende Bestellung aufgegeben werden.,de_DE
-recurring_orders.checkout.error.cadence_value_required,Please choose an interval for the recurring order.,en_US
-recurring_orders.checkout.error.cadence_value_required,Bitte wählen Sie ein Intervall für die wiederkehrende Bestellung aus.,de_DE
 recurring_orders.error.quote_not_found,The cart could not be found or access was denied.,en_US
 recurring_orders.error.quote_not_found,Der Warenkorb wurde nicht gefunden oder der Zugriff wurde verweigert.,de_DE
 recurring_orders.review.reason.configurable_bundle_unavailable,Configurable bundle unavailable,en_US
@@ -458,14 +456,16 @@ recurring_orders.review.product-discontinued.message,"This product is discontinu
 recurring_orders.review.product-discontinued.message,"Dieses Produkt wurde eingestellt. Wählen Sie einen Ersatz aus, damit es in Ihrer Bestellung bleibt.",de_DE
 recurring_orders.review.substitute.sold-by,Sold by,en_US
 recurring_orders.review.substitute.sold-by,Verkauft durch,de_DE
+recurring_orders.cadence.validation.value_required,Please choose an interval for the recurring order.,en_US
+recurring_orders.cadence.validation.value_required,Bitte wählen Sie ein Intervall für die wiederkehrende Bestellung aus.,de_DE
+recurring_orders.cadence.validation.date_not_selected_week_day,Select a date that falls on one of the selected days.,en_US
+recurring_orders.cadence.validation.date_not_selected_week_day,"Wählen Sie ein Datum, das auf einen der ausgewählten Tage fällt.",de_DE
+recurring_orders.cadence.validation.days_required,Select at least one day.,en_US
+recurring_orders.cadence.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
 recurring_orders.cadence.by_days,On specific days,en_US
 recurring_orders.cadence.by_days,An bestimmten Tagen,de_DE
 recurring_orders.checkout.days_label,Days,en_US
 recurring_orders.checkout.days_label,Tage,de_DE
-recurring_orders.checkout.validation.days_required,Select at least one day.,en_US
-recurring_orders.checkout.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
-recurring_orders.checkout.error.days_required,Select at least one day.,en_US
-recurring_orders.checkout.error.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
 recurring_orders.day.monday,Monday,en_US
 recurring_orders.day.monday,Montag,de_DE
 recurring_orders.day.tuesday,Tuesday,en_US
@@ -482,9 +482,3 @@ recurring_orders.day.sunday,Sunday,en_US
 recurring_orders.day.sunday,Sonntag,de_DE
 recurring_orders.detail.edit.days_label,Days,en_US
 recurring_orders.detail.edit.days_label,Tage,de_DE
-recurring_orders.detail.edit.error.cadence_value_required,Please choose an interval for the recurring order.,en_US
-recurring_orders.detail.edit.error.cadence_value_required,Bitte wählen Sie ein Intervall für die wiederkehrende Bestellung aus.,de_DE
-recurring_orders.detail.edit.error.days_required,Select at least one day.,en_US
-recurring_orders.detail.edit.error.days_required,Wählen Sie mindestens einen Tag aus.,de_DE
-recurring_orders.detail.edit.validation.days_required,Select at least one day.,en_US
-recurring_orders.detail.edit.validation.days_required,Wählen Sie mindestens einen Tag aus.,de_DE

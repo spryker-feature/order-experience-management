@@ -27,10 +27,6 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
 {
     protected const string GLOSSARY_KEY_SCHEDULE_NOT_FOUND = 'recurring_orders.detail.edit.error.schedule_not_found';
 
-    protected const string GLOSSARY_KEY_CADENCE_VALUE_REQUIRED = 'recurring_orders.detail.edit.error.cadence_value_required';
-
-    protected const string GLOSSARY_KEY_CADENCE_DAYS_REQUIRED = 'recurring_orders.detail.edit.error.days_required';
-
     protected const string PARAMETER_UUID = '%uuid%';
 
     public function __construct(
@@ -110,12 +106,14 @@ class ScheduleUpdater implements ScheduleUpdaterInterface
             return null;
         }
 
-        if (!$this->cadenceResolver->isValueValid($cadenceType, $requestedScheduleTransfer->getCadenceValue())) {
-            return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
-        }
+        $cadenceValidationResponseTransfer = $this->cadenceResolver->isCadenceValid(
+            $cadenceType,
+            $requestedScheduleTransfer->getCadenceValue(),
+            $requestedScheduleTransfer->getCadenceOptions(),
+        );
 
-        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $requestedScheduleTransfer->getCadenceOptions())) {
-            return static::GLOSSARY_KEY_CADENCE_DAYS_REQUIRED;
+        if (!$cadenceValidationResponseTransfer->getIsSuccess()) {
+            return $cadenceValidationResponseTransfer->getMessage();
         }
 
         return null;

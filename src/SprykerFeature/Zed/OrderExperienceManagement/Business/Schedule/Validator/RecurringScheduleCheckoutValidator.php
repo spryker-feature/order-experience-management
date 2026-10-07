@@ -24,10 +24,6 @@ class RecurringScheduleCheckoutValidator implements RecurringScheduleCheckoutVal
 
     protected const string GLOSSARY_KEY_CADENCE_REQUIRED = 'recurring_orders.checkout.validation.cadence_required';
 
-    protected const string GLOSSARY_KEY_CADENCE_VALUE_REQUIRED = 'recurring_orders.checkout.error.cadence_value_required';
-
-    protected const string GLOSSARY_KEY_CADENCE_DAYS_REQUIRED = 'recurring_orders.checkout.error.days_required';
-
     protected const string GLOSSARY_KEY_START_DATE_REQUIRED = 'recurring_orders.checkout.error.start_date_required';
 
     protected const string GLOSSARY_KEY_START_DATE_IN_PAST = 'recurring_orders.checkout.error.start_date_in_past';
@@ -129,14 +125,14 @@ class RecurringScheduleCheckoutValidator implements RecurringScheduleCheckoutVal
             return static::GLOSSARY_KEY_CADENCE_REQUIRED;
         }
 
-        if (!$this->cadenceResolver->isValueValid($cadenceType, $recurringOrderSettingsTransfer->getCadenceValue())) {
-            return static::GLOSSARY_KEY_CADENCE_VALUE_REQUIRED;
-        }
+        $cadenceValidationResponseTransfer = $this->cadenceResolver->isCadenceValid(
+            $cadenceType,
+            $recurringOrderSettingsTransfer->getCadenceValue(),
+            $recurringOrderSettingsTransfer->getCadenceOptions(),
+        );
 
-        $cadenceOptions = array_map('strval', $recurringOrderSettingsTransfer->getCadenceOptions());
-
-        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $cadenceOptions)) {
-            return static::GLOSSARY_KEY_CADENCE_DAYS_REQUIRED;
+        if (!$cadenceValidationResponseTransfer->getIsSuccess()) {
+            return $cadenceValidationResponseTransfer->getMessage();
         }
 
         return null;

@@ -109,9 +109,23 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
         return $recurringScheduleTransfer;
     }
 
+    /**
+     * @param array<string> $cadenceOptions
+     *
+     * @return array<string>
+     */
+    protected function getRequiredCadenceFields(string $cadenceType, ?int $cadenceValue, array $cadenceOptions = []): array
+    {
+        return $this->cadenceResolver
+            ->isCadenceValid($cadenceType, $cadenceValue, $this->castCadenceOptions($cadenceOptions))
+            ->getRequiredCadenceFields();
+    }
+
     protected function resolveCadenceValue(string $cadenceType, ?int $cadenceValue): ?int
     {
-        if (!$this->cadenceResolver->isValueRequired($cadenceType)) {
+        $requiredCadenceFields = $this->getRequiredCadenceFields($cadenceType, $cadenceValue);
+
+        if (!in_array(SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_VALUE, $requiredCadenceFields, true)) {
             return null;
         }
 
@@ -125,17 +139,29 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
      */
     protected function resolveCadenceOptions(string $cadenceType, iterable $cadenceOptions): array
     {
-        if (!$this->cadenceResolver->areOptionsRequired($cadenceType)) {
+        $requiredCadenceFields = $this->getRequiredCadenceFields($cadenceType, null, $cadenceOptions);
+
+        if (!in_array(SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_OPTIONS, $requiredCadenceFields, true)) {
             return [];
         }
 
-        $resolvedCadenceOptions = [];
+        return $this->castCadenceOptions($cadenceOptions);
+    }
+
+    /**
+     * @param \ArrayObject<int, string>|array<string> $cadenceOptions
+     *
+     * @return array<string>
+     */
+    protected function castCadenceOptions(iterable $cadenceOptions): array
+    {
+        $castCadenceOptions = [];
 
         foreach ($cadenceOptions as $cadenceOption) {
-            $resolvedCadenceOptions[] = (string)$cadenceOption;
+            $castCadenceOptions[] = (string)$cadenceOption;
         }
 
-        return $resolvedCadenceOptions;
+        return $castCadenceOptions;
     }
 
     /**

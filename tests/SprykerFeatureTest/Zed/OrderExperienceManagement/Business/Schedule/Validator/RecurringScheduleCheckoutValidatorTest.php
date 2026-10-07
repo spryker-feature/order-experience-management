@@ -11,6 +11,7 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Schedule\Val
 
 use Codeception\Test\Unit;
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 use Generated\Shared\Transfer\CheckoutErrorTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
@@ -34,6 +35,8 @@ use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\RecurringOrde
  */
 class RecurringScheduleCheckoutValidatorTest extends Unit
 {
+    protected const string GLOSSARY_KEY_DAYS_REQUIRED = 'recurring_orders.cadence.validation.days_required';
+
     protected const string DATE_FORMAT = 'Y-m-d';
 
     protected const string GLOSSARY_KEY_START_DATE_IN_PAST = 'recurring_orders.checkout.error.start_date_in_past';
@@ -192,7 +195,7 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
 
         // Assert
         $this->assertNotNull($checkoutErrorTransfer);
-        $this->assertSame('recurring_orders.checkout.error.days_required', $checkoutErrorTransfer->getMessage());
+        $this->assertSame(static::GLOSSARY_KEY_DAYS_REQUIRED, $checkoutErrorTransfer->getMessage());
     }
 
     protected function createPluginCheckoutErrorTransfer(): CheckoutErrorTransfer
@@ -214,8 +217,8 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
     {
         $cadenceResolverMock = $this->createMock(CadenceResolverInterface::class);
         $cadenceResolverMock->method('isSupported')->willReturn(true);
-        $cadenceResolverMock->method('isValueValid')->willReturn(true);
-        $cadenceResolverMock->method('areOptionsValid')->willReturn(true);
+        $cadenceResolverMock->method('isCadenceValid')
+            ->willReturn((new CadenceValidationResponseTransfer())->setIsSuccess(true));
 
         return $cadenceResolverMock;
     }
@@ -224,8 +227,11 @@ class RecurringScheduleCheckoutValidatorTest extends Unit
     {
         $cadenceResolverMock = $this->createMock(CadenceResolverInterface::class);
         $cadenceResolverMock->method('isSupported')->willReturn(true);
-        $cadenceResolverMock->method('isValueValid')->willReturn(true);
-        $cadenceResolverMock->method('areOptionsValid')->willReturn(false);
+        $cadenceResolverMock->method('isCadenceValid')->willReturn(
+            (new CadenceValidationResponseTransfer())
+                ->setIsSuccess(false)
+                ->setMessage(static::GLOSSARY_KEY_DAYS_REQUIRED),
+        );
 
         return $cadenceResolverMock;
     }

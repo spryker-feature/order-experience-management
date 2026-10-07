@@ -7,12 +7,14 @@
 
 declare(strict_types=1);
 
-namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
+namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator;
+
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 
 interface WeekDayOptionsValidatorInterface
 {
     /**
      * @param array<string> $cadenceOptions
      */
-    public function areWeekDaysValid(array $cadenceOptions): bool;
+    public function areWeekDaysValid(array $cadenceOptions): CadenceValidationResponseTransfer;
 }

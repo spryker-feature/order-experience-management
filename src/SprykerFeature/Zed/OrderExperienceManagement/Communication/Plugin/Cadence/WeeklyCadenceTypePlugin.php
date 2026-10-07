@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence;
 
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
@@ -47,42 +48,12 @@ class WeeklyCadenceTypePlugin extends AbstractPlugin implements CadenceTypePlugi
      * {@inheritDoc}
      *
      * @api
-     */
-    public function isValueRequired(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function isValueValid(?int $cadenceValue): bool
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function areOptionsRequired(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
      *
      * @param array<string> $cadenceOptions
      */
-    public function areOptionsValid(array $cadenceOptions): bool
+    public function isCadenceValid(?int $cadenceValue, array $cadenceOptions): CadenceValidationResponseTransfer
     {
-        return true;
+        return (new CadenceValidationResponseTransfer())->setIsSuccess(true);
     }
 
     /**

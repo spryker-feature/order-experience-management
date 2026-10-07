@@ -97,8 +97,8 @@ use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderQuoteUpd
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderQuoteUpdaterInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderScheduleResumeUpdater;
 use SprykerFeature\Yves\OrderExperienceManagement\Updater\RecurringOrderScheduleResumeUpdaterInterface;
-use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceOptionsValidator;
-use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceOptionsValidatorInterface;
+use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceFormValidator;
+use SprykerFeature\Yves\OrderExperienceManagement\Validator\CadenceFormValidatorInterface;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -244,9 +244,9 @@ class OrderExperienceManagementFactory extends AbstractFactory
         );
     }
 
-    public function createCadenceOptionsValidator(): CadenceOptionsValidatorInterface
+    public function createCadenceFormValidator(): CadenceFormValidatorInterface
     {
-        return new CadenceOptionsValidator();
+        return new CadenceFormValidator();
     }
 
     public function getGlossaryStorageClient(): GlossaryStorageClientInterface

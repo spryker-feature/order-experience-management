@@ -46,10 +46,12 @@ use Spryker\Zed\Translator\Business\TranslatorFacadeInterface;
 use SprykerFeature\Service\OrderExperienceManagement\OrderExperienceManagementServiceInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolver;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolverInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator\WeekDayOptionsValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator\WeekDayOptionsValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator\WeekIntervalValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator\WeekIntervalValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsReader;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsReaderInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidator;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayTriggerDateCalculatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Checker\RecurringOrderPreConditionChecker;
@@ -390,6 +392,11 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function createWeekDayOptionsValidator(): WeekDayOptionsValidatorInterface
     {
         return new WeekDayOptionsValidator($this->getConfig());
+    }
+
+    public function createWeekIntervalValidator(): WeekIntervalValidatorInterface
+    {
+        return new WeekIntervalValidator();
     }
 
     public function createWeekDayTriggerDateCalculator(): WeekDayTriggerDateCalculatorInterface

@@ -60,7 +60,7 @@ class RecurringScheduleEditForm extends AbstractRecurringOrderUuidForm
         $resolver->setDefaults([
             static::OPTION_RECURRING_SCHEDULE => null,
             'constraints' => [
-                new Callback([$this->getFactory()->createCadenceOptionsValidator(), 'validateScheduleEditCadenceOptions']),
+                new Callback([$this->getFactory()->createCadenceFormValidator(), 'validateScheduleEditCadence']),
             ],
         ]);
     }

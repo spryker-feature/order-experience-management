@@ -55,6 +55,24 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
 
     /**
      * Specification:
+     * - Name of the cadence field holding the numeric interval, as reported by a cadence type plugin.
+     * - Matches the `cadenceValue` transfer property.
+     *
+     * @api
+     */
+    public const string CADENCE_FIELD_CADENCE_VALUE = 'cadenceValue';
+
+    /**
+     * Specification:
+     * - Name of the cadence field holding the parameter set, as reported by a cadence type plugin.
+     * - Matches the `cadenceOptions` transfer property.
+     *
+     * @api
+     */
+    public const string CADENCE_FIELD_CADENCE_OPTIONS = 'cadenceOptions';
+
+    /**
+     * Specification:
      * - ISO-8601 number of Monday, as returned by date('N').
      *
      * @api

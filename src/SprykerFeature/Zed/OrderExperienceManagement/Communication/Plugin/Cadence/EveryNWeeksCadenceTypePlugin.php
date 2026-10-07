@@ -10,16 +10,18 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence;
 
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\InvalidCadenceValueException;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
 
+/**
+ * @method \SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementBusinessFactory getBusinessFactory()
+ */
 class EveryNWeeksCadenceTypePlugin extends AbstractPlugin implements CadenceTypePluginInterface
 {
     protected const string DISPLAY_KEY = 'recurring_orders.cadence.every_n_weeks';
-
-    protected const int MINIMUM_INTERVAL_IN_WEEKS = 1;
 
     /**
      * {@inheritDoc}
@@ -45,7 +47,7 @@ class EveryNWeeksCadenceTypePlugin extends AbstractPlugin implements CadenceType
         ?int $cadenceValue,
         array $cadenceOptions = [],
     ): DateTimeImmutable {
-        if (!$this->isValueValid($cadenceValue)) {
+        if (!$this->isCadenceValid($cadenceValue, $cadenceOptions)->getIsSuccess()) {
             throw new InvalidCadenceValueException(
                 sprintf('Cadence type "%s" requires a positive integer cadence value.', $this->getName()),
             );
@@ -58,42 +60,14 @@ class EveryNWeeksCadenceTypePlugin extends AbstractPlugin implements CadenceType
      * {@inheritDoc}
      *
      * @api
-     */
-    public function isValueRequired(): bool
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function isValueValid(?int $cadenceValue): bool
-    {
-        return $cadenceValue !== null && $cadenceValue >= static::MINIMUM_INTERVAL_IN_WEEKS;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function areOptionsRequired(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
      *
      * @param array<string> $cadenceOptions
      */
-    public function areOptionsValid(array $cadenceOptions): bool
+    public function isCadenceValid(?int $cadenceValue, array $cadenceOptions): CadenceValidationResponseTransfer
     {
-        return true;
+        return $this->getBusinessFactory()
+            ->createWeekIntervalValidator()
+            ->isIntervalValid($cadenceValue);
     }
 
     /**

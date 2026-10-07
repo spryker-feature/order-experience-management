@@ -12,6 +12,7 @@ namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Cadence;
 use Codeception\Test\Unit;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\CadenceResolver;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\EveryNWeeksCadenceTypePlugin;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\Cadence\WeeklyCadenceTypePlugin;
 use SprykerFeatureTest\Zed\OrderExperienceManagement\ByDaysCadenceTypePluginStub;
 
@@ -30,36 +31,38 @@ class CadenceResolverTest extends Unit
 {
     protected const string CADENCE_TYPE_UNREGISTERED = 'quarterly';
 
-    public function testAreOptionsRequiredIsAnsweredByTheMatchingCadenceTypePlugin(): void
+    public function testValidationResponseReportsTheRequiredCadenceFieldsOfTheMatchingPlugin(): void
     {
         // Arrange
         $cadenceResolver = $this->createCadenceResolver();
 
         // Act
-        $areOptionsRequiredForByDays = $cadenceResolver->areOptionsRequired(
+        $byDaysResponseTransfer = $cadenceResolver->isCadenceValid(
             SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            null,
+            ['1'],
         );
-        $areOptionsRequiredForWeekly = $cadenceResolver->areOptionsRequired(
+        $everyNWeeksResponseTransfer = $cadenceResolver->isCadenceValid(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS,
+            3,
+            [],
+        );
+        $weeklyResponseTransfer = $cadenceResolver->isCadenceValid(
             SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+            null,
+            [],
         );
 
         // Assert
-        $this->assertTrue($areOptionsRequiredForByDays);
-        $this->assertFalse($areOptionsRequiredForWeekly);
-    }
-
-    public function testIsValueRequiredIsAnsweredByTheMatchingCadenceTypePlugin(): void
-    {
-        // Arrange
-        $cadenceResolver = $this->createCadenceResolver();
-
-        // Act
-        $isValueRequired = $cadenceResolver->isValueRequired(
-            SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+        $this->assertSame(
+            [SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_OPTIONS],
+            $byDaysResponseTransfer->getRequiredCadenceFields(),
         );
-
-        // Assert
-        $this->assertFalse($isValueRequired);
+        $this->assertSame(
+            [SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_VALUE],
+            $everyNWeeksResponseTransfer->getRequiredCadenceFields(),
+        );
+        $this->assertSame([], $weeklyResponseTransfer->getRequiredCadenceFields());
     }
 
     /**
@@ -67,18 +70,19 @@ class CadenceResolverTest extends Unit
      *
      * @param array<string> $cadenceOptions
      */
-    public function testAreOptionsValidDelegatesToTheByDaysCadenceTypePlugin(
+    public function testIsCadenceValidDelegatesToTheByDaysCadenceTypePlugin(
         array $cadenceOptions,
-        bool $expectedIsValid
+        bool $expectedIsSuccess
     ): void {
         // Act
-        $isValid = $this->createCadenceResolver()->areOptionsValid(
+        $cadenceValidationResponseTransfer = $this->createCadenceResolver()->isCadenceValid(
             SharedOrderExperienceManagementConfig::CADENCE_TYPE_BY_DAYS,
+            null,
             $cadenceOptions,
         );
 
         // Assert
-        $this->assertSame($expectedIsValid, $isValid);
+        $this->assertSame($expectedIsSuccess, $cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     /**
@@ -94,36 +98,55 @@ class CadenceResolverTest extends Unit
         ];
     }
 
-    public function testAreOptionsValidReturnsTrueForCadenceTypeThatTakesNoOptions(): void
+    public function testIsCadenceValidCarriesTheFailureMessageFromThePlugin(): void
     {
         // Act
-        $isValid = $this->createCadenceResolver()->areOptionsValid(
-            SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+        $cadenceValidationResponseTransfer = $this->createCadenceResolver()->isCadenceValid(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_EVERY_N_WEEKS,
+            null,
             [],
         );
 
         // Assert
-        $this->assertTrue($isValid);
+        $this->assertFalse($cadenceValidationResponseTransfer->getIsSuccess());
+        $this->assertSame(
+            'recurring_orders.cadence.validation.value_required',
+            $cadenceValidationResponseTransfer->getMessage(),
+        );
+    }
+
+    public function testIsCadenceValidReturnsSuccessForCadenceTypeThatTakesNoParameters(): void
+    {
+        // Act
+        $cadenceValidationResponseTransfer = $this->createCadenceResolver()->isCadenceValid(
+            SharedOrderExperienceManagementConfig::CADENCE_TYPE_WEEKLY,
+            null,
+            [],
+        );
+
+        // Assert
+        $this->assertTrue($cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     public function testValidationFailsClosedForAnUnregisteredCadenceType(): void
     {
-        // Arrange
-        $cadenceResolver = $this->createCadenceResolver();
-
         // Act
-        $isValueValid = $cadenceResolver->isValueValid(static::CADENCE_TYPE_UNREGISTERED, 1);
-        $areOptionsValid = $cadenceResolver->areOptionsValid(static::CADENCE_TYPE_UNREGISTERED, ['1']);
+        $cadenceValidationResponseTransfer = $this->createCadenceResolver()->isCadenceValid(
+            static::CADENCE_TYPE_UNREGISTERED,
+            1,
+            ['1'],
+        );
 
         // Assert
-        $this->assertFalse($isValueValid);
-        $this->assertFalse($areOptionsValid);
+        $this->assertFalse($cadenceValidationResponseTransfer->getIsSuccess());
+        $this->assertSame([], $cadenceValidationResponseTransfer->getRequiredCadenceFields());
     }
 
     protected function createCadenceResolver(): CadenceResolver
     {
         return new CadenceResolver([
             new WeeklyCadenceTypePlugin(),
+            new EveryNWeeksCadenceTypePlugin(),
             new ByDaysCadenceTypePluginStub(),
         ]);
     }

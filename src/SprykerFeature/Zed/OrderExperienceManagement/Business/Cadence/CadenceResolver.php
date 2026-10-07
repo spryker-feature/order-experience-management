@@ -10,12 +10,15 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
 
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Exception\UnsupportedCadenceTypeException;
 use SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface;
 
 class CadenceResolver implements CadenceResolverInterface
 {
+    protected const string GLOSSARY_KEY_CADENCE_TYPE_UNSUPPORTED = 'recurring_orders.checkout.validation.cadence_required';
+
     /**
      * @param array<\SprykerFeature\Zed\OrderExperienceManagement\Dependency\Plugin\CadenceTypePluginInterface> $cadenceTypePlugins
      */
@@ -60,27 +63,23 @@ class CadenceResolver implements CadenceResolverInterface
         return $this->findCadenceTypePlugin($cadenceType) !== null;
     }
 
-    public function isValueRequired(string $cadenceType): bool
-    {
-        return $this->findCadenceTypePlugin($cadenceType)?->isValueRequired() ?? false;
-    }
-
-    public function isValueValid(string $cadenceType, ?int $cadenceValue): bool
-    {
-        return $this->findCadenceTypePlugin($cadenceType)?->isValueValid($cadenceValue) ?? false;
-    }
-
-    public function areOptionsRequired(string $cadenceType): bool
-    {
-        return $this->findCadenceTypePlugin($cadenceType)?->areOptionsRequired() ?? false;
-    }
-
     /**
      * @param array<string> $cadenceOptions
      */
-    public function areOptionsValid(string $cadenceType, array $cadenceOptions): bool
-    {
-        return $this->findCadenceTypePlugin($cadenceType)?->areOptionsValid($cadenceOptions) ?? false;
+    public function isCadenceValid(
+        string $cadenceType,
+        ?int $cadenceValue,
+        array $cadenceOptions,
+    ): CadenceValidationResponseTransfer {
+        $cadenceTypePlugin = $this->findCadenceTypePlugin($cadenceType);
+
+        if ($cadenceTypePlugin === null) {
+            return (new CadenceValidationResponseTransfer())
+                ->setIsSuccess(false)
+                ->setMessage(static::GLOSSARY_KEY_CADENCE_TYPE_UNSUPPORTED);
+        }
+
+        return $cadenceTypePlugin->isCadenceValid($cadenceValue, $cadenceOptions);
     }
 
     /**

@@ -186,7 +186,7 @@ class UpdateRecurringOrderSettingsOnQuoteTest extends Unit
         // Assert
         $this->assertFalse($responseTransfer->getIsSuccessful());
         $this->assertSame(
-            'recurring_orders.checkout.error.cadence_value_required',
+            'recurring_orders.cadence.validation.value_required',
             $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
         );
     }
@@ -271,7 +271,7 @@ class UpdateRecurringOrderSettingsOnQuoteTest extends Unit
         // Assert
         $this->assertFalse($responseTransfer->getIsSuccessful());
         $this->assertSame(
-            'recurring_orders.checkout.error.days_required',
+            'recurring_orders.cadence.validation.days_required',
             $responseTransfer->getErrors()->offsetGet(0)->getMessage(),
         );
     }

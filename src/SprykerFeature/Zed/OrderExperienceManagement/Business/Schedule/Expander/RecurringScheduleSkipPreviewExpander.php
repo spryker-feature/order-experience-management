@@ -50,11 +50,13 @@ class RecurringScheduleSkipPreviewExpander implements RecurringScheduleExpanderI
             return;
         }
 
-        if (!$this->cadenceResolver->isValueValid($cadenceType, $recurringScheduleTransfer->getCadenceValue())) {
-            return;
-        }
+        $cadenceValidationResponseTransfer = $this->cadenceResolver->isCadenceValid(
+            $cadenceType,
+            $recurringScheduleTransfer->getCadenceValue(),
+            $recurringScheduleTransfer->getCadenceOptions(),
+        );
 
-        if (!$this->cadenceResolver->areOptionsValid($cadenceType, $recurringScheduleTransfer->getCadenceOptions())) {
+        if (!$cadenceValidationResponseTransfer->getIsSuccess()) {
             return;
         }
 

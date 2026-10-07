@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Cadence;
+namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Cadence\Validator;
 
 use Codeception\Test\Unit;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\WeekDayOptionsValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence\Validator\WeekDayOptionsValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig;
 
 /**
@@ -22,6 +22,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig
  * @group OrderExperienceManagement
  * @group Business
  * @group Cadence
+ * @group Validator
  * @group WeekDayOptionsValidatorTest
  * Add your own group annotations below this line
  */
@@ -32,13 +33,26 @@ class WeekDayOptionsValidatorTest extends Unit
      *
      * @param array<string> $cadenceOptions
      */
-    public function testAreWeekDaysValid(array $cadenceOptions, bool $expectedIsValid): void
+    public function testAreWeekDaysValid(array $cadenceOptions, bool $expectedIsSuccess): void
     {
         // Act
-        $isValid = $this->createValidator()->areWeekDaysValid($cadenceOptions);
+        $cadenceValidationResponseTransfer = $this->createValidator()->areWeekDaysValid($cadenceOptions);
 
         // Assert
-        $this->assertSame($expectedIsValid, $isValid);
+        $this->assertSame($expectedIsSuccess, $cadenceValidationResponseTransfer->getIsSuccess());
+    }
+
+    public function testReportsTheDaysRequiredMessageAndTheRequiredCadenceField(): void
+    {
+        // Act
+        $cadenceValidationResponseTransfer = $this->createValidator()->areWeekDaysValid([]);
+
+        // Assert
+        $this->assertSame('recurring_orders.cadence.validation.days_required', $cadenceValidationResponseTransfer->getMessage());
+        $this->assertSame(
+            [SharedOrderExperienceManagementConfig::CADENCE_FIELD_CADENCE_OPTIONS],
+            $cadenceValidationResponseTransfer->getRequiredCadenceFields(),
+        );
     }
 
     /**
@@ -63,10 +77,10 @@ class WeekDayOptionsValidatorTest extends Unit
         $cadenceOptions = array_map('strval', SharedOrderExperienceManagementConfig::SUPPORTED_WEEK_DAYS);
 
         // Act
-        $isValid = $this->createValidator()->areWeekDaysValid($cadenceOptions);
+        $cadenceValidationResponseTransfer = $this->createValidator()->areWeekDaysValid($cadenceOptions);
 
         // Assert
-        $this->assertTrue($isValid);
+        $this->assertTrue($cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     public function testRejectsAWeekDayTheProjectDoesNotOffer(): void
@@ -78,10 +92,10 @@ class WeekDayOptionsValidatorTest extends Unit
         ]);
 
         // Act
-        $isValid = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_TUESDAY]);
+        $cadenceValidationResponseTransfer = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_TUESDAY]);
 
         // Assert
-        $this->assertFalse($isValid);
+        $this->assertFalse($cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     public function testAcceptsAWeekDayTheProjectOffers(): void
@@ -93,10 +107,10 @@ class WeekDayOptionsValidatorTest extends Unit
         ]);
 
         // Act
-        $isValid = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_FRIDAY]);
+        $cadenceValidationResponseTransfer = $validator->areWeekDaysValid([(string)SharedOrderExperienceManagementConfig::DAY_FRIDAY]);
 
         // Assert
-        $this->assertTrue($isValid);
+        $this->assertTrue($cadenceValidationResponseTransfer->getIsSuccess());
     }
 
     /**

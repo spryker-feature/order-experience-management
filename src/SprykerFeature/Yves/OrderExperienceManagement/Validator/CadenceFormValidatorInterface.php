@@ -12,9 +12,9 @@ namespace SprykerFeature\Yves\OrderExperienceManagement\Validator;
 use Generated\Shared\Transfer\RecurringOrderSettingsTransfer;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
-interface CadenceOptionsValidatorInterface
+interface CadenceFormValidatorInterface
 {
-    public function validateCheckoutCadenceOptions(
+    public function validateCheckoutCadence(
         ?RecurringOrderSettingsTransfer $recurringOrderSettingsTransfer,
         ExecutionContextInterface $context
     ): void;
@@ -22,5 +22,5 @@ interface CadenceOptionsValidatorInterface
     /**
      * @param array<string, mixed>|null $formData
      */
-    public function validateScheduleEditCadenceOptions(?array $formData, ExecutionContextInterface $context): void;
+    public function validateScheduleEditCadence(?array $formData, ExecutionContextInterface $context): void;
 }

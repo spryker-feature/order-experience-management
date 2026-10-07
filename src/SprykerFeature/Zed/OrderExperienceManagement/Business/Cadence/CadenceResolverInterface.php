@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Cadence;
 
 use DateTimeImmutable;
+use Generated\Shared\Transfer\CadenceValidationResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 
 interface CadenceResolverInterface
@@ -28,14 +29,12 @@ interface CadenceResolverInterface
 
     public function isSupported(string $cadenceType): bool;
 
-    public function isValueRequired(string $cadenceType): bool;
-
-    public function isValueValid(string $cadenceType, ?int $cadenceValue): bool;
-
-    public function areOptionsRequired(string $cadenceType): bool;
-
     /**
      * @param array<string> $cadenceOptions
      */
-    public function areOptionsValid(string $cadenceType, array $cadenceOptions): bool;
+    public function isCadenceValid(
+        string $cadenceType,
+        ?int $cadenceValue,
+        array $cadenceOptions
+    ): CadenceValidationResponseTransfer;
 }
