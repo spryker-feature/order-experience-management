@@ -110,11 +110,11 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
     }
 
     /**
-     * @param array<string> $cadenceOptions
+     * @param \ArrayObject<int, string>|array<string> $cadenceOptions
      *
      * @return array<string>
      */
-    protected function getRequiredCadenceFields(string $cadenceType, ?int $cadenceValue, array $cadenceOptions = []): array
+    protected function getRequiredCadenceFields(string $cadenceType, ?int $cadenceValue, iterable $cadenceOptions = []): array
     {
         return $this->cadenceResolver
             ->isCadenceValid($cadenceType, $cadenceValue, $this->castCadenceOptions($cadenceOptions))
