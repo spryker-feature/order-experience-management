@@ -30,6 +30,10 @@ use SprykerFeature\Client\OrderExperienceManagement\OrderExperienceManagementCli
 use SprykerFeature\Service\OrderExperienceManagement\OrderExperienceManagementServiceInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Builder\AddedItemProbeQuoteBuilder;
 use SprykerFeature\Yves\OrderExperienceManagement\Builder\AddedItemProbeQuoteBuilderInterface;
+use SprykerFeature\Yves\OrderExperienceManagement\Builder\PriceToleranceRowBuilder;
+use SprykerFeature\Yves\OrderExperienceManagement\Builder\PriceToleranceRowBuilderInterface;
+use SprykerFeature\Yves\OrderExperienceManagement\Calculator\OrderTotalReviewThresholdCalculator;
+use SprykerFeature\Yves\OrderExperienceManagement\Calculator\OrderTotalReviewThresholdCalculatorInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Checker\AddedProductConcreteRestrictionChecker;
 use SprykerFeature\Yves\OrderExperienceManagement\Checker\AddedProductConcreteRestrictionCheckerInterface;
 use SprykerFeature\Yves\OrderExperienceManagement\Checker\AddedProductMeasurementUnitChecker;
@@ -52,6 +56,7 @@ use SprykerFeature\Yves\OrderExperienceManagement\Form\DataProvider\RecurringOrd
 use SprykerFeature\Yves\OrderExperienceManagement\Form\DataProvider\RecurringScheduleEditFormDataProvider;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderActionForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderApproveForm;
+use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderPriceToleranceForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderResumeForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSearchForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderSelectorForm;
@@ -190,6 +195,25 @@ class OrderExperienceManagementFactory extends AbstractFactory
     public function getRecurringScheduleEditFormExpanderPlugins(): array
     {
         return $this->getProvidedDependency(OrderExperienceManagementDependencyProvider::PLUGINS_RECURRING_SCHEDULE_EDIT_FORM_EXPANDER);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $options
+     */
+    public function createRecurringOrderPriceToleranceForm(array $data = [], array $options = []): FormInterface
+    {
+        return $this->getFormFactory()->create(RecurringOrderPriceToleranceForm::class, $data, $options);
+    }
+
+    public function createOrderTotalReviewThresholdCalculator(): OrderTotalReviewThresholdCalculatorInterface
+    {
+        return new OrderTotalReviewThresholdCalculator($this->getConfig());
+    }
+
+    public function createPriceToleranceRowBuilder(): PriceToleranceRowBuilderInterface
+    {
+        return new PriceToleranceRowBuilder($this->createOrderTotalReviewThresholdCalculator());
     }
 
     public function createRecurringScheduleEditFormDataProvider(): RecurringScheduleEditFormDataProvider

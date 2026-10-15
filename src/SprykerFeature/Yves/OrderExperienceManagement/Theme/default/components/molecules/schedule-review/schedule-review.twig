@@ -51,6 +51,7 @@
             data: {
                 review: data.review,
                 currencyIsoCode: data.schedule.currencyIsoCode,
+                isProductCheckIgnored: data.schedule.isProductPriceChangeIgnored and data.schedule.priceTolerancePercent and data.schedule.priceTolerancePercent.isPositive(),
             },
         } only %}
     {% endblock %}
@@ -93,6 +94,7 @@
                     reviewReasonLabelMap: data.reviewReasonLabelMap,
                     reviewReasonBadgeMap: data.reviewReasonBadgeMap,
                     priceChangeReviewReasons: data.priceChangeReviewReasons,
+                    isProductCheckIgnored: data.schedule.isProductPriceChangeIgnored and data.schedule.priceTolerancePercent and data.schedule.priceTolerancePercent.isPositive(),
                     itemFlagLabelMap: data.itemFlagLabelMap,
                     itemFlagBadgeMap: data.itemFlagBadgeMap,
                     currencyIsoCode: data.schedule.currencyIsoCode,
@@ -107,9 +109,17 @@
         {% endblock %}
 
         {% block unchangedItems %}
+            {% set priceChanges = {} %}
+            {% for unflaggedPriceChange in data.review.unflaggedPriceChanges %}
+                {% set priceChanges = priceChanges | merge({(unflaggedPriceChange.recurringScheduleItem.groupKey): {previous: unflaggedPriceChange.previousPrice, current: unflaggedPriceChange.currentPrice}}) %}
+            {% endfor %}
+
             {% include molecule('review-unchanged-items', 'OrderExperienceManagement') with {
                 data: {
                     unchangedItems: data.review.unchangedItems,
+                    priceChanges: priceChanges,
+                    orderTolerance: data.schedule.priceTolerancePercent,
+                    isProductCheckIgnored: data.schedule.isProductPriceChangeIgnored and data.schedule.priceTolerancePercent and data.schedule.priceTolerancePercent.isPositive(),
                     itemFlagLabelMap: data.itemFlagLabelMap,
                     itemFlagBadgeMap: data.itemFlagBadgeMap,
                     currencyIsoCode: data.schedule.currencyIsoCode,
@@ -189,7 +199,7 @@
                     <li class="{{ config.name }}__changes-list-item">{{ 'recurring_orders.review.modal.new_total' | trans }}: <span class="{{ config.name }}__changes-item-value js-review-total-recalculator__total" data-qa="recurring-order-review-modal-new-total">{{ data.review.updatedTotal | money(true, data.schedule.currencyIsoCode) }}</span></li>
                 </ul>
             {% endblock %}
-            
+
             {% block scopeSelector %}
                 {% include molecule('review-scope-selector', 'OrderExperienceManagement') with {
                     data: {

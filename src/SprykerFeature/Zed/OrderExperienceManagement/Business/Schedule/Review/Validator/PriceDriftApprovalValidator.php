@@ -16,7 +16,7 @@ use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementCon
 
 class PriceDriftApprovalValidator implements ScheduleApprovalValidatorInterface
 {
-    protected const string GLOSSARY_KEY_PRICES_CHANGED = 'recurring_orders.review.prices_changed';
+    public const string GLOSSARY_KEY_PRICES_CHANGED = 'recurring_orders.review.prices_changed';
 
     public function validate(
         RecurringScheduleEventRequestTransfer $recurringScheduleEventRequestTransfer,

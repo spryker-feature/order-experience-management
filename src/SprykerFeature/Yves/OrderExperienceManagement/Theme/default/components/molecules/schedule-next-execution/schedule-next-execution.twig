@@ -10,6 +10,7 @@
     statusActive: '',
     statusPaused: '',
     statusReviewRequired: '',
+    statusProcessing: '',
     skipModalTriggerClassName: required,
     resumeModalTriggerClassName: required,
 } %}
@@ -20,7 +21,7 @@
 {% set priceMode = data.schedule.priceMode %}
 
 {% block component %}
-    {% if status != data.statusPaused %}
+    {% if status not in [data.statusPaused, data.statusProcessing] %}
         {{ parent() }}
     {% endif %}
 {% endblock %}

@@ -99,6 +99,8 @@ class RecurringScheduleController extends AbstractController
             ->createConfigurableBundleNameResolver()
             ->getTranslatedNamesByGlossaryKey($recurringScheduleTransfer);
 
+        $priceToleranceLabelFormatter = $this->getFactory()->createPriceToleranceLabelFormatter();
+
         return [
             'recurringSchedule' => $recurringScheduleTransfer,
             'frequency' => $this->getFactory()
@@ -108,6 +110,9 @@ class RecurringScheduleController extends AbstractController
             'sourceOrderReference' => $sourceOrderReference,
             'merchantNamesByReference' => $merchantNamesByReference,
             'configurableBundleNamesByGlossaryKey' => $configurableBundleNamesByGlossaryKey,
+            'orderToleranceLabel' => $priceToleranceLabelFormatter->formatOrderTolerance($recurringScheduleTransfer),
+            'itemToleranceLabels' => $priceToleranceLabelFormatter->formatItemTolerances($recurringScheduleTransfer),
+            'isProductPriceChangeIgnored' => $priceToleranceLabelFormatter->isProductPriceChangeIgnored($recurringScheduleTransfer),
         ];
     }
 

@@ -214,6 +214,15 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
 
     /**
      * Specification:
+     * - Schedule status indicating the schedule is passing through an intermediate state machine state (notification, validation, order placement).
+     * - Buyer actions are not available until the schedule settles in a stable state.
+     *
+     * @api
+     */
+    public const string STATUS_PROCESSING = 'processing';
+
+    /**
+     * Specification:
      * - Per-item review reason group indicating the current unit price is higher than the stored reference price.
      * - Surfaced on the Review Required page; only price increases require review.
      *
@@ -315,6 +324,50 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
      * @api
      */
     public const string REVIEW_REASON_GROUP_PRICE_UNAVAILABLE = 'price_unavailable';
+
+    /**
+     * Specification:
+     * - Order-level review reason indicating the total of one execution rose beyond the schedule's order-total price tolerance.
+     * - Belongs to no item, it is carried by `RecurringScheduleOrderReviewTransfer.reviewReason`.
+     *
+     * @api
+     */
+    public const string REVIEW_REASON_GROUP_ORDER_TOTAL_INCREASED = 'order_total_increased';
+
+    /**
+     * Specification:
+     * - Upper bound of a price tolerance, in percent.
+     *
+     * @api
+     */
+    public const string PRICE_TOLERANCE_PERCENT_MAX = '999.99';
+
+    /**
+     * Specification:
+     * - Number of decimal places a price tolerance is stored with, matching the `price_tolerance_percent` column scale.
+     *
+     * @api
+     */
+    public const int PRICE_TOLERANCE_PERCENT_SCALE = 2;
+
+    /**
+     * Specification:
+     * - Step a price tolerance moves in, in percent: a tolerance has to be a multiple of it, for example `0.25`.
+     * - Must not have more decimal places than `PRICE_TOLERANCE_PERCENT_SCALE`.
+     *
+     * @api
+     */
+    public const string PRICE_TOLERANCE_PERCENT_STEP = '0.01';
+
+    /**
+     * Specification:
+     * - Number a price tolerance percentage is expressed against, so that a tolerance of `t` allows a price of up to `price * (100 + t) / 100`.
+     * - Fixed by the meaning of a percentage and not a setting: stored tolerances, labels and messages all assume percent.
+     * - Shared by the backend price checks and the storefront trigger prices, so both evaluate a tolerance the same way.
+     *
+     * @api
+     */
+    public const int PRICE_TOLERANCE_PERCENT_DENOMINATOR = 100;
 
     /**
      * Specification:
@@ -587,6 +640,44 @@ class OrderExperienceManagementConfig extends AbstractSharedConfig
     public function getSubstitutableReviewReasons(): array
     {
         return static::SUBSTITUTABLE_REVIEW_REASON_GROUPS;
+    }
+
+    /**
+     * Specification:
+     * - Returns the highest price tolerance in percent a buyer may set on a recurring schedule or one of its items.
+     * - The `price_tolerance_percent` columns of `spy_recurring_schedule` and `spy_recurring_schedule_item` are `DECIMAL(5,2)`, which stores at most 999.99. Raising the value past that requires the column size to be updated in the Propel schema as well.
+     *
+     * @api
+     */
+    public function getPriceToleranceMaxPercent(): string
+    {
+        return static::PRICE_TOLERANCE_PERCENT_MAX;
+    }
+
+    /**
+     * Specification:
+     * - Returns the number of decimal places a price tolerance may have.
+     * - The `price_tolerance_percent` columns of `spy_recurring_schedule` and `spy_recurring_schedule_item` store 2 decimals (`DECIMAL(5,2)`). A larger value requires the column scale to be updated in the Propel schema as well, otherwise the database rounds the stored tolerance and the check uses a different value than the one that was validated.
+     * - The validation messages state it, they take it as a parameter.
+     *
+     * @api
+     */
+    public function getPriceToleranceScale(): int
+    {
+        return static::PRICE_TOLERANCE_PERCENT_SCALE;
+    }
+
+    /**
+     * Specification:
+     * - Returns the step a price tolerance moves in, in percent, for example `0.01` or `0.25`.
+     * - The storefront tolerance fields use it as their step and a tolerance that is not a multiple of it is rejected.
+     * - Must not have more decimal places than `getPriceToleranceScale()`.
+     *
+     * @api
+     */
+    public function getPriceToleranceStep(): string
+    {
+        return static::PRICE_TOLERANCE_PERCENT_STEP;
     }
 
     /**

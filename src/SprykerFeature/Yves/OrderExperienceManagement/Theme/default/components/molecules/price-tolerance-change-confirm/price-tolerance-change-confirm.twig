@@ -1,0 +1,93 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'price-tolerance-change-confirm',
+    tag: 'price-tolerance-change-confirm',
+} %}
+
+{% define data = {
+    discardUrl: required,
+} %}
+
+{% define attributes = {
+    'form-id': required,
+    'tracked-field-selector': required,
+    'confirm-text-one': 'recurring_orders.price_tolerance.confirm.text.one' | trans,
+    'confirm-text-many': 'recurring_orders.price_tolerance.confirm.text.many' | trans,
+    'discard-text-one': 'recurring_orders.price_tolerance.discard.text.one' | trans,
+    'discard-text-many': 'recurring_orders.price_tolerance.discard.text.many' | trans,
+} %}
+
+{% block body %}
+    {% block confirmPopup %}
+        {% include molecule('main-popup') with {
+            class: config.jsName ~ '__confirm-popup',
+            data: {
+                title: 'recurring_orders.price_tolerance.confirm.title' | trans,
+                content: block('confirmContent'),
+            },
+            attributes: {
+                'content-id': config.jsName ~ '-confirm-popup',
+            },
+        } only %}
+    {% endblock %}
+
+    {% block discardPopup %}
+        {% include molecule('main-popup') with {
+            class: config.jsName ~ '__discard-popup',
+            data: {
+                title: 'recurring_orders.price_tolerance.discard.title' | trans,
+                content: block('discardContent'),
+            },
+            attributes: {
+                'content-id': config.jsName ~ '-discard-popup',
+            },
+        } only %}
+    {% endblock %}
+{% endblock %}
+
+{% block keepEditingButton %}
+    <button type="button" class="button button--hollow js-main-popup-close" {{ qa('recurring-order-price-tolerances-keep-editing') }}>
+        {{ 'recurring_orders.price_tolerance.keep_editing' | trans }}
+    </button>
+{% endblock %}
+
+{% block confirmContent %}
+    {% block confirmText %}
+        <p class="{{ config.jsName }}__confirm-text"></p>
+    {% endblock %}
+
+    {% set confirmActionsClassName = 'grid grid--right grid--gap-smaller spacing-top' %}
+    {% block confirmActions %}
+        <div class="{{ confirmActionsClassName }}">
+            {{ block('keepEditingButton') }}
+
+            {% set confirmButtonClassName = 'button spacing-left' %}
+            {% block confirmButton %}
+                <button type="submit" form="{{ attributes['form-id'] }}" class="{{ confirmButtonClassName }} {{ config.jsName }}__confirm" {{ qa('recurring-order-price-tolerances-confirm') }}>
+                    {{ 'recurring_orders.price_tolerance.confirm.action' | trans }}
+                </button>
+            {% endblock %}
+        </div>
+    {% endblock %}
+{% endblock %}
+
+{% block discardContent %}
+    {% block discardText %}
+        <p class="{{ config.jsName }}__discard-text"></p>
+    {% endblock %}
+
+    {% set discardActionsClassName = 'grid grid--right grid--gap-smaller spacing-top' %}
+    {% block discardActions %}
+        <div class="{{ discardActionsClassName }}">
+            {{ block('keepEditingButton') }}
+
+            {% set discardButtonClassName = 'button button--alert spacing-left' %}
+            {% block discardButton %}
+                <a href="{{ data.discardUrl }}" class="{{ discardButtonClassName }} {{ config.jsName }}__discard" {{ qa('recurring-order-price-tolerances-discard') }}>
+                    {{ 'recurring_orders.price_tolerance.discard.action' | trans }}
+                </a>
+            {% endblock %}
+        </div>
+    {% endblock %}
+{% endblock %}

@@ -112,3 +112,14 @@ Thursday,Donnerstag
 Friday,Freitag
 Saturday,Samstag
 Sunday,Sonntag
+"Price Tolerance",Preistoleranz
+"Unit Price Tolerance",Stückpreistoleranz
+"Unit Price",Stückpreis
+"Order Price Tolerance","Preistoleranz der Bestellung"
+On,Ein
+Off,Aus
+"%tolerance% (product price changes ignored)","%tolerance% (Preisänderungen einzelner Produkte werden ignoriert)"
+Yes,Ja
+No,Nein
+Any,Beliebig
+Processing,"In Bearbeitung"

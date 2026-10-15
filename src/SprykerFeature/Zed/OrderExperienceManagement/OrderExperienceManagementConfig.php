@@ -69,6 +69,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             'Review required' => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
             'Cancelled' => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
             'Failed' => SharedOrderExperienceManagementConfig::STATUS_FAILED,
+            'Processing' => SharedOrderExperienceManagementConfig::STATUS_PROCESSING,
         ];
     }
 
@@ -263,6 +264,22 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     protected const string CONFIGURATION_KEY_RECURRING_ORDERS_GENERAL_SCHEDULE_GRACE_PERIOD_HOURS = 'recurring_orders:general:schedule:grace_period_hours';
 
+    protected const string SM_STATE_PRE_TRIGGER_NOTIFIED = 'pre_trigger_notified';
+
+    protected const string SM_STATE_NOTIFYING = 'notifying';
+
+    protected const string SM_STATE_ORDER_PLACED = 'order_placed';
+
+    protected const string SM_STATE_CONFIRMED = 'confirmed';
+
+    protected const string SM_STATE_COMPLETING = 'completing';
+
+    protected const string SM_STATE_SKIPPED = 'skipped';
+
+    protected const string SM_EVENT_NOTIFY_BUYER = 'notify-buyer';
+
+    protected const string SM_EVENT_FINALISE_PLACEMENT = 'finalise-placement';
+
     /**
      * Specification:
      * - Returns the state machine name used to manage recurring schedule lifecycle.
@@ -421,8 +438,9 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Maps each recurring-schedule state machine state name to the public schedule status it represents.
-     * - State names not present in the map resolve to `null` (see `SmStateStatusResolver`).
+     * - Maps each stable recurring-schedule state machine state name to the public schedule status it represents.
+     * - A stable state is one the schedule rests in and the buyer can act on; every state the buyer can trigger an event from must be listed.
+     * - State names not present in the map are intermediate states and resolve to `getTransitionalScheduleStatus()`.
      *
      * @api
      *
@@ -432,12 +450,24 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     {
         return [
             SharedOrderExperienceManagementConfig::STATUS_ACTIVE => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+            static::SM_STATE_PRE_TRIGGER_NOTIFIED => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
             SharedOrderExperienceManagementConfig::STATUS_PAUSED => SharedOrderExperienceManagementConfig::STATUS_PAUSED,
             SharedOrderExperienceManagementConfig::STATUS_CANCELLED => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
             SharedOrderExperienceManagementConfig::STATUS_FAILED => SharedOrderExperienceManagementConfig::STATUS_FAILED,
             SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
             static::INITIAL_STATE => SharedOrderExperienceManagementConfig::STATUS_DRAFT,
         ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the schedule status persisted while the schedule passes through a state machine state not listed in `getSmStateNameToStatusMap()`.
+     *
+     * @api
+     */
+    public function getTransitionalScheduleStatus(): string
+    {
+        return SharedOrderExperienceManagementConfig::STATUS_PROCESSING;
     }
 
     /**
@@ -461,6 +491,39 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getSubstitutableReviewReasons(): array
     {
         return $this->getSharedConfig()->getSubstitutableReviewReasons();
+    }
+
+    /**
+     * Specification:
+     * - Returns the highest price tolerance in percent a buyer may set, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceMaxPercent(): string
+    {
+        return $this->getSharedConfig()->getPriceToleranceMaxPercent();
+    }
+
+    /**
+     * Specification:
+     * - Returns the number of decimal places a price tolerance may have, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceScale(): int
+    {
+        return $this->getSharedConfig()->getPriceToleranceScale();
+    }
+
+    /**
+     * Specification:
+     * - Returns the step a price tolerance moves in, in percent, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceStep(): string
+    {
+        return $this->getSharedConfig()->getPriceToleranceStep();
     }
 
     /**
@@ -514,5 +577,42 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
     public function getSupportedWeekDays(): array
     {
         return $this->getSharedConfig()->getSupportedWeekDays();
+    }
+
+    /**
+     * Specification:
+     * - Returns the transient state machine states a schedule can be safely recovered from, mapped to the `onEnter` event to re-trigger.
+     * - Contains only states whose event can run twice without duplicating an order or advancing the schedule twice.
+     * - `notify-buyer` runs `RecurringOrders/NotifyBuyer`, which sends the upcoming-order email: a run that died after sending it and before saving the state makes the recovery send it a second time. This is accepted, as a duplicate reminder is cheaper than a schedule that never places its order.
+     * - `finalise-placement` has no command, so re-triggering it only moves the schedule on.
+     *
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getRecoverableStuckScheduleEvents(): array
+    {
+        return [
+            static::SM_STATE_NOTIFYING => static::SM_EVENT_NOTIFY_BUYER,
+            static::SM_STATE_ORDER_PLACED => static::SM_EVENT_FINALISE_PLACEMENT,
+        ];
+    }
+
+    /**
+     * Specification:
+     * - Returns the transient state machine states that are only reported when a schedule is stuck in them.
+     * - Their event runs a command that is not idempotent (places an order, advances the trigger date), so re-triggering it could duplicate work.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getReportOnlyStuckScheduleStates(): array
+    {
+        return [
+            static::SM_STATE_CONFIRMED,
+            static::SM_STATE_COMPLETING,
+            static::SM_STATE_SKIPPED,
+        ];
     }
 }

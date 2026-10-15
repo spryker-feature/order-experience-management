@@ -9,6 +9,7 @@ const ADDED_OUTPUT_CLASS = 'js-review-change-summary__added';
 const REMOVE_CHECKBOX_CLASS = 'js-review-total-recalculator__line-remove';
 const LINE_SELECTOR = 'review-quantity-control';
 const PRICE_CHANGED_LINE_SELECTOR = 'review-quantity-control[data-has-price-change="1"]';
+const UNCHANGED_PRICE_CHANGED_LINE_SELECTOR = '[data-unchanged-price-change="1"]';
 const SUBSTITUTE_ENTRY_KEY_ATTRIBUTE = 'data-substitute-entry-key';
 const COUNT_PLACEHOLDER = '%count%';
 
@@ -39,9 +40,16 @@ export default class ReviewChangeSummary extends Component {
         ).length;
     }
 
+    /**
+     * Counts every item with a changed price the buyer accepts: the flagged ones that are not removed, and the ones that
+     * stayed within the tolerance and cannot be removed here.
+     */
     protected countAcceptedPriceChanges(): number {
-        return this.getLines(PRICE_CHANGED_LINE_SELECTOR).filter((line: HTMLElement) => !this.isLineRemoved(line))
-            .length;
+        const acceptedFlaggedLines = this.getLines(PRICE_CHANGED_LINE_SELECTOR).filter(
+            (line: HTMLElement) => !this.isLineRemoved(line),
+        );
+
+        return acceptedFlaggedLines.length + this.getLines(UNCHANGED_PRICE_CHANGED_LINE_SELECTOR).length;
     }
 
     protected getLines(selector: string): HTMLElement[] {

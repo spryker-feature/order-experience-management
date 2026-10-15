@@ -9,6 +9,7 @@
     reviewReasonLabelMap: {},
     reviewReasonBadgeMap: {},
     priceChangeReviewReasons: [],
+    isProductCheckIgnored: false,
     itemFlagLabelMap: {},
     itemFlagBadgeMap: {},
     currencyIsoCode: required,
@@ -40,6 +41,12 @@
                 {% set referenceUnitPrice = data.priceMode == priceModeNet ? flaggedItem.recurringScheduleItem.referenceNetPrice : flaggedItem.recurringScheduleItem.referenceGrossPrice %}
                 {% set hasSubstituteOptions = flaggedItem.substituteOptions | length > 0 %}
                 {% set hasPriceChange = flaggedItem.reviewReasons | filter(reviewReason => reviewReason in data.priceChangeReviewReasons) | length > 0 %}
+                {% set itemTolerance = flaggedItem.recurringScheduleItem.priceTolerancePercent %}
+                {% set isItemToleranceSet = itemTolerance and itemTolerance.isPositive() %}
+
+                {% set isBeyondItemTolerance = isItemToleranceSet and not data.isProductCheckIgnored and not flaggedItem.isFlaggedByOrderTotal %}
+                {% set isWithinItemTolerance = isItemToleranceSet and not data.isProductCheckIgnored and flaggedItem.isFlaggedByOrderTotal %}
+
                 {% set gridClassName = 'grid grid--gap' %}
                 {% set infoColClassName = 'col col--expand' %}
 
@@ -59,9 +66,12 @@
 
                                     {% block itemStatus %}
                                         {% for reviewReason in flaggedItem.reviewReasons %}
+                                            {% set reviewReasonLabel = isBeyondItemTolerance and reviewReason in data.priceChangeReviewReasons
+                                                ? 'recurring_orders.review.reason.price_increased_beyond' | trans({'%tolerance%': itemTolerance.trim() ~ '%'})
+                                                : (data.reviewReasonLabelMap[reviewReason] ?? reviewReason) | trans %}
                                             {% include molecule('status') with {
                                                 data: {
-                                                    label: (data.reviewReasonLabelMap[reviewReason] ?? reviewReason) | trans,
+                                                    label: reviewReasonLabel,
                                                     status: data.reviewReasonBadgeMap[reviewReason],
                                                 },
                                             } only %}
@@ -85,6 +95,9 @@
                                 {% block itemPriceInfo %}
                                     {% if (flaggedItem.previousPrice is not null) %}
                                         <small>{{ (flaggedItem.recurringScheduleItem.nextDeliveryQuantity ?: flaggedItem.recurringScheduleItem.quantity) }}x <s>{{ flaggedItem.previousPrice | money(true, data.currencyIsoCode) }}</s> {{ flaggedItem.currentPrice | money(true, data.currencyIsoCode) }}</small>
+                                        {% if isWithinItemTolerance %}
+                                            <br><small class="text-muted" {{ qa('recurring-order-review-within-tolerance') }}>({{ 'recurring_orders.review.price_note.within_tolerance' | trans({'%tolerance%': itemTolerance.trim() ~ '%'}) }})</small>
+                                        {% endif %}
                                     {% endif %}
                                 {% endblock %}
                             </div>

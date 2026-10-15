@@ -22,6 +22,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\S
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Scope\OccurrenceScheduleReviewScopeStrategy;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Scope\StandingScheduleReviewScopeStrategy;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
 /**
  * Auto-generated group annotations
@@ -131,6 +132,7 @@ class ScheduleReviewItemAdderTest extends Unit
             $this->createMock(ScheduleReviewQuantityApplierInterface::class),
             $this->createMock(ScheduleReviewItemUpdatePlanMergerInterface::class),
             $this->createMock(OrderExperienceManagementEntityManagerInterface::class),
+            $this->createMock(OrderExperienceManagementRepositoryInterface::class),
         );
     }
 

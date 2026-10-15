@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift;
 
 use Generated\Shared\Transfer\CartChangeTransfer;
-use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Generated\Shared\Transfer\RecurringScheduleValidationResultTransfer;
@@ -44,14 +43,10 @@ class ItemPriceDriftChecker extends AbstractPriceDriftChecker
                 $recurringScheduleItemTransfer,
                 $this->resolveReferencePriceByMode($recurringScheduleItemTransfer, $priceMode),
                 $this->resolveItemPriceByMode($repricedItemTransfer, $priceMode),
+                $this->isProductPriceChangeIgnored($recurringScheduleTransfer),
             );
         }
 
         return $recurringScheduleValidationResultTransfer;
-    }
-
-    protected function isBundleRelated(ItemTransfer $itemTransfer): bool
-    {
-        return $itemTransfer->getBundleItemIdentifier() !== null || $itemTransfer->getRelatedBundleItemIdentifier() !== null;
     }
 }

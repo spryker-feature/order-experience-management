@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SprykerFeature\Zed\OrderExperienceManagement\Persistence;
 
+use DateTime;
 use Generated\Shared\Transfer\RecurringScheduleForecastSnapshotTransfer;
 use Generated\Shared\Transfer\RecurringScheduleHistoryTransfer;
 use Generated\Shared\Transfer\RecurringScheduleItemTransfer;
@@ -31,6 +32,8 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
 
     protected const string COLUMN_STATUS = 'Status';
 
+    protected const string COLUMN_UPDATED_AT = 'UpdatedAt';
+
     protected const string COLUMN_REFERENCE_NET_PRICE = 'ReferenceNetPrice';
 
     protected const string COLUMN_REFERENCE_GROSS_PRICE = 'ReferenceGrossPrice';
@@ -42,6 +45,10 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
     protected const string COLUMN_NEXT_DELIVERY_NET_PRICE = 'NextDeliveryNetPrice';
 
     protected const string COLUMN_QUANTITY = 'Quantity';
+
+    protected const string COLUMN_PRICE_TOLERANCE_PERCENT = 'PriceTolerancePercent';
+
+    protected const string DEFAULT_PRICE_TOLERANCE_PERCENT = '0';
 
     protected const int NEXT_DELIVERY_QUANTITY_SKIP = 0;
 
@@ -177,6 +184,41 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
         return $recurringScheduleItemEntitiesById;
     }
 
+    public function updateRecurringScheduleItemPriceTolerances(int $idRecurringSchedule, array $recurringScheduleItemTransfers): void
+    {
+        $groupKeysByTolerance = [];
+        $bundleItemIdentifiersByTolerance = [];
+
+        foreach ($recurringScheduleItemTransfers as $recurringScheduleItemTransfer) {
+            $tolerance = (string)($recurringScheduleItemTransfer->getPriceTolerancePercent()?->toString() ?? static::DEFAULT_PRICE_TOLERANCE_PERCENT);
+            $groupKey = $recurringScheduleItemTransfer->getGroupKey();
+
+            if ($groupKey !== null) {
+                $groupKeysByTolerance[$tolerance][] = $groupKey;
+
+                continue;
+            }
+
+            $bundleItemIdentifiersByTolerance[$tolerance][] = $recurringScheduleItemTransfer->getBundleItemIdentifierOrFail();
+        }
+
+        foreach ($groupKeysByTolerance as $tolerance => $groupKeys) {
+            $this->getFactory()
+                ->createRecurringScheduleItemQuery()
+                ->filterByFkRecurringSchedule($idRecurringSchedule)
+                ->filterByGroupKey_In(array_unique($groupKeys))
+                ->update([static::COLUMN_PRICE_TOLERANCE_PERCENT => (string)$tolerance]);
+        }
+
+        foreach ($bundleItemIdentifiersByTolerance as $tolerance => $bundleItemIdentifiers) {
+            $this->getFactory()
+                ->createRecurringScheduleItemQuery()
+                ->filterByFkRecurringSchedule($idRecurringSchedule)
+                ->filterByBundleItemIdentifier_In(array_unique($bundleItemIdentifiers))
+                ->update([static::COLUMN_PRICE_TOLERANCE_PERCENT => (string)$tolerance]);
+        }
+    }
+
     /**
      * @param array<int> $recurringScheduleItemIds
      */
@@ -192,18 +234,23 @@ class OrderExperienceManagementEntityManager extends AbstractEntityManager imple
             ->delete();
     }
 
-    public function updateRecurringScheduleStateMachineState(int $idRecurringSchedule, int $idStateMachineItemState, ?string $status): void
+    public function updateRecurringScheduleStateMachineState(int $idRecurringSchedule, int $idStateMachineItemState, string $status): void
     {
-        $updateData = [static::COLUMN_FK_STATE_MACHINE_ITEM_STATE => $idStateMachineItemState];
-
-        if ($status !== null) {
-            $updateData[static::COLUMN_STATUS] = $status;
-        }
-
         $this->getFactory()
             ->createRecurringScheduleQuery()
             ->filterByIdRecurringSchedule($idRecurringSchedule)
-            ->update($updateData);
+            ->update([
+                static::COLUMN_FK_STATE_MACHINE_ITEM_STATE => $idStateMachineItemState,
+                static::COLUMN_STATUS => $status,
+            ]);
+    }
+
+    public function updateRecurringScheduleUpdatedAt(int $idRecurringSchedule): void
+    {
+        $this->getFactory()
+            ->createRecurringScheduleQuery()
+            ->filterByIdRecurringSchedule($idRecurringSchedule)
+            ->update([static::COLUMN_UPDATED_AT => new DateTime()]);
     }
 
     public function createRecurringScheduleHistory(RecurringScheduleHistoryTransfer $recurringScheduleHistoryTransfer): RecurringScheduleHistoryTransfer

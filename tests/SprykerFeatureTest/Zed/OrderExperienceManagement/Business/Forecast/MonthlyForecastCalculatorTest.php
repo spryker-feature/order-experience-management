@@ -88,6 +88,35 @@ class MonthlyForecastCalculatorTest extends Unit
         $this->assertSame(1000, $forecastCollectionTransfer->getForecasts()->offsetGet(0)->getEstimatedTotal());
     }
 
+    public function testForecastIncludesSchedulesPassingThroughTransitionalState(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $this->createActiveMonthlySchedule($idCustomer, 'EUR', 1, 1000);
+
+        $processingScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_PROCESSING,
+            RecurringScheduleTransfer::CADENCE_TYPE => SharedOrderExperienceManagementConfig::CADENCE_TYPE_MONTHLY,
+            RecurringScheduleTransfer::PRICE_MODE => 'GROSS_MODE',
+            RecurringScheduleTransfer::CURRENCY_ISO_CODE => 'EUR',
+            RecurringScheduleTransfer::FIRST_TRIGGER_DATE => (new DateTimeImmutable('first day of this month'))->format('Y-m-d'),
+            RecurringScheduleTransfer::NEXT_TRIGGER_DATE => (new DateTimeImmutable())->format('Y-m-d'),
+        ]);
+        $this->tester->haveRecurringScheduleItem($processingScheduleTransfer->getIdRecurringScheduleOrFail(), [
+            RecurringScheduleItemTransfer::QUANTITY => 1,
+            RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500,
+        ]);
+
+        // Act
+        $forecastCollectionTransfer = $this->calculateForecast();
+
+        // Assert
+        $forecastTransfer = $this->findForecastByCurrency($forecastCollectionTransfer->getForecasts(), 'EUR');
+        $this->assertNotNull($forecastTransfer);
+        $this->assertSame(1500, $forecastTransfer->getEstimatedTotal());
+        $this->assertSame(2, $forecastTransfer->getScheduleCount());
+    }
+
     public function testForecastGroupsTotalsByCurrency(): void
     {
         // Arrange

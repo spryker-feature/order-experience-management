@@ -106,6 +106,14 @@ class RecurringScheduleMapper implements RecurringScheduleMapperInterface
             $recurringScheduleTransfer->setNextTriggerDate($requestedRecurringScheduleTransfer->getNextTriggerDate());
         }
 
+        if ($requestedRecurringScheduleTransfer->getPriceTolerancePercent() !== null) {
+            $recurringScheduleTransfer->setPriceTolerancePercent($requestedRecurringScheduleTransfer->getPriceTolerancePercent());
+        }
+
+        if ($requestedRecurringScheduleTransfer->getIsProductPriceChangeIgnored() !== null) {
+            $recurringScheduleTransfer->setIsProductPriceChangeIgnored($requestedRecurringScheduleTransfer->getIsProductPriceChangeIgnored());
+        }
+
         return $recurringScheduleTransfer;
     }
 

@@ -35,11 +35,18 @@ interface OrderExperienceManagementEntityManagerInterface
     public function updateRecurringScheduleItemCollection(array $recurringScheduleItemTransfers): void;
 
     /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemTransfer> $recurringScheduleItemTransfers
+     */
+    public function updateRecurringScheduleItemPriceTolerances(int $idRecurringSchedule, array $recurringScheduleItemTransfers): void;
+
+    /**
      * @param array<int> $recurringScheduleItemIds
      */
     public function deleteRecurringScheduleItemsByIds(array $recurringScheduleItemIds): void;
 
-    public function updateRecurringScheduleStateMachineState(int $idRecurringSchedule, int $idStateMachineItemState, ?string $status): void;
+    public function updateRecurringScheduleStateMachineState(int $idRecurringSchedule, int $idStateMachineItemState, string $status): void;
+
+    public function updateRecurringScheduleUpdatedAt(int $idRecurringSchedule): void;
 
     public function createRecurringScheduleHistory(RecurringScheduleHistoryTransfer $recurringScheduleHistoryTransfer): RecurringScheduleHistoryTransfer;
 

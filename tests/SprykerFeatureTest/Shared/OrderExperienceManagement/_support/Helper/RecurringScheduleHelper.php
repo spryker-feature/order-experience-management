@@ -92,6 +92,8 @@ class RecurringScheduleHelper extends Module
 
     protected const string OVERRIDE_ENABLE_STATE_MACHINE = 'enable_state_machine';
 
+    protected const int SECONDS_PER_MINUTE = 60;
+
     /**
      * @param array<string, mixed> $overrides
      */
@@ -390,6 +392,51 @@ class RecurringScheduleHelper extends Module
         return $idSalesOrder;
     }
 
+    public function haveStuckRecurringSchedule(
+        int $idCustomer,
+        string $stateName,
+        int $stuckForMinutes,
+        ?int $lastTouchedMinutesAgo = null,
+        bool $hasStateHistory = true
+    ): int {
+        $idRecurringSchedule = $this->haveRecurringSchedule($idCustomer)->getIdRecurringScheduleOrFail();
+
+        $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
+            ->filterByStateMachineName(OrderExperienceManagementConfig::STATE_MACHINE_NAME)
+            ->filterByName(OrderExperienceManagementConfig::PROCESS_NAME)
+            ->findOneOrCreate();
+        $stateMachineProcessEntity->save();
+
+        $stateMachineItemStateEntity = SpyStateMachineItemStateQuery::create()
+            ->filterByFkStateMachineProcess($stateMachineProcessEntity->getIdStateMachineProcess())
+            ->filterByName($stateName)
+            ->findOneOrCreate();
+        $stateMachineItemStateEntity->save();
+
+        if ($hasStateHistory) {
+            (new SpyStateMachineItemStateHistory())
+                ->setFkStateMachineItemState($stateMachineItemStateEntity->getIdStateMachineItemState())
+                ->setIdentifier($idRecurringSchedule)
+                ->setCreatedAt($this->createTimestampMinutesAgo($stuckForMinutes))
+                ->save();
+        }
+
+        SpyRecurringScheduleQuery::create()
+            ->filterByIdRecurringSchedule($idRecurringSchedule)
+            ->update([
+                'FkStateMachineItemState' => $stateMachineItemStateEntity->getIdStateMachineItemState(),
+                'CreatedAt' => $this->createTimestampMinutesAgo($stuckForMinutes),
+                'UpdatedAt' => $this->createTimestampMinutesAgo($lastTouchedMinutesAgo ?? $stuckForMinutes),
+            ]);
+
+        return $idRecurringSchedule;
+    }
+
+    public function createTimestampMinutesAgo(int $minutesAgo): string
+    {
+        return date('Y-m-d H:i:s', time() - $minutesAgo * static::SECONDS_PER_MINUTE);
+    }
+
     protected function initializeStateMachineState(int $idRecurringSchedule, string $status, bool $enableStateMachine = false): void
     {
         $stateMachineProcessEntity = SpyStateMachineProcessQuery::create()
@@ -657,6 +704,8 @@ class RecurringScheduleHelper extends Module
             ->setCurrencyIsoCode($recurringScheduleTransfer->getCurrencyIsoCodeOrFail())
             ->setPriceMode($recurringScheduleTransfer->getPriceModeOrFail())
             ->setCustomerReference($recurringScheduleTransfer->getCustomerReference())
+            ->setPriceTolerancePercent((string)($recurringScheduleTransfer->getPriceTolerancePercent() ?? 0))
+            ->setIsProductPriceChangeIgnored((bool)$recurringScheduleTransfer->getIsProductPriceChangeIgnored())
             ->setQuoteData($this->resolveQuoteData($recurringScheduleTransfer, $buildQuoteData, $quoteDataOverrides));
 
         $recurringScheduleEntity->save();
@@ -690,6 +739,7 @@ class RecurringScheduleHelper extends Module
             ->setConfiguredBundleGroupKey($recurringScheduleItemTransfer->getConfiguredBundleGroupKey())
             ->setConfigurableBundleName($recurringScheduleItemTransfer->getConfigurableBundleName())
             ->setConfiguredBundleQuantity($recurringScheduleItemTransfer->getConfiguredBundleQuantity())
+            ->setPriceTolerancePercent((string)($recurringScheduleItemTransfer->getPriceTolerancePercent() ?? 0))
             ->setItemData($this->resolveItemData($recurringScheduleItemTransfer, $buildItemData, $configuratorKey));
 
         $recurringScheduleItemEntity->save();

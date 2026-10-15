@@ -7,6 +7,7 @@
         "php": ">=8.3",
         "spryker-shop/merchant-product-offer-widget": "^2.0.0",
         "spryker-shop/shop-application": "^1.0.0",
+        "spryker-shop/shop-ui": "^2.5.0",
         "spryker/application": "^3.46.0",
         "spryker/calculation": "^4.0.0",
         "spryker/cart": "^7.0.0",
@@ -85,7 +86,6 @@
         "spryker-shop/company-page": "Register RecurringOrderMenuItemWidget in the company account navigation sidebar.",
         "spryker-shop/customer-page": "Provides page-layout-customer extended by recurring order list, detail, and review views.",
         "spryker-shop/product-search-widget": "Provides ProductConcreteSearchWidget and the products-list molecule used by the recurring order add-product search bar.",
-        "spryker-shop/shop-ui": "Provides Component base class, AjaxProvider, and app registry used by recurring order web components.",
         "spryker/api-platform": "Provides Backend API functionality.",
         "spryker/router": "Required by RecurringOrderRouteProviderPlugin to register recurring order Yves routes."
     },

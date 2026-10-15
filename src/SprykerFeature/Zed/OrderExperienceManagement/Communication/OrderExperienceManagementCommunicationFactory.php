@@ -21,6 +21,8 @@ use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\DataProvider
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\RecurringScheduleTableFilterForm;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\CadenceLabelFormatter;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\CadenceLabelFormatterInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\PriceToleranceLabelFormatter;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\PriceToleranceLabelFormatterInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Mapper\WeekDayNameMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Plugin\StateMachine\Command\AdvanceScheduleCommandPlugin;
@@ -51,7 +53,13 @@ class OrderExperienceManagementCommunicationFactory extends AbstractCommunicatio
         return new RecurringScheduleTable(
             $this->getFacade(),
             $this->createCadenceLabelFormatter(),
+            $this->createPriceToleranceLabelFormatter(),
         );
+    }
+
+    public function createPriceToleranceLabelFormatter(): PriceToleranceLabelFormatterInterface
+    {
+        return new PriceToleranceLabelFormatter();
     }
 
     public function getTranslatorFacade(): TranslatorFacadeInterface

@@ -46,6 +46,8 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     public const string ROUTE_NAME_RECURRING_ORDER_EDIT = 'recurring-order/edit';
 
+    public const string ROUTE_NAME_RECURRING_ORDER_PRICE_TOLERANCES = 'recurring-orders/price-tolerances';
+
     protected const string PATTERN_RECURRING_ORDER_SAVE = '/recurring-order/save';
 
     protected const string PATTERN_RECURRING_ORDER_CLEAR = '/recurring-order/clear';
@@ -80,6 +82,8 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     protected const string PATTERN_RECURRING_ORDER_EDIT = '/recurring-order/{uuid}/edit';
 
+    protected const string PATTERN_RECURRING_ORDER_PRICE_TOLERANCES = '/recurring-orders/{uuid}/price-tolerances';
+
     /**
      * {@inheritDoc}
      *
@@ -104,6 +108,24 @@ class RecurringOrderRouteProviderPlugin extends AbstractRouteProviderPlugin
         $routeCollection = $this->addProductConcreteSearchRoute($routeCollection);
         $routeCollection = $this->addProductOfferSelectRoute($routeCollection);
         $routeCollection = $this->addEditRoute($routeCollection);
+        $routeCollection = $this->addPriceTolerancesRoute($routeCollection);
+
+        return $routeCollection;
+    }
+
+    /**
+     * @uses \SprykerFeature\Yves\OrderExperienceManagement\Controller\RecurringOrderPriceToleranceController::indexAction()
+     */
+    protected function addPriceTolerancesRoute(RouteCollection $routeCollection): RouteCollection
+    {
+        $route = $this->buildRoute(
+            static::PATTERN_RECURRING_ORDER_PRICE_TOLERANCES,
+            'OrderExperienceManagement',
+            'RecurringOrderPriceTolerance',
+            'index',
+        );
+
+        $routeCollection->add(static::ROUTE_NAME_RECURRING_ORDER_PRICE_TOLERANCES, $route);
 
         return $routeCollection;
     }

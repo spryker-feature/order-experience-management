@@ -174,6 +174,8 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\Recurr
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\RecurringScheduleMapperInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReader;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Reader\RecurringScheduleReaderInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Recovery\StuckScheduleRecoverer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Recovery\StuckScheduleRecovererInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\ConfiguredBundleUnavailabilityExpander;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\ConfiguredBundleUnavailabilityExpanderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\AcceptedItemReviewMapper;
@@ -246,6 +248,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Scope\
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\AddedItemsApprovalValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\BlockingErrorApprovalValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\ItemsRemainingApprovalValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\OrderTotalDriftApprovalValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\PriceDriftApprovalValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\QuantityApprovalValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Validator\ScheduleApprovalValidatorComposite;
@@ -268,11 +271,14 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\Che
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\CheckoutValidationResultBuilderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift\BundlePriceDriftChecker;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift\ItemPriceDriftChecker;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift\OrderTotalPriceDriftChecker;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\PriceDrift\PriceDriftCheckerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringScheduleCheckoutValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringScheduleCheckoutValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePrePlacementValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePrePlacementValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePriceToleranceValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePriceToleranceValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePriceValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringSchedulePriceValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Validator\RecurringScheduleValidationResultExpander;
@@ -511,6 +517,7 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
         return [
             $this->createItemPriceDriftChecker(),
             $this->createBundlePriceDriftChecker(),
+            $this->createOrderTotalPriceDriftChecker(),
         ];
     }
 
@@ -524,6 +531,13 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function createBundlePriceDriftChecker(): PriceDriftCheckerInterface
     {
         return new BundlePriceDriftChecker(
+            $this->createRecurringScheduleItemIndexer(),
+        );
+    }
+
+    public function createOrderTotalPriceDriftChecker(): PriceDriftCheckerInterface
+    {
+        return new OrderTotalPriceDriftChecker(
             $this->createRecurringScheduleItemIndexer(),
         );
     }
@@ -766,6 +780,16 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
         );
     }
 
+    public function createStuckScheduleRecoverer(): StuckScheduleRecovererInterface
+    {
+        return new StuckScheduleRecoverer(
+            $this->getRepository(),
+            $this->getEntityManager(),
+            $this->getStateMachineFacade(),
+            $this->getConfig(),
+        );
+    }
+
     public function createScheduleEventTrigger(): ScheduleEventTriggerInterface
     {
         return new ScheduleEventTrigger(
@@ -852,6 +876,7 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createScopeChosenApprovalValidator(),
             $this->createScheduleAwaitingReviewApprovalValidator(),
             $this->createPriceDriftApprovalValidator(),
+            $this->createOrderTotalDriftApprovalValidator(),
             $this->createItemsRemainingApprovalValidator(),
             $this->createAddedItemsApprovalValidator(),
             $this->createBlockingErrorApprovalValidator(),
@@ -876,6 +901,11 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
     public function createScheduleAwaitingReviewApprovalValidator(): ScheduleApprovalValidatorInterface
     {
         return new ScheduleAwaitingReviewApprovalValidator();
+    }
+
+    public function createOrderTotalDriftApprovalValidator(): ScheduleApprovalValidatorInterface
+    {
+        return new OrderTotalDriftApprovalValidator();
     }
 
     public function createPriceDriftApprovalValidator(): ScheduleApprovalValidatorInterface
@@ -921,6 +951,7 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createScheduleReviewQuantityApplier(),
             $this->createScheduleReviewItemUpdatePlanMerger(),
             $this->getEntityManager(),
+            $this->getRepository(),
         );
     }
 
@@ -1263,7 +1294,13 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createRecurringScheduleMapper(),
             $this->getEntityManager(),
             $this->createCadenceResolver(),
+            $this->createRecurringSchedulePriceToleranceValidator(),
         );
+    }
+
+    public function createRecurringSchedulePriceToleranceValidator(): RecurringSchedulePriceToleranceValidatorInterface
+    {
+        return new RecurringSchedulePriceToleranceValidator($this->getConfig());
     }
 
     public function createRecurringOrderBuyerMailNotificationSender(): RecurringOrderBuyerMailNotificationSenderInterface

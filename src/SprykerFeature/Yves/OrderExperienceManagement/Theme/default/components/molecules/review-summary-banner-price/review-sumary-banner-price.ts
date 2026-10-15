@@ -5,6 +5,10 @@ const CENTS_IN_UNIT = 100;
 
 const PRICE_DECIMAL_PLACES = 2;
 
+const PERCENT_DENOMINATOR = 100;
+
+const CHANGE_DECIMAL_PLACES = 2;
+
 export default class ReviewSummaryBannerPrice extends Component {
     protected init(): void {
         this.recalculate();
@@ -20,6 +24,34 @@ export default class ReviewSummaryBannerPrice extends Component {
         const formattedTotal = this.formatPrice(totalInCents);
         this.textContent = formattedTotal;
         this.updateTotalOutputs(formattedTotal);
+        this.updateChangeOutputs(totalInCents);
+    }
+
+    protected updateChangeOutputs(totalInCents: number): void {
+        const formattedChange = this.formatChange(totalInCents);
+
+        document
+            .querySelectorAll<HTMLElement>(`.${this.getAttribute('change-class-name')}`)
+            .forEach((changeElement: HTMLElement) => {
+                changeElement.textContent = formattedChange;
+            });
+    }
+
+    /**
+     * The relative change of the new total against the original one, for example `(+10.6%)`, written like the one the server
+     * renders in the banner. Empty when there is no original total to compare with.
+     */
+    protected formatChange(totalInCents: number): string {
+        const originalTotal = Number(this.getAttribute('data-original-total')) || 0;
+
+        if (originalTotal <= 0) {
+            return '';
+        }
+
+        const changePercent = ((totalInCents - originalTotal) / originalTotal) * PERCENT_DENOMINATOR;
+        const roundedChange = Number(changePercent.toFixed(CHANGE_DECIMAL_PLACES));
+
+        return `(${roundedChange > 0 ? '+' : ''}${roundedChange}%)`;
     }
 
     protected updateTotalOutputs(formattedTotal: string): void {

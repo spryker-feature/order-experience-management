@@ -36,8 +36,9 @@ class RecurringOrderApproveFormDataProvider
      * drops them: this covers substituted/discontinued lines (which stay purchasable but are being replaced —
      * whether or not a substitute is available or confirmed) and any non-purchasable line (e.g. unavailable
      * products or unavailable configured bundles). A chosen substitute is added separately via the added-items
-     * collection. Remaining purchasable lines carry the accepted price. Unchanged lines are read-only on the
-     * review page and are not seeded. The scope has no default and the price is not editable here: accepting the
+     * collection. Remaining purchasable lines carry the accepted price. Lines flagged because the order total breached
+     * are seeded like any other flagged price rise: approving the order is what accepts the total, and the accepted
+     * prices become the new reference. Unchanged lines are read-only on the review page and are not seeded. The scope has no default and the price is not editable here: accepting the
      * flagged price becomes a change only when the buyer chooses a scope.
      *
      * @return array<int, array<string, mixed>>

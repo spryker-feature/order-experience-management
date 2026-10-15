@@ -7,19 +7,21 @@
 {% define data = {
     review: required,
     currencyIsoCode: required,
+    isProductCheckIgnored: false,
 } %}
 
 {% block component %}
-    {% if data.review.removedItemCount or
+    {% if data.review.orderReview or
+          data.review.removedItemCount or
           data.review.priceChangeCount or
           data.review.substitutedCount or
           data.review.unavailableCount %}
         {{ parent() }}
-    {% else %}
-        <div class="is-hidden">
-            {{ block('newValue') }}
-        </div>
     {% endif %}
+
+    <div class="is-hidden">
+        {{ block('newValue') }}
+    </div>
 {% endblock %}
 
 {% block body %}
@@ -39,7 +41,28 @@
                         {% set summaryParts = summaryParts | merge([item.key | trans({'%count%': item.count})]) %}
                     {% endfor %}
 
-                    {{ summaryParts | join(' | ') }}
+                    {% if summaryParts %}
+                        <p>{{ summaryParts | join(' | ') }}</p>
+                    {% endif %}
+
+                    {% block orderTotalDetails %}
+                        {% set orderReview = data.review.orderReview %}
+
+                        {% if orderReview %}
+                            <p {{ qa('recurring-order-review-order-total') }}>
+                                {{ 'recurring_orders.review.order_total.rose_beyond_tolerance' | trans({
+                                    '%previous_total%': orderReview.previousTotal | money(true, data.currencyIsoCode),
+                                    '%current_total%': orderReview.currentTotal | money(true, data.currencyIsoCode),
+                                    '%increase%': orderReview.increasePercent ~ '%',
+                                    '%tolerance%': orderReview.tolerancePercent.trim() ~ '%',
+                                }) }}
+
+                                {% if orderReview.isOrderTotalOnly %}
+                                    <span {{ qa('recurring-order-review-order-total-only') }}></span>
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    {% endblock %}
                 {% endblock %}
             </div>
             <div class="col">
@@ -47,8 +70,15 @@
                     {% block oldValue %}
                         <s>{{ data.review.originalTotal | money(true, data.currencyIsoCode) }}</s>
                     {% endblock %}
-                    
-                    {{ block('newValue') }}
+
+                    {% block staticNewValue %}
+                        <span data-qa="recurring-order-review-banner-total">
+                            {{ data.review.updatedTotal | money(true, data.currencyIsoCode) }}
+                            {% if data.review.totalChangePercent %}
+                                <span class="{{ config.name }}__change" data-qa="recurring-order-review-banner-change">({{ data.review.totalChangePercent }}%)</span>
+                            {% endif %}
+                        </span>
+                    {% endblock %}
                 {% endblock %}
             </div>
         </div>
@@ -56,11 +86,12 @@
 {% endblock %}
 
 {% block newValue %}
-    <span data-qa="recurring-order-review-footer-total">
+    <span>
         {% include molecule('review-summary-banner-price', 'OrderExperienceManagement') with {
             data: {
                 total: data.review.updatedTotal | money(true, data.currencyIsoCode),
                 currency: data.currencyIsoCode,
+                originalTotal: data.review.originalTotal,
             },
         } only %}
     </span>

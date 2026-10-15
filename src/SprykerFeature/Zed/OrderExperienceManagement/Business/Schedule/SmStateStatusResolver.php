@@ -18,8 +18,8 @@ class SmStateStatusResolver implements SmStateStatusResolverInterface
     ) {
     }
 
-    public function resolveStatus(string $smStateName): ?string
+    public function resolveStatus(string $smStateName): string
     {
-        return $this->config->getSmStateNameToStatusMap()[$smStateName] ?? null;
+        return $this->config->getSmStateNameToStatusMap()[$smStateName] ?? $this->config->getTransitionalScheduleStatus();
     }
 }

@@ -46,6 +46,7 @@ class BundlePriceDriftChecker extends AbstractPriceDriftChecker
                 $recurringScheduleItemTransfer,
                 $this->resolveReferencePriceByMode($recurringScheduleItemTransfer, $priceMode),
                 $currentPrice,
+                $this->isProductPriceChangeIgnored($recurringScheduleTransfer),
             );
         }
 

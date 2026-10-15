@@ -8,6 +8,7 @@
     schedule: [],
     itemFlagLabelMap: [],
     itemFlagBadgeMap: [],
+    orderReviewThreshold: null,
 }%}
 
 {% block component %}
@@ -26,9 +27,23 @@
     {% block table %}
         {% set itemColumns = [
             { id: 'product', title: 'recurring_orders.detail.order_items.column.product' },
+            {
+                id: 'priceTolerance',
+                title: 'recurring_orders.detail.sidebar.price_tolerance',
+                hint: {
+                    text: 'recurring_orders.detail.order_items.price_tolerance.hint',
+                    label: 'recurring_orders.detail.order_items.price_tolerance.hint_label',
+                    attributes: {
+                        'data-qa': 'recurring-order-price-tolerance-hint',
+                    },
+                },
+            },
             { id: 'quantity', title: 'recurring_orders.detail.order_items.column.quantity' },
             { id: 'total', title: 'recurring_orders.detail.order_items.column.total' },
         ] %}
+
+        {% set orderTolerance = data.schedule.priceTolerancePercent %}
+        {% set isProductCheckIgnored = data.schedule.isProductPriceChangeIgnored and orderTolerance and orderTolerance.isPositive() %}
 
         {% set itemRows = [] %}
         {% for item in data.schedule.items %}
@@ -52,10 +67,24 @@
                 <input type="number" class="{{ config.jsName }}__qty-input is-hidden" data-item-id="{{ item.idRecurringScheduleItem }}" value="{{ itemQuantity }}" min="1">
             {% endset %}
 
+            {% set priceTolerance = item.priceTolerancePercent %}
+
+            {% if isProductCheckIgnored %}
+                {% set priceToleranceLabel = 'recurring_orders.price_tolerance.order_total.title' | trans %}
+            {% elseif priceTolerance is not null and priceTolerance.isPositive() %}
+                {% set priceToleranceLabel = '+' ~ priceTolerance.trim() ~ '%' %}
+            {% else %}
+                {% set priceToleranceLabel = 'recurring_orders.price_tolerance.products.any_increase' | trans %}
+            {% endif %}
+            {% set priceToleranceCell %}
+                <span class="status" data-qa="recurring-order-detail-item-price-tolerance">{{ priceToleranceLabel }}</span>
+            {% endset %}
+
             {% set totalCell = item.itemTotal | money(true, data.schedule.currencyIsoCode) %}
 
             {% set itemRows = itemRows | merge([{
                 product: productCell,
+                priceTolerance: priceToleranceCell,
                 quantity: quantityCell,
                 total: totalCell,
             }]) %}
@@ -73,12 +102,22 @@
     {% block summary%}
         <div class="grid grid--justify spacing-top--small">
             <div class="col">
+                <strong>{{ 'recurring_orders.detail.estimated_total.label' | trans }}</strong><br>
                 <small class="text-muted">{{ 'recurring_orders.detail.estimated_total.info' | trans }}</small>
             </div>
             <div class="col col--right">
-                <strong>{{ 'recurring_orders.detail.estimated_total.label' | trans }}:
-                    {{ data.schedule.estimatedTotal | money(true, data.schedule.currencyIsoCode) }}
-                </strong>
+                <strong>{{ data.schedule.estimatedTotal | money(true, data.schedule.currencyIsoCode) }}</strong>
+                {% block autoApprovedLimit %}
+                    {% if data.orderReviewThreshold is not null %}
+                        <br>
+                        <small class="text-muted" {{ qa('recurring-order-detail-auto-approved-limit') }}>
+                            {{ 'recurring_orders.detail.estimated_total.auto_approved' | trans({
+                                '%threshold%': data.orderReviewThreshold | money(true, data.schedule.currencyIsoCode),
+                                '%tolerance%': data.schedule.priceTolerancePercent.trim() ~ '%',
+                            }) }}
+                        </small>
+                    {% endif %}
+                {% endblock %}
             </div>
         </div>
     {% endblock %}

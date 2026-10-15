@@ -31,10 +31,12 @@ use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringSchedule;
 use Orm\Zed\OrderExperienceManagement\Persistence\SpyRecurringScheduleQuery;
 use Orm\Zed\Sales\Persistence\Map\SpySalesOrderTableMap;
 use Orm\Zed\Sales\Persistence\Map\SpySalesOrderTotalsTableMap;
+use Orm\Zed\StateMachine\Persistence\Map\SpyStateMachineItemStateHistoryTableMap;
 use Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateHistory;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\ActiveQuery\Join;
 use Propel\Runtime\ActiveQuery\ModelCriteria;
+use Spryker\DecimalObject\Decimal;
 use Spryker\Zed\Kernel\Persistence\AbstractRepository;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleForecastMapper;
@@ -45,6 +47,10 @@ use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\Recur
  */
 class OrderExperienceManagementRepository extends AbstractRepository implements OrderExperienceManagementRepositoryInterface
 {
+    protected const string ALIAS_STATE_ENTERED_AT = 'state_entered_at';
+
+    protected const int STATE_HISTORY_LOOKUP_CHUNK_SIZE = 1000;
+
     protected const string VIRTUAL_COL_ORDER_REFERENCE = 'order_reference';
 
     protected const string VIRTUAL_COL_LAST_EXECUTION_DATE = 'last_execution_date';
@@ -55,6 +61,8 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
      * @see \Spryker\Shared\Price\PriceConfig::PRICE_MODE_NET
      */
     protected const string PRICE_MODE_NET = 'NET_MODE';
+
+    protected const int PRICE_TOLERANCE_PERCENT_NONE = 0;
 
     protected const array SORT_FIELD_MAP = [
         'spy_recurring_schedule.name' => SpyRecurringScheduleTableMap::COL_NAME,
@@ -244,6 +252,126 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
             ->findOne();
     }
 
+    /**
+     * @module StateMachine
+     *
+     * @param array<string> $stateNames
+     *
+     * @return array<\Generated\Shared\Transfer\RecurringScheduleStuckItemTransfer>
+     */
+    public function getRecurringScheduleStuckItems(string $stateMachineName, array $stateNames): array
+    {
+        $stateNamesById = $this->getStateNamesByIdForStateMachine($stateMachineName, $stateNames);
+
+        if ($stateNamesById === []) {
+            return [];
+        }
+
+        /** @var array<array<string, mixed>> $scheduleRows */
+        $scheduleRows = $this->getFactory()
+            ->createRecurringScheduleQuery()
+            ->filterByFkStateMachineItemState_In(array_keys($stateNamesById))
+            ->select([
+                SpyRecurringScheduleTableMap::COL_ID_RECURRING_SCHEDULE,
+                SpyRecurringScheduleTableMap::COL_FK_STATE_MACHINE_ITEM_STATE,
+                SpyRecurringScheduleTableMap::COL_CREATED_AT,
+                SpyRecurringScheduleTableMap::COL_UPDATED_AT,
+            ])
+            ->find()
+            ->getData();
+
+        $stateEnteredAtMap = $this->getStateEnteredAtMap(
+            array_column($scheduleRows, SpyRecurringScheduleTableMap::COL_ID_RECURRING_SCHEDULE),
+            array_keys($stateNamesById),
+        );
+
+        return $this->getFactory()
+            ->createRecurringScheduleStuckItemMapper()
+            ->mapScheduleRowsToRecurringScheduleStuckItemTransfers($scheduleRows, $stateNamesById, $stateEnteredAtMap);
+    }
+
+    /**
+     * @module StateMachine
+     *
+     * @param array<string> $stateNames
+     *
+     * @return array<int, string>
+     */
+    protected function getStateNamesByIdForStateMachine(string $stateMachineName, array $stateNames): array
+    {
+        /** @var \Orm\Zed\StateMachine\Persistence\SpyStateMachineItemStateQuery $stateQuery */
+        $stateQuery = $this->getFactory()
+            ->createStateMachineItemStateQuery()
+            ->filterByName_In($stateNames)
+            ->useProcessQuery()
+                ->filterByStateMachineName($stateMachineName)
+            ->endUse();
+
+        $stateNamesById = [];
+
+        foreach ($stateQuery->find() as $stateEntity) {
+            $stateNamesById[$stateEntity->getIdStateMachineItemState()] = $stateEntity->getName();
+        }
+
+        return $stateNamesById;
+    }
+
+    /**
+     * @module StateMachine
+     *
+     * @param array<int|string> $scheduleIds
+     * @param array<int> $stateIds
+     *
+     * @return array<int, array<int, string>>
+     */
+    protected function getStateEnteredAtMap(array $scheduleIds, array $stateIds): array
+    {
+        $stateEnteredAtMap = [];
+
+        foreach (array_chunk($scheduleIds, max(1, static::STATE_HISTORY_LOOKUP_CHUNK_SIZE)) as $scheduleIdsChunk) {
+            $stateEnteredAtMap += $this->getStateEnteredAtMapChunk($scheduleIdsChunk, $stateIds);
+        }
+
+        return $stateEnteredAtMap;
+    }
+
+    /**
+     * @module StateMachine
+     *
+     * @param array<int|string> $scheduleIds
+     * @param array<int> $stateIds
+     *
+     * @return array<int, array<int, string>>
+     */
+    protected function getStateEnteredAtMapChunk(array $scheduleIds, array $stateIds): array
+    {
+        /** @var array<array<string, mixed>> $historyRows */
+        $historyRows = $this->getFactory()
+            ->createStateMachineItemStateHistoryQuery()
+            ->filterByIdentifier_In($scheduleIds)
+            ->filterByFkStateMachineItemState_In($stateIds)
+            ->withColumn(sprintf('MAX(%s)', SpyStateMachineItemStateHistoryTableMap::COL_CREATED_AT), static::ALIAS_STATE_ENTERED_AT)
+            ->select([
+                SpyStateMachineItemStateHistoryTableMap::COL_IDENTIFIER,
+                SpyStateMachineItemStateHistoryTableMap::COL_FK_STATE_MACHINE_ITEM_STATE,
+                static::ALIAS_STATE_ENTERED_AT,
+            ])
+            ->groupBy(SpyStateMachineItemStateHistoryTableMap::COL_IDENTIFIER)
+            ->groupBy(SpyStateMachineItemStateHistoryTableMap::COL_FK_STATE_MACHINE_ITEM_STATE)
+            ->find()
+            ->getData();
+
+        $stateEnteredAtMap = [];
+
+        foreach ($historyRows as $historyRow) {
+            $idRecurringSchedule = (int)$historyRow[SpyStateMachineItemStateHistoryTableMap::COL_IDENTIFIER];
+            $idStateMachineItemState = (int)$historyRow[SpyStateMachineItemStateHistoryTableMap::COL_FK_STATE_MACHINE_ITEM_STATE];
+            $stateEnteredAtMap[$idRecurringSchedule][$idStateMachineItemState] = (string)$historyRow[static::ALIAS_STATE_ENTERED_AT];
+        }
+
+        return $stateEnteredAtMap;
+    }
+
     public function getRecurringScheduleCollection(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {
@@ -256,6 +384,7 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
         if ($conditions !== null) {
             $query = $this->applyConditionsToQuery($query, $conditions);
             $this->applyCycleTotalConditions($query, $conditions);
+            $this->applyPriceToleranceCondition($query, $conditions);
         }
 
         $query = $this->applySortingToQuery($query, $recurringScheduleCriteriaTransfer->getSortCollection());
@@ -491,6 +620,37 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
     }
 
     /**
+     * @param array<int> $recurringScheduleItemIds
+     *
+     * @return array<int, \Spryker\DecimalObject\Decimal>
+     */
+    public function getRecurringScheduleItemPriceTolerancePercentsByIds(array $recurringScheduleItemIds): array
+    {
+        if ($recurringScheduleItemIds === []) {
+            return [];
+        }
+
+        /** @var array<array<string, string>> $rows */
+        $rows = $this->getFactory()
+            ->createRecurringScheduleItemQuery()
+            ->filterByIdRecurringScheduleItem_In($recurringScheduleItemIds)
+            ->select([
+                SpyRecurringScheduleItemTableMap::COL_ID_RECURRING_SCHEDULE_ITEM,
+                SpyRecurringScheduleItemTableMap::COL_PRICE_TOLERANCE_PERCENT,
+            ])
+            ->find()
+            ->getData();
+
+        $priceTolerancePercents = [];
+
+        foreach ($rows as $row) {
+            $priceTolerancePercents[(int)$row[SpyRecurringScheduleItemTableMap::COL_ID_RECURRING_SCHEDULE_ITEM]] = Decimal::create($row[SpyRecurringScheduleItemTableMap::COL_PRICE_TOLERANCE_PERCENT]);
+        }
+
+        return $priceTolerancePercents;
+    }
+
+    /**
      * @return array<int, string>
      */
     public function getRecurringScheduleItemGroupKeysByScheduleId(int $idRecurringSchedule): array
@@ -642,6 +802,51 @@ class OrderExperienceManagementRepository extends AbstractRepository implements 
         $query->having(
             implode(' AND ', $havingClauses),
             count($havingValues) === 1 ? $havingValues[0] : $havingValues,
+        );
+    }
+
+    protected function applyPriceToleranceCondition(
+        SpyRecurringScheduleQuery $query,
+        RecurringScheduleConditionsTransfer $recurringScheduleConditionsTransfer
+    ): void {
+        $isWithPriceTolerance = $recurringScheduleConditionsTransfer->getIsWithPriceTolerance();
+
+        if ($isWithPriceTolerance === null) {
+            return;
+        }
+
+        $query->where(
+            $this->buildPriceToleranceClause($isWithPriceTolerance),
+            [static::PRICE_TOLERANCE_PERCENT_NONE, static::PRICE_TOLERANCE_PERCENT_NONE],
+        );
+    }
+
+    /**
+     * @return literal-string
+     */
+    protected function buildPriceToleranceClause(bool $isWithPriceTolerance): string
+    {
+        $priceTolerancePercentColumn = SpyRecurringScheduleTableMap::COL_PRICE_TOLERANCE_PERCENT;
+        $itemExistsSubQuery = $this->getPriceToleranceItemExistsSubQuery();
+
+        if ($isWithPriceTolerance) {
+            return '(' . $priceTolerancePercentColumn . ' > ? OR EXISTS (' . $itemExistsSubQuery . '))';
+        }
+
+        return '(' . $priceTolerancePercentColumn . ' <= ? AND NOT EXISTS (' . $itemExistsSubQuery . '))';
+    }
+
+    /**
+     * @return literal-string
+     */
+    protected function getPriceToleranceItemExistsSubQuery(): string
+    {
+        return sprintf(
+            'SELECT 1 FROM %s WHERE %s = %s AND %s > ?',
+            SpyRecurringScheduleItemTableMap::TABLE_NAME,
+            SpyRecurringScheduleItemTableMap::COL_FK_RECURRING_SCHEDULE,
+            SpyRecurringScheduleTableMap::COL_ID_RECURRING_SCHEDULE,
+            SpyRecurringScheduleItemTableMap::COL_PRICE_TOLERANCE_PERCENT,
         );
     }
 

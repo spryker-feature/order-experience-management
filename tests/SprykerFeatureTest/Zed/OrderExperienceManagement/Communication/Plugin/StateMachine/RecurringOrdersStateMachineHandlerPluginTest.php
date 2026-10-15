@@ -37,6 +37,8 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
 
     protected const string STATE_NAME_OTHER = 'cancelled';
 
+    protected const string STATE_NAME_PRE_TRIGGER_NOTIFIED = 'pre_trigger_notified';
+
     protected OrderExperienceManagementBusinessTester $tester;
 
     protected function setUp(): void
@@ -70,6 +72,72 @@ class RecurringOrdersStateMachineHandlerPluginTest extends Unit
         $this->assertTrue($isUpdated);
         $this->assertSame($idStateMachineItemState, $recurringScheduleEntity->getFkStateMachineItemState());
         $this->assertSame(SharedOrderExperienceManagementConfig::STATUS_PAUSED, $recurringScheduleEntity->getStatus());
+    }
+
+    /**
+     * @dataProvider provideTransitionalStateNames
+     */
+    public function testItemStateUpdatedPersistsProcessingStatusForTransitionalState(string $stateName): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_ACTIVE,
+        ]);
+        $idStateMachineItemState = $this->haveStateMachineItemState($stateName);
+
+        // Act
+        $this->createPlugin()->itemStateUpdated(
+            (new StateMachineItemTransfer())
+                ->setIdentifier($recurringScheduleTransfer->getIdRecurringScheduleOrFail())
+                ->setIdItemState($idStateMachineItemState)
+                ->setStateName($stateName),
+        );
+
+        // Assert
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByIdRecurringSchedule($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
+
+        $this->assertSame(SharedOrderExperienceManagementConfig::STATUS_PROCESSING, $recurringScheduleEntity->getStatus());
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public function provideTransitionalStateNames(): array
+    {
+        return [
+            'validation' => ['validation'],
+            'notifying' => ['notifying'],
+            'order_placed' => ['order_placed'],
+            'confirmed' => ['confirmed'],
+            'completing' => ['completing'],
+            'skipped' => ['skipped'],
+        ];
+    }
+
+    public function testItemStateUpdatedPersistsActiveStatusWhenLeavingTransitionForPreTriggerNotifiedState(): void
+    {
+        // Arrange
+        $idCustomer = (int)$this->tester->haveCustomer()->getIdCustomer();
+        $recurringScheduleTransfer = $this->tester->haveRecurringSchedule($idCustomer, [
+            RecurringScheduleTransfer::STATUS => SharedOrderExperienceManagementConfig::STATUS_PROCESSING,
+        ]);
+        $idStateMachineItemState = $this->haveStateMachineItemState(static::STATE_NAME_PRE_TRIGGER_NOTIFIED);
+
+        // Act
+        $this->createPlugin()->itemStateUpdated(
+            (new StateMachineItemTransfer())
+                ->setIdentifier($recurringScheduleTransfer->getIdRecurringScheduleOrFail())
+                ->setIdItemState($idStateMachineItemState)
+                ->setStateName(static::STATE_NAME_PRE_TRIGGER_NOTIFIED),
+        );
+
+        // Assert
+        $recurringScheduleEntity = SpyRecurringScheduleQuery::create()
+            ->findOneByIdRecurringSchedule($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
+
+        $this->assertSame(SharedOrderExperienceManagementConfig::STATUS_ACTIVE, $recurringScheduleEntity->getStatus());
     }
 
     public function testGetStateMachineItemsByStateIdsReturnsOnlySchedulesInGivenStates(): void

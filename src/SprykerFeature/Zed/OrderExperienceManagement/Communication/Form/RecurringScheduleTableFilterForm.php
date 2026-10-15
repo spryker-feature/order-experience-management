@@ -14,6 +14,7 @@ use Spryker\Zed\Gui\Communication\Form\Type\DatePickerType;
 use Spryker\Zed\Gui\Communication\Form\Type\Select2ComboBoxType;
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Form\DataProvider\RecurringScheduleTableFilterFormDataProvider;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\PriceToleranceLabelFormatter;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
@@ -46,6 +47,12 @@ class RecurringScheduleTableFilterForm extends AbstractType
     public const string FIELD_NEXT_TRIGGER_DATE_FROM = 'nextTriggerDateFrom';
 
     public const string FIELD_NEXT_TRIGGER_DATE_TO = 'nextTriggerDateTo';
+
+    public const string FIELD_HAS_PRICE_TOLERANCE = 'hasPriceTolerance';
+
+    protected const string LABEL_PRICE_TOLERANCE = 'Price Tolerance';
+
+    protected const string PLACEHOLDER_PRICE_TOLERANCE = 'Any';
 
     protected const string RANGE_GROUP_NEXT_TRIGGER_DATE = 'recurring-schedule-next-trigger-date';
 
@@ -100,7 +107,29 @@ class RecurringScheduleTableFilterForm extends AbstractType
             ->addCycleTotalToField($builder)
             ->addNextTriggerDateFromField($builder)
             ->addNextTriggerDateToField($builder)
+            ->addHasPriceToleranceField($builder)
             ->addPreSubmitEventListener($builder);
+    }
+
+    /**
+     * @return $this
+     */
+    protected function addHasPriceToleranceField(FormBuilderInterface $builder)
+    {
+        $builder->add(static::FIELD_HAS_PRICE_TOLERANCE, ChoiceType::class, [
+            'label' => static::LABEL_PRICE_TOLERANCE,
+            'placeholder' => static::PLACEHOLDER_PRICE_TOLERANCE,
+            'required' => false,
+            'multiple' => false,
+            'expanded' => false,
+            'choices' => [
+                PriceToleranceLabelFormatter::LABEL_ON => true,
+                PriceToleranceLabelFormatter::LABEL_OFF => false,
+            ],
+            'choice_translation_domain' => true,
+        ]);
+
+        return $this;
     }
 
     /**

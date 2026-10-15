@@ -23,6 +23,7 @@ use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\OrderExperienceManagementFacadeInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\CadenceLabelFormatterInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Communication\Formatter\PriceToleranceLabelFormatterInterface;
 
 class RecurringScheduleTable extends AbstractTable
 {
@@ -40,6 +41,8 @@ class RecurringScheduleTable extends AbstractTable
 
     protected const string COL_CYCLE_TOTAL = 'cycle_total';
 
+    protected const string COL_PRICE_TOLERANCE = 'price_tolerance';
+
     protected const string COL_NEXT_TRIGGER_DATE = 'next_trigger_date';
 
     protected const string COL_LAST_EXECUTION_DATE = 'last_execution_date';
@@ -47,8 +50,6 @@ class RecurringScheduleTable extends AbstractTable
     protected const string COL_ACTIONS = 'actions';
 
     /**
-     * The Gui table template prepends the current `/module/controller/`, so this is the action-relative path only.
-     *
      * @uses \SprykerFeature\Zed\OrderExperienceManagement\Communication\Controller\RecurringScheduleController::tableAction()
      */
     protected const string URL_TABLE = '/table';
@@ -64,6 +65,11 @@ class RecurringScheduleTable extends AbstractTable
 
     protected const int MONEY_DIVISOR = 100;
 
+    /**
+     * @see \Spryker\Zed\Gui\Communication\Table\AbstractTable::generateTableIdentifier()
+     */
+    protected const string TABLE_IDENTIFIER_PREFIX = 'table-';
+
     protected const array SORTABLE_COLUMN_TO_SORT_FIELD = [
         self::COL_NAME => 'spy_recurring_schedule.name',
         self::COL_STATUS => 'spy_recurring_schedule.status',
@@ -78,6 +84,7 @@ class RecurringScheduleTable extends AbstractTable
         SharedOrderExperienceManagementConfig::STATUS_CANCELLED => 'label-danger',
         SharedOrderExperienceManagementConfig::STATUS_FAILED => 'label-danger',
         SharedOrderExperienceManagementConfig::STATUS_DRAFT => 'label-default',
+        SharedOrderExperienceManagementConfig::STATUS_PROCESSING => 'label-default',
     ];
 
     protected RecurringScheduleTableFilterTransfer $recurringScheduleTableFilterTransfer;
@@ -85,6 +92,7 @@ class RecurringScheduleTable extends AbstractTable
     public function __construct(
         protected readonly OrderExperienceManagementFacadeInterface $orderExperienceManagementFacade,
         protected readonly CadenceLabelFormatterInterface $cadenceLabelFormatter,
+        protected readonly PriceToleranceLabelFormatterInterface $priceToleranceLabelFormatter,
     ) {
         $this->recurringScheduleTableFilterTransfer = new RecurringScheduleTableFilterTransfer();
     }
@@ -92,6 +100,18 @@ class RecurringScheduleTable extends AbstractTable
     public function applyCriteria(?RecurringScheduleTableFilterTransfer $recurringScheduleTableFilterTransfer): void
     {
         $this->recurringScheduleTableFilterTransfer = $recurringScheduleTableFilterTransfer ?? new RecurringScheduleTableFilterTransfer();
+
+        $this->setTableIdentifier($this->buildFilterAwareTableIdentifier());
+    }
+
+    /**
+     * @see \Spryker\Zed\Gui\Communication\Table\AbstractTable::generateTableIdentifier()
+     */
+    protected function buildFilterAwareTableIdentifier(): string
+    {
+        return static::TABLE_IDENTIFIER_PREFIX . md5(
+            static::class . serialize($this->recurringScheduleTableFilterTransfer->toArray()),
+        );
     }
 
     protected function configure(TableConfiguration $config): TableConfiguration
@@ -104,6 +124,7 @@ class RecurringScheduleTable extends AbstractTable
             static::COL_STATUS => 'Status',
             static::COL_FREQUENCY => 'Frequency',
             static::COL_CYCLE_TOTAL => 'Cycle Total',
+            static::COL_PRICE_TOLERANCE => 'Price Tolerance',
             static::COL_NEXT_TRIGGER_DATE => 'Next Trigger Date',
             static::COL_LAST_EXECUTION_DATE => 'Last Execution',
             static::COL_ACTIONS => 'Actions',
@@ -198,6 +219,10 @@ class RecurringScheduleTable extends AbstractTable
             $recurringScheduleConditionsTransfer->setCadenceTypes($recurringScheduleTableFilterTransfer->getCadenceTypes());
         }
 
+        if ($recurringScheduleTableFilterTransfer->getHasPriceTolerance() !== null) {
+            $recurringScheduleConditionsTransfer->setIsWithPriceTolerance($recurringScheduleTableFilterTransfer->getHasPriceTolerance());
+        }
+
         $recurringScheduleConditionsTransfer
             ->setEstimatedTotalMin($recurringScheduleTableFilterTransfer->getCycleTotalFrom())
             ->setEstimatedTotalMax($recurringScheduleTableFilterTransfer->getCycleTotalTo())
@@ -256,6 +281,7 @@ class RecurringScheduleTable extends AbstractTable
             static::COL_STATUS => $this->formatStatus($recurringScheduleTransfer->getStatus()),
             static::COL_FREQUENCY => $this->formatFrequency($recurringScheduleTransfer),
             static::COL_CYCLE_TOTAL => $this->formatCycleTotal($recurringScheduleTransfer),
+            static::COL_PRICE_TOLERANCE => $this->priceToleranceLabelFormatter->formatToleranceState($recurringScheduleTransfer),
             static::COL_NEXT_TRIGGER_DATE => $this->formatDate($recurringScheduleTransfer->getNextTriggerDate(), static::DATE_FORMAT),
             static::COL_LAST_EXECUTION_DATE => $this->formatDate($recurringScheduleTransfer->getLastExecutionDate(), static::DATE_FORMAT),
             static::COL_ACTIONS => $this->buildLinks($recurringScheduleTransfer),

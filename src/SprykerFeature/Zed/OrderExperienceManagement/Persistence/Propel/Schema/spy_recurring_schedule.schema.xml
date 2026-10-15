@@ -29,6 +29,8 @@
         <column name="customer_reference" type="VARCHAR" size="255" required="false"/>
         <column name="locale_name" type="VARCHAR" size="16" required="false"/>
         <column name="quote_data" type="CLOB" required="true"/>
+        <column name="price_tolerance_percent" type="DECIMAL" size="5" scale="2" required="true" defaultValue="0" description="Accepted increase of the execution total, in percent. 0 = the order-total check is off."/>
+        <column name="is_product_price_change_ignored" type="BOOLEAN" required="true" defaultValue="false" description="When true and price_tolerance_percent is above 0, the per-product price checks are not executed and only the order total decides."/>
         <column name="created_at" type="TIMESTAMP" required="true"/>
         <column name="updated_at" type="TIMESTAMP" required="true"/>
 
@@ -94,6 +96,7 @@
         <column name="shipment_unit_gross_price" type="INTEGER" required="false"/>
         <column name="shipment_unit_net_price" type="INTEGER" required="false"/>
         <column name="item_data" type="LONGVARCHAR" required="true"/>
+        <column name="price_tolerance_percent" type="DECIMAL" size="5" scale="2" required="true" defaultValue="0" description="Accepted increase of this item's unit price, in percent. 0 = review any increase."/>
 
         <foreign-key name="spy_recurring_schedule_item-fk_schedule" foreignTable="spy_recurring_schedule" onDelete="CASCADE">
             <reference local="fk_recurring_schedule" foreign="id_recurring_schedule"/>

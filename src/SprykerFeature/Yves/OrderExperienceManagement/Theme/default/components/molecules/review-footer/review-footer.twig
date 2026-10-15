@@ -20,10 +20,11 @@
 {% block body %}
     <div class="{{ gridClassName }}">
         {% block data %}
-            <div class="{{ dataColumnClassName }}">
+            <div class="{{ dataColumnClassName }}" data-qa="recurring-order-review-footer-total">
                 {{ 'recurring_orders.review.footer.new_total' | trans }}:
                 <span class="js-review-total-recalculator__total"
                     data-qa="recurring-order-review-footer-summary"></span>
+                <span class="js-review-total-recalculator__change" data-qa="recurring-order-review-footer-change"></span>
             </div>
         {% endblock %}
 

@@ -186,6 +186,173 @@ class ApproveScheduleReviewTest extends Unit
         $this->assertSame(static::ERROR_MESSAGE_PRICES_CHANGED, $responseTransfer->getErrors()->offsetGet(0)->getMessage());
     }
 
+    public function testReturnsPricesChangedWhenOrderTotalRoseAndBuyerAcceptedNothing(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+        ], static::PRICE_MODE_GROSS, '1', true);
+
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [520, 520]])]);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())->setUuid($uuid)->setIdCustomer($idCustomer);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(static::ERROR_MESSAGE_PRICES_CHANGED, $responseTransfer->getErrors()->offsetGet(0)->getMessage());
+    }
+
+    public function testApprovesOrderTotalOnlyBreachWhenBuyerAcceptsTheDriftedPrices(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+            [RecurringScheduleItemTransfer::SKU => static::SKU_B, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 300, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_B],
+        ], static::PRICE_MODE_GROSS, '1', true);
+
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [520, 520], static::GROUP_KEY_B => [300, 300]])]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(520),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $referencePricesBySku = [];
+
+        foreach ($this->findScheduleItems($idCustomer, $idRecurringSchedule) as $recurringScheduleItemTransfer) {
+            $referencePricesBySku[$recurringScheduleItemTransfer->getSku()] = $recurringScheduleItemTransfer->getReferenceGrossPrice();
+        }
+
+        $this->assertSame([static::SKU_A => 520, static::SKU_B => 300], $referencePricesBySku);
+    }
+
+    public function testReturnsPricesChangedWhenOrderTotalRoseAgainAfterTheBuyerAccepted(): void
+    {
+        // Arrange: the buyer accepted 520 but the catalogue now says 560
+        [$uuid, $idCustomer] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+        ], static::PRICE_MODE_GROSS, '1', true);
+
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [560, 560]])]);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice(520),
+            );
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(static::ERROR_MESSAGE_PRICES_CHANGED, $responseTransfer->getErrors()->offsetGet(0)->getMessage());
+    }
+
+    public function testApprovesWhenOrderTotalRoseWithinTheScheduleTolerance(): void
+    {
+        // Arrange: 500 -> 520 is +4%, inside a 5% tolerance, so nothing needs accepting
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+        ], static::PRICE_MODE_GROSS, '5', true);
+
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [520, 520]])]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        $requestTransfer = (new RecurringScheduleEventRequestTransfer())->setUuid($uuid)->setIdCustomer($idCustomer);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($requestTransfer);
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+    }
+
+    public function testApprovalKeepsTheProductToleranceAndRebaselinesThePrice(): void
+    {
+        // Arrange: A is set to 5%, rose 8% (flagged) and the buyer accepts 540
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A, RecurringScheduleItemTransfer::PRICE_TOLERANCE_PERCENT => '5'],
+        ]);
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [540, 540]])]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($this->createAcceptPriceRequest($uuid, $idCustomer, 540));
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertSame(540, $itemTransfers[0]->getReferenceGrossPrice());
+        $this->assertSame('5', $itemTransfers[0]->getPriceTolerancePercent()->trim()->toString());
+    }
+
+    public function testApprovalAcceptsALaterRiseThatStaysWithinTheProductToleranceOfTheAcceptedPrice(): void
+    {
+        // Arrange: accepted 540, the catalogue now says 560 (+3.7% on the accepted price, within the 5%)
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A, RecurringScheduleItemTransfer::PRICE_TOLERANCE_PERCENT => '5'],
+        ]);
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [560, 560]])]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($this->createAcceptPriceRequest($uuid, $idCustomer, 540));
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+    }
+
+    public function testApprovalIsRefusedWhenThePriceRoseBeyondTheProductToleranceOfTheAcceptedPrice(): void
+    {
+        // Arrange: accepted 540, the catalogue now says 600 (+11% on the accepted price)
+        [$uuid, $idCustomer] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A, RecurringScheduleItemTransfer::PRICE_TOLERANCE_PERCENT => '5'],
+        ]);
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [600, 600]])]);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($this->createAcceptPriceRequest($uuid, $idCustomer, 540));
+
+        // Assert
+        $this->assertFalse($responseTransfer->getIsSuccessful());
+        $this->assertSame(static::ERROR_MESSAGE_PRICES_CHANGED, $responseTransfer->getErrors()->offsetGet(0)->getMessage());
+    }
+
+    public function testApprovalIgnoresAProductIncreaseWhenProductPriceChangesAreIgnoredAndTheTotalIsWithinTolerance(): void
+    {
+        // Arrange: 500 -> 520 (+4%) on a product at 0, order tolerance 5% with product changes ignored: nothing to accept
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+        ], static::PRICE_MODE_GROSS, '5', true);
+        $this->tester->setScheduleValidatorPlugins([$this->tester->createPriceScheduleValidatorPlugin([static::GROUP_KEY_A => [520, 520]])]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview((new RecurringScheduleEventRequestTransfer())->setUuid($uuid)->setIdCustomer($idCustomer));
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+    }
+
     public function testReturnsErrorWhenAllItemsAreUnpurchasable(): void
     {
         // Arrange
@@ -915,6 +1082,45 @@ class ApproveScheduleReviewTest extends Unit
         $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
         $this->assertCount(1, $itemTransfers);
         $this->assertSame(5, $itemTransfers[0]->getQuantity());
+    }
+
+    public function testCollapsedStandingRowsKeepTheHighestProductTolerance(): void
+    {
+        // Arrange: one line stored as three rows with tolerances 2%, none and 5%
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A, RecurringScheduleItemTransfer::PRICE_TOLERANCE_PERCENT => '2'],
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A, RecurringScheduleItemTransfer::PRICE_TOLERANCE_PERCENT => '5'],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        // Act
+        $responseTransfer = $this->tester->getFacade()->approveScheduleReview($this->createStandingQuantityRequest($uuid, $idCustomer));
+
+        // Assert
+        $this->assertTrue($responseTransfer->getIsSuccessful());
+
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertCount(1, $itemTransfers);
+        $this->assertSame('5', $itemTransfers[0]->getPriceTolerancePercent()->trim()->toString());
+    }
+
+    public function testCollapsedStandingRowsWithoutAToleranceStayAtTheDefaultZero(): void
+    {
+        // Arrange
+        [$uuid, $idCustomer, $idRecurringSchedule] = $this->haveSchedule(SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED, [
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+            [RecurringScheduleItemTransfer::SKU => static::SKU_A, RecurringScheduleItemTransfer::QUANTITY => 1, RecurringScheduleItemTransfer::REFERENCE_GROSS_PRICE => 500, RecurringScheduleItemTransfer::GROUP_KEY => static::GROUP_KEY_A],
+        ]);
+        $this->tester->enableStateMachineConfirmation($idRecurringSchedule);
+
+        // Act
+        $this->tester->getFacade()->approveScheduleReview($this->createStandingQuantityRequest($uuid, $idCustomer));
+
+        // Assert
+        $itemTransfers = $this->findScheduleItems($idCustomer, $idRecurringSchedule);
+        $this->assertCount(1, $itemTransfers);
+        $this->assertTrue($itemTransfers[0]->getPriceTolerancePercent()->isZero());
     }
 
     public function testDistributesOccurrenceQuantityAcrossSplitGroupWithoutChangingStanding(): void
@@ -1764,14 +1970,21 @@ class ApproveScheduleReviewTest extends Unit
      *
      * @return array{0: string, 1: int, 2: int}
      */
-    protected function haveSchedule(string $status, array $itemOverridesList, string $priceMode = self::PRICE_MODE_GROSS): array
-    {
+    protected function haveSchedule(
+        string $status,
+        array $itemOverridesList,
+        string $priceMode = self::PRICE_MODE_GROSS,
+        string $priceTolerancePercent = '0',
+        bool $isProductPriceChangeIgnored = false,
+    ): array {
         $customerTransfer = $this->tester->haveCustomer();
         $this->tester->pinMailFacadeDependency();
 
         $recurringScheduleTransfer = $this->tester->haveRecurringSchedule((int)$customerTransfer->getIdCustomer(), [
             RecurringScheduleTransfer::STATUS => $status,
             RecurringScheduleTransfer::PRICE_MODE => $priceMode,
+            RecurringScheduleTransfer::PRICE_TOLERANCE_PERCENT => $priceTolerancePercent,
+            RecurringScheduleTransfer::IS_PRODUCT_PRICE_CHANGE_IGNORED => $isProductPriceChangeIgnored,
             static::OVERRIDE_BUILD_QUOTE_DATA => true,
         ]);
         $idRecurringSchedule = $recurringScheduleTransfer->getIdRecurringScheduleOrFail();
@@ -1865,6 +2078,31 @@ class ApproveScheduleReviewTest extends Unit
     /**
      * @return array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
      */
+    protected function createAcceptPriceRequest(string $uuid, int $idCustomer, int $acceptedPrice): RecurringScheduleEventRequestTransfer
+    {
+        return (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setCurrentPrice($acceptedPrice),
+            );
+    }
+
+    protected function createStandingQuantityRequest(string $uuid, int $idCustomer): RecurringScheduleEventRequestTransfer
+    {
+        return (new RecurringScheduleEventRequestTransfer())
+            ->setUuid($uuid)
+            ->setIdCustomer($idCustomer)
+            ->setScope(SharedOrderExperienceManagementConfig::SCOPE_STANDING)
+            ->addAcceptedItem(
+                (new RecurringScheduleItemReviewTransfer())
+                    ->setRecurringScheduleItem((new RecurringScheduleItemTransfer())->setGroupKey(static::GROUP_KEY_A))
+                    ->setAcceptedQuantity(5),
+            );
+    }
+
     protected function findScheduleItems(int $idCustomer, int $idRecurringSchedule): array
     {
         $criteriaTransfer = (new RecurringScheduleCriteriaTransfer())

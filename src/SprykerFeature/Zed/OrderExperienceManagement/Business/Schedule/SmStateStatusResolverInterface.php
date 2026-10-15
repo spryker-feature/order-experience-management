@@ -11,5 +11,5 @@ namespace SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule;
 
 interface SmStateStatusResolverInterface
 {
-    public function resolveStatus(string $smStateName): ?string;
+    public function resolveStatus(string $smStateName): string;
 }

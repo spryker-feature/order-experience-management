@@ -112,3 +112,14 @@ Thursday,Thursday
 Friday,Friday
 Saturday,Saturday
 Sunday,Sunday
+"Price Tolerance","Price Tolerance"
+"Unit Price Tolerance","Unit Price Tolerance"
+"Unit Price","Unit Price"
+"Order Price Tolerance","Order Price Tolerance"
+On,On
+Off,Off
+"%tolerance% (product price changes ignored)","%tolerance% (product price changes ignored)"
+Yes,Yes
+No,No
+Any,Any
+Processing,Processing

@@ -8,15 +8,18 @@
 {% define attributes = {
     'line-class-name': 'js-review-total-recalculator__line',
     'total-class-name': 'js-review-total-recalculator__total',
+    'change-class-name': 'js-review-total-recalculator__change',
 }%}
 
 {% define data = {
     total: 0,
     currency: 'EUR',
+    originalTotal: 0,
 }%}
 
 {% define attributes = {
     'data-currency': data.currency,
+    'data-original-total': data.originalTotal,
 }%}
 
 {% block body %}

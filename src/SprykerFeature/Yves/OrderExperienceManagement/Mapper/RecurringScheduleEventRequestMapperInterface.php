@@ -32,4 +32,13 @@ interface RecurringScheduleEventRequestMapperInterface
         CustomerTransfer $customerTransfer,
         RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer
     ): RecurringScheduleCollectionRequestTransfer;
+
+    /**
+     * @param array<string, mixed> $formData
+     */
+    public function mapPriceToleranceFormDataToRecurringScheduleCollectionRequest(
+        array $formData,
+        CustomerTransfer $customerTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
+    ): RecurringScheduleCollectionRequestTransfer;
 }

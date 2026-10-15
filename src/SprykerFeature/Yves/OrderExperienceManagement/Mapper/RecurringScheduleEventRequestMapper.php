@@ -21,6 +21,8 @@ use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderAcceptedItemForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderAddedItemForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderApproveForm;
+use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderPriceToleranceForm;
+use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringOrderPriceToleranceItemForm;
 use SprykerFeature\Yves\OrderExperienceManagement\Form\RecurringScheduleEditForm;
 
 class RecurringScheduleEventRequestMapper implements RecurringScheduleEventRequestMapperInterface
@@ -68,6 +70,45 @@ class RecurringScheduleEventRequestMapper implements RecurringScheduleEventReque
     /**
      * @param array<string, mixed> $formData
      */
+    public function mapPriceToleranceFormDataToRecurringScheduleCollectionRequest(
+        array $formData,
+        CustomerTransfer $customerTransfer,
+        RecurringScheduleCollectionRequestTransfer $recurringScheduleCollectionRequestTransfer,
+    ): RecurringScheduleCollectionRequestTransfer {
+        $recurringScheduleTransfer = (new RecurringScheduleTransfer())
+            ->setUuid((string)$formData[RecurringOrderPriceToleranceForm::FIELD_UUID])
+            ->setPriceTolerancePercent((string)($formData[RecurringOrderPriceToleranceForm::FIELD_ORDER_TOLERANCE] ?: '0'))
+            ->setIsProductPriceChangeIgnored((bool)($formData[RecurringOrderPriceToleranceForm::FIELD_IGNORE_PRODUCT_PRICE_CHANGES] ?? false));
+
+        foreach ($formData[RecurringOrderPriceToleranceForm::FIELD_ITEMS] ?? [] as $itemFormData) {
+            $tolerance = $itemFormData[RecurringOrderPriceToleranceItemForm::FIELD_TOLERANCE] ?? null;
+
+            if ($tolerance === null || $tolerance === '') {
+                continue;
+            }
+
+            $recurringScheduleTransfer->addItem($this->mapPriceToleranceItemFormData($itemFormData));
+        }
+
+        return $recurringScheduleCollectionRequestTransfer
+            ->setCustomer($customerTransfer)
+            ->addRecurringSchedule($recurringScheduleTransfer);
+    }
+
+    /**
+     * @param array<string, mixed> $itemFormData
+     */
+    protected function mapPriceToleranceItemFormData(array $itemFormData): RecurringScheduleItemTransfer
+    {
+        $groupKey = (string)($itemFormData[RecurringOrderPriceToleranceItemForm::FIELD_GROUP_KEY] ?? '');
+        $recurringScheduleItemTransfer = new RecurringScheduleItemTransfer();
+        $groupKey !== ''
+            ? $recurringScheduleItemTransfer->setGroupKey($groupKey)
+            : $recurringScheduleItemTransfer->setBundleItemIdentifier((string)($itemFormData[RecurringOrderPriceToleranceItemForm::FIELD_BUNDLE_ITEM_IDENTIFIER] ?? ''));
+
+        return $recurringScheduleItemTransfer->setPriceTolerancePercent((string)$itemFormData[RecurringOrderPriceToleranceItemForm::FIELD_TOLERANCE]);
+    }
+
     public function mapEditFormDataToRecurringScheduleCollectionRequest(
         array $formData,
         CustomerTransfer $customerTransfer,

@@ -166,6 +166,7 @@ class MonthlyForecastCalculator implements MonthlyForecastCalculatorInterface
     {
         $recurringScheduleConditionsTransfer = (new RecurringScheduleConditionsTransfer())
             ->addStatus(SharedOrderExperienceManagementConfig::STATUS_ACTIVE)
+            ->addStatus(SharedOrderExperienceManagementConfig::STATUS_PROCESSING)
             ->setNextTriggerDateFrom($referenceDate->modify($this->config->getForecastPeriodFrom())->format(static::DATE_FORMAT))
             ->setNextTriggerDateTo($referenceDate->modify($this->config->getForecastPeriodTo())->format(static::DATE_FORMAT));
 

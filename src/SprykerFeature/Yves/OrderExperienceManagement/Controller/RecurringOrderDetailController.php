@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SprykerFeature\Yves\OrderExperienceManagement\Controller;
 
 use Generated\Shared\Transfer\PaginationTransfer;
+use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Spryker\Yves\Kernel\View\View;
 use SprykerFeature\Shared\OrderExperienceManagement\OrderExperienceManagementConfig as SharedOrderExperienceManagementConfig;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -90,6 +91,7 @@ class RecurringOrderDetailController extends AbstractRecurringOrderController
                 'statusClassMap' => $config->getStatusBadgeClassMap(),
                 'itemFlagLabelMap' => $config->getItemFlagLabelMap(),
                 'itemFlagBadgeMap' => $config->getItemFlagBadgeMap(),
+                'orderReviewThreshold' => $this->findOrderReviewThreshold($recurringScheduleTransfer),
                 'statusIconMap' => $config->getStatusIconMap(),
                 'errorBannerStatuses' => $config->getErrorBannerStatuses(),
                 'historyEventTypeBadgeClassMap' => $config->getHistoryEventTypeBadgeClassMap(),
@@ -98,6 +100,7 @@ class RecurringOrderDetailController extends AbstractRecurringOrderController
                 'statusCancelled' => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
                 'statusReviewRequired' => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
                 'statusFailed' => SharedOrderExperienceManagementConfig::STATUS_FAILED,
+                'statusProcessing' => SharedOrderExperienceManagementConfig::STATUS_PROCESSING,
                 'historyEventTypeFailed' => SharedOrderExperienceManagementConfig::HISTORY_EVENT_TYPE_FAILED,
                 'pauseForm' => $this->getFactory()->createRecurringOrderActionForm($uuid)->createView(),
                 'confirmForm' => $this->getFactory()->createRecurringOrderActionForm($uuid)->createView(),
@@ -116,5 +119,18 @@ class RecurringOrderDetailController extends AbstractRecurringOrderController
         return (new PaginationTransfer())
             ->setPage((int)$request->query->get(static::REQUEST_PARAM_PAGE, static::DEFAULT_PAGE))
             ->setMaxPerPage($this->getFactory()->getConfig()->getRecurringScheduleHistoryItemsPerPage());
+    }
+
+    protected function findOrderReviewThreshold(RecurringScheduleTransfer $recurringScheduleTransfer): ?int
+    {
+        $tolerancePercent = $recurringScheduleTransfer->getPriceTolerancePercent();
+
+        if ($tolerancePercent === null || !$tolerancePercent->isPositive()) {
+            return null;
+        }
+
+        return $this->getFactory()
+            ->createOrderTotalReviewThresholdCalculator()
+            ->calculate((int)$recurringScheduleTransfer->getEstimatedTotal(), $tolerancePercent);
     }
 }

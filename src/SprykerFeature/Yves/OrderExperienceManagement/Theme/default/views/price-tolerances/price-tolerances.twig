@@ -1,0 +1,24 @@
+{% extends template('page-layout-customer', 'CustomerPage') %}
+
+{% define data = {
+    schedule: _view.schedule,
+    form: _view.form,
+    isLocked: _view.isLocked,
+    orderTotal: _view.orderTotal,
+    isOrderToleranceSet: _view.isOrderToleranceSet,
+    orderReviewThreshold: _view.orderReviewThreshold,
+    productRows: _view.productRows,
+    title: 'recurring_orders.price_tolerance.title' | trans,
+    activePage: 'recurring-orders',
+} %}
+
+{% block title %}{% endblock %}
+
+{% set customerContentClassName = 'box' %}
+{% block customerContent %}
+    <div class="{{ customerContentClassName }}">
+        {% include molecule('price-tolerance', 'OrderExperienceManagement') with {
+            data: data,
+        } only %}
+    </div>
+{% endblock %}

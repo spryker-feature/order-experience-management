@@ -142,8 +142,13 @@ interface OrderExperienceManagementFacadeInterface
      * - Updates each persisted schedule in `RecurringScheduleCollectionRequestTransfer.recurringSchedules`, looked up by `RecurringScheduleTransfer.uuid`.
      * - Authorizes access through the recurring schedule access filter using `RecurringScheduleCollectionRequestTransfer.customer`, granting company users with the `SeeCompanyOrders` or `SeeBusinessUnitOrders` permission access to schedules within their company or business unit, otherwise scopes to `RecurringScheduleCollectionRequestTransfer.customer.idCustomer` ownership.
      * - Allowed in any schedule status, does NOT fire a StateMachine event.
-     * - Updates only the properties set on each `RecurringScheduleTransfer` (e.g. `name`, `cadenceType`, `cadenceValue`, `nextTriggerDate`) in a single write per schedule.
+     * - Updates only the properties set on each `RecurringScheduleTransfer` (e.g. `name`, `cadenceType`, `cadenceValue`, `nextTriggerDate`), together with the product tolerances listed in `items`, in one transaction per schedule.
      * - Merges the `RecurringScheduleTransfer.quote` cost center / budget overrides into `spy_recurring_schedule.quote_data`.
+     * - Updates `RecurringScheduleTransfer.priceTolerancePercent`, the accepted increase of the execution total in percent, when it is set.
+     * - Updates `RecurringScheduleTransfer.isProductPriceChangeIgnored`: while it is true and the order tolerance is above 0 the per-product price checks are not executed and only the order total decides.
+     * - Updates the tolerance of the products listed in `RecurringScheduleTransfer.items` (matched by `groupKey`, or `bundleItemIdentifier` for a bundle parent, and applied to every row of the group); a `null` tolerance resets the product to 0.
+     * - Adds an error and leaves the schedule untouched, name and cadence included, when a tolerance is below 0 or above the configured maximum, has more decimals than the configured scale or is not a multiple of the configured step, a listed product is not part of the schedule, or `isProductPriceChangeIgnored` is true without an order tolerance above 0.
+     * - Adds an error and leaves the schedule untouched when any tolerance or `isProductPriceChangeIgnored` is requested while the schedule is awaiting review.
      * - Adds an error to the response for each schedule that is not found or not accessible, identified by `ErrorTransfer.entityIdentifier` holding the requested `RecurringScheduleTransfer.uuid`, and returns the updated schedules.
      *
      * @api
@@ -158,6 +163,7 @@ interface OrderExperienceManagementFacadeInterface
      * - Re-validates the schedule against the current catalogue and prices at read time without persisting anything.
      * - Runs the re-validation only while the schedule awaits review, any other status returns the schedule without review data.
      * - Groups the schedule items into flagged and unchanged sets with the detected per-item reasons, and collects any non-item blocking errors.
+     * - Sets `RecurringScheduleReviewResponseTransfer.orderReview` when the total of one execution rose beyond `RecurringScheduleTransfer.priceTolerancePercent`, independently of the per-item reasons, with the previous and current totals and the drifted items.
      * - Provides the original and updated order totals and the per-reason summary counters shown on the page.
      * - Returns an empty review (`null` recurringSchedule) when no schedule matches the criteria.
      *
@@ -176,6 +182,7 @@ interface OrderExperienceManagementFacadeInterface
      * - Returns an unsuccessful response without any changes when any `RecurringScheduleEventRequestTransfer.acceptedItems.acceptedQuantity` or `RecurringScheduleEventRequestTransfer.addedItems.quantity` is below 1, a `null` accepted quantity leaves the line unchanged.
      * - Applies `RecurringScheduleEventRequestTransfer.acceptedItems.acceptedQuantity` as the new standing quantity or as the next delivery quantity only, depending on `RecurringScheduleEventRequestTransfer.scope`.
      * - Returns an unsuccessful response without any changes when the live price drifted above the accepted price, so the buyer can review the new prices.
+     * - Returns the same unsuccessful response when the execution total still exceeds the order-total tolerance after the accepted prices are applied.
      * - Otherwise applies the changes in a single transaction: removes unpurchasable items (from this order and future executions) and writes the accepted prices as the new reference price.
      * - Fires the `confirm` StateMachine event to place the order from the updated schedule.
      * - Returns a successful response once the order is placed, otherwise an unsuccessful one.

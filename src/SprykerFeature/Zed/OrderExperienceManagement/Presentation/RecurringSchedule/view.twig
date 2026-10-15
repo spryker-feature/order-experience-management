@@ -7,6 +7,9 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Schedule Details' | trans } %}
         {% block widget_content %}
+            {% set orderPriceToleranceValue = isProductPriceChangeIgnored
+                ? '%tolerance% (product price changes ignored)' | trans({'%tolerance%': orderToleranceLabel})
+                : orderToleranceLabel %}
             {% set detailRows = [
                 { label: 'Name', value: recurringSchedule.name, qa: 'name' },
                 { label: 'Company', value: recurringSchedule.companyName, qa: 'company' },
@@ -14,6 +17,7 @@
                 { label: 'Owner', value: recurringSchedule.createdByName, qa: 'owner' },
                 { label: 'Status', value: recurringSchedule.status, qa: 'status' },
                 { label: 'Frequency', value: frequency, qa: 'frequency' },
+                { label: 'Order Price Tolerance', value: orderPriceToleranceValue, qa: 'order-tolerance' },
                 { label: 'Next Trigger Date', value: recurringSchedule.nextTriggerDate, qa: 'next-trigger-date' },
             ] %}
 
@@ -44,12 +48,13 @@
                         <th>{{ 'SKU' | trans }}</th>
                         <th>{{ 'Merchant' | trans }}</th>
                         <th>{{ 'Quantity' | trans }}</th>
-                        <th>{{ 'Price' | trans }}</th>
+                        <th>{{ 'Unit Price' | trans }}</th>
                         <th>{{ 'Total' | trans }}</th>
+                        <th>{{ 'Unit Price Tolerance' | trans }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in recurringSchedule.items %}
+                    {% for itemKey, item in recurringSchedule.items %}
                         <tr>
                             <td>
                                 {{ item.productName }}
@@ -64,10 +69,11 @@
                             <td>{{ item.quantity }}</td>
                             <td>{{ (item.quantity ? item.itemTotal / item.quantity / 100 : 0) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</td>
                             <td>{{ (item.itemTotal / 100) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</td>
+                            <td data-qa="recurring-schedule-view-item-price-tolerance">{{ itemToleranceLabels[itemKey] | default('-') }}</td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6">{{ 'No scheduled items.' | trans }}</td>
+                            <td colspan="7">{{ 'No scheduled items.' | trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -76,6 +82,7 @@
                         <tr>
                             <th colspan="5" class="text-right">{{ 'Sum total' | trans }}</th>
                             <th data-qa="recurring-schedule-view-sum-total">{{ (sumTotal / 100) | number_format(2) }} {{ recurringSchedule.currencyIsoCode }}</th>
+                            <th></th>
                         </tr>
                     </tfoot>
                 {% endif %}

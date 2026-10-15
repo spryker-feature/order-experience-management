@@ -1,0 +1,30 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-price-tolerance($name: '.price-tolerance') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-price-tolerance-base-hook) {
+            @include order-experience-management-price-tolerance-base-hook;
+        }
+
+        &__how-it-works-title {
+            @include helper-font-size(6);
+            margin: 0 0 12px;
+            font-weight: 700;
+        }
+
+        &__how-it-works-list {
+            margin: 0;
+        }
+
+        &__how-it-works-term {
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        &__how-it-works-description {
+            margin: 0 0 12px;
+        }
+
+        @content;
+    }
+}

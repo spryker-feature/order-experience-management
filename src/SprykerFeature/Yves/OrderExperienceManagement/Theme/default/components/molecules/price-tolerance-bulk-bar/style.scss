@@ -1,0 +1,3 @@
+@include helper-import(molecule, price-tolerance-bulk-bar) {
+    @include order-experience-management-price-tolerance-bulk-bar();
+}

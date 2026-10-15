@@ -10,6 +10,7 @@
     statusClassMap: [],
     itemFlagLabelMap: [],
     itemFlagBadgeMap: [],
+    orderReviewThreshold: null,
     statusIconMap: [],
     errorBannerStatuses: [],
     statusActive: '',
@@ -17,6 +18,7 @@
     statusCancelled: '',
     statusReviewRequired: '',
     statusFailed: '',
+    statusProcessing: '',
     historyEventTypeFailed: '',
     historyEventTypeBadgeClassMap: [],
     pauseForm: required,
@@ -81,7 +83,7 @@
 
                 {% set scheduleCancelButtonClassName = 'button button--danger spacing-left' %}
                 {% block scheduleCancelButton %}
-                    {% if status != data.statusCancelled %}
+                    {% if status not in [data.statusCancelled, data.statusProcessing] %}
                         <button class="{{ scheduleCancelButtonClassName }} {{ cancelModalTriggerClassName }}" data-qa="recurring-order-cancel-button">
                             {{ 'recurring_orders.detail.actions.cancel' | trans }}
                         </button>
@@ -152,6 +154,7 @@
                                 statusActive: data.statusActive,
                                 statusPaused: data.statusPaused,
                                 statusReviewRequired: data.statusReviewRequired,
+                                statusProcessing: data.statusProcessing,
                                 skipModalTriggerClassName: skipModalTriggerClassName,
                                 resumeModalTriggerClassName: resumeModalTriggerClassName,
                             },
@@ -164,6 +167,7 @@
                                 schedule: data.schedule,
                                 itemFlagLabelMap: data.itemFlagLabelMap,
                                 itemFlagBadgeMap: data.itemFlagBadgeMap,
+                                orderReviewThreshold: data.orderReviewThreshold,
                             },
                         } only %}
                     {% endblock %}
@@ -179,6 +183,7 @@
                             quote: data.quote,
                             editModalTriggerClassName: editModalTriggerClassName,
                             withBudgetSummary: true,
+                            isPriceToleranceLocked: data.schedule.status == data.statusReviewRequired,
                             weekDayGlossaryKeys: data.weekDayGlossaryKeys,
                         },
                     } only %}

@@ -1,0 +1,65 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'price-tolerance-bulk-bar',
+    tag: 'price-tolerance-bulk-bar',
+} %}
+
+{% define data = {
+    valueAttributes: required,
+} %}
+
+{% define attributes = {
+    'selected-one-label': 'recurring_orders.price_tolerance.bulk.selected.one' | trans,
+    'selected-many-label': 'recurring_orders.price_tolerance.bulk.selected.many' | trans,
+    'data-qa': 'recurring-order-bulk-bar',
+    'hidden-class': 'is-hidden',
+} %}
+
+{% block body %}
+    {% block counter %}
+        <span class="{{ config.name }}__count {{ config.jsName }}__count" role="status" aria-live="polite"></span>
+    {% endblock %}
+    
+    {{ block('separator') }}
+
+    {% block inputElement %}
+        {% block label %}
+            <label for="{{ config.name }}-value">{{ 'recurring_orders.price_tolerance.bulk.set_to' | trans }}</label>
+        {% endblock %}
+
+        {% block input %}
+            <input type="number" id="{{ config.name }}-value"
+                class="{{ config.name }}__value {{ config.jsName }}__value input"
+                inputmode="decimal"
+                {{ _self.renderAttributes(data.valueAttributes) }}
+                {{ qa('recurring-order-bulk-value') }}>
+        {% endblock %}
+
+        {% block extra %}
+            <span>%</span>
+        {% endblock %}
+    {% endblock %}
+
+    {% block actions %}
+        {% set applyButtonClassName = 'button' %}
+        {% block applyButton %}
+            <button type="button" class="{{ applyButtonClassName }} {{ config.jsName }}__apply" {{ qa('recurring-order-bulk-apply') }}>
+                {{ 'forms.apply-btn' | trans }}
+            </button>
+        {% endblock %}
+
+        {{ block('separator') }}
+
+        {% set turnOffButtonClassName = 'button button--hollow' %}
+        {% block turnOffButton %}
+            <button type="button" class="{{ turnOffButtonClassName }} {{ config.jsName }}__turn-off" {{ qa('recurring-order-bulk-turn-off') }}>
+                {{ 'recurring_orders.price_tolerance.bulk.turn_off' | trans }}
+            </button>
+        {% endblock %}
+    {% endblock %}
+{% endblock %}
+
+{% block separator %}
+    <span class="{{ config.name }}__separator" aria-hidden="true">|</span>
+{% endblock %}

@@ -31,6 +31,13 @@ interface OrderExperienceManagementRepositoryInterface
 
     public function findRecurringScheduleById(int $idRecurringSchedule): ?RecurringScheduleTransfer;
 
+    /**
+     * @param array<string> $stateNames
+     *
+     * @return array<\Generated\Shared\Transfer\RecurringScheduleStuckItemTransfer>
+     */
+    public function getRecurringScheduleStuckItems(string $stateMachineName, array $stateNames): array;
+
     public function findRecurringScheduleDueData(int $idRecurringSchedule): ?RecurringScheduleDueDataTransfer;
 
     public function findLatestHistoryByScheduleId(int $idRecurringSchedule): ?RecurringScheduleHistoryTransfer;
@@ -67,6 +74,13 @@ interface OrderExperienceManagementRepositoryInterface
      * @return array<int, string> Group keys keyed by recurring schedule item ID, ordered by ID ascending. Items without a group key are omitted.
      */
     public function getRecurringScheduleItemGroupKeysByScheduleId(int $idRecurringSchedule): array;
+
+    /**
+     * @param array<int> $recurringScheduleItemIds
+     *
+     * @return array<int, \Spryker\DecimalObject\Decimal> Price tolerances in percent keyed by recurring schedule item ID. 0 means any price increase of the item is reviewed.
+     */
+    public function getRecurringScheduleItemPriceTolerancePercentsByIds(array $recurringScheduleItemIds): array;
 
     /**
      * @param array<int> $scheduleIds

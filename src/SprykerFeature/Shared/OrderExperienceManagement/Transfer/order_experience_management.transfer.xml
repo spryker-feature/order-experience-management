@@ -37,6 +37,8 @@
         <property name="companyName" type="string"/>
         <property name="businessUnitName" type="string"/>
         <property name="lastExecutionDate" type="string"/>
+        <property name="priceTolerancePercent" type="decimal"/>
+        <property name="isProductPriceChangeIgnored" type="bool"/>
     </transfer>
 
     <transfer name="RecurringScheduleItem" strict="true">
@@ -67,6 +69,7 @@
         <property name="itemData" type="string"/>
         <property name="itemTotal" type="int"/>
         <property name="flags" type="string[]" singular="flag"/>
+        <property name="priceTolerancePercent" type="decimal"/>
     </transfer>
 
     <transfer name="RecurringScheduleCollection" strict="true">
@@ -141,6 +144,7 @@
         <property name="isWithQuoteData" type="bool"/>
         <property name="isWithSkipPreview" type="bool"/>
         <property name="isGroupedByGroupKey" type="bool"/>
+        <property name="isWithPriceTolerance" type="bool"/>
     </transfer>
 
     <transfer name="RecurringScheduleTableFilter" strict="true">
@@ -152,6 +156,7 @@
         <property name="cycleTotalTo" type="int"/>
         <property name="nextTriggerDateFrom" type="string"/>
         <property name="nextTriggerDateTo" type="string"/>
+        <property name="hasPriceTolerance" type="bool"/>
     </transfer>
 
     <transfer name="RecurringScheduleDueData" strict="true">
@@ -242,6 +247,21 @@
         <property name="companyBusinessUnitUuid" type="string"/>
         <property name="companyUuid" type="string"/>
         <property name="calculatedDiscounts" type="CalculatedDiscount[]" singular="calculatedDiscount" description="A list of discounts calculated for an item or order."/>
+        <property name="expenses" type="Expense[]" singular="expense"/>
+        <property name="items" type="Item[]" singular="item"/>
+        <property name="payments" type="Payment[]" singular="payment"/>
+        <property name="orderReference" type="string"/>
+        <property name="customerReference" type="string"/>
+        <property name="store" type="string"/>
+        <property name="createdAt" type="string"/>
+        <property name="billingAddress" type="Address"/>
+        <property name="locale" type="Locale"/>
+        <property name="email" type="string"/>
+        <property name="salutation" type="string"/>
+        <property name="firstName" type="string"/>
+        <property name="lastName" type="string"/>
+        <property name="totals" type="Totals"/>
+        <property name="idSalesOrder" type="int"/>
     </transfer>
 
     <transfer name="RecurringOrderQuoteUpdateRequest" strict="true">
@@ -306,6 +326,26 @@
         <property name="concreteAttributes" type="array" singular="concreteAttribute"/>
         <property name="isQuantitySplittable" type="bool"/>
         <property name="cartNote" type="string"/>
+        <property name="calculatedDiscounts" type="CalculatedDiscount[]" singular="calculatedDiscount"/>
+        <property name="amountSalesUnit" type="ProductMeasurementSalesUnit"/>
+        <property name="amountLeadProduct" type="ProductConcrete"/>
+        <property name="quantitySalesUnit" type="ProductMeasurementSalesUnit"/>
+        <property name="productOptions" type="ProductOption[]" singular="productOption"/>
+        <property name="id" type="int"/>
+        <property name="productPackagingUnit" type="ProductPackagingUnit"/>
+        <property name="originUnitNetPrice" type="int"/>
+        <property name="originUnitGrossPrice" type="int"/>
+        <property name="groupKeyPrefix" type="string"/>
+        <property name="process" type="string"/>
+        <property name="state" type="ItemState"/>
+        <property name="sumSubtotalAggregation" type="int"/>
+        <property name="sumDiscountAmountFullAggregation" type="int"/>
+        <property name="sumPriceToPayAggregation" type="int"/>
+        <property name="taxRate" type="float"/>
+        <property name="sumTaxAmount" type="int"/>
+        <property name="refundableAmount" type="int"/>
+        <property name="canceledAmount" type="int"/>
+        <property name="abstractSku" type="string"/>
     </transfer>
 
     <transfer name="StateMachineProcess">
@@ -347,6 +387,17 @@
         <property name="shipment" type="Shipment"/>
         <property name="unitNetPrice" type="int"/>
         <property name="unitGrossPrice" type="int"/>
+        <property name="taxRate" type="float"/>
+        <property name="type" type="string"/>
+        <property name="name" type="string"/>
+        <property name="sumPrice" type="int"/>
+        <property name="sumTaxAmount" type="int"/>
+        <property name="sumDiscountAmountAggregation" type="int"/>
+        <property name="sumPriceToPayAggregation" type="int"/>
+        <property name="canceledAmount" type="int"/>
+        <property name="quantity" type="int"/>
+        <property name="sumGrossPrice" type="int"/>
+        <property name="sumNetPrice" type="int"/>
     </transfer>
 
     <transfer name="Payment">
@@ -356,6 +407,7 @@
         <property name="paymentProvider" type="string"/>
         <property name="paymentProviderName" type="string"/>
         <property name="giftCard" type="GiftCard"/>
+        <property name="amount" type="int"/>
     </transfer>
 
     <transfer name="CheckoutError">
@@ -368,6 +420,7 @@
     <transfer name="SaveOrder">
         <property name="idSalesOrder" type="int"/>
         <property name="orderReference" type="string"/>
+        <property name="orderItems" type="Item[]" singular="orderItem"/>
     </transfer>
 
     <transfer name="Shipment">
@@ -377,6 +430,8 @@
         <property name="shippingAddress" type="Address"/>
         <property name="uuid" type="string" strict="true"/>
         <property name="shipmentTypeUuid" type="string" strict="true"/>
+        <property name="requestedDeliveryDate" type="string"/>
+        <property name="shipmentSelection" type="string"/>
     </transfer>
 
     <transfer name="QuoteResponse">
@@ -395,6 +450,12 @@
         <property name="zipCode" type="string"/>
         <property name="city" type="string"/>
         <property name="iso2Code" type="string"/>
+        <property name="salutation" type="string"/>
+        <property name="firstName" type="string"/>
+        <property name="lastName" type="string"/>
+        <property name="company" type="string"/>
+        <property name="phone" type="string"/>
+        <property name="uuid" type="string"/>
     </transfer>
 
     <transfer name="Customer">
@@ -406,6 +467,9 @@
         <property name="anonymizedAt" type="string"/>
         <property name="locale" type="Locale"/>
         <property name="isGuest" type="bool"/>
+        <property name="customerReference" type="string"/>
+        <property name="addresses" type="Addresses"/>
+        <property name="salutation" type="string"/>
     </transfer>
 
     <transfer name="Store">
@@ -415,6 +479,8 @@
     <transfer name="ShipmentMethod">
         <property name="idShipmentMethod" type="int"/>
         <property name="shipmentType" type="ShipmentType" strict="true"/>
+        <property name="name" type="string"/>
+        <property name="storeCurrencyPrice" type="int"/>
     </transfer>
 
     <transfer name="QuoteError">
@@ -437,6 +503,8 @@
         <property name="discountTotal" type="int"/>
         <property name="taxTotal" type="TaxTotal"/>
         <property name="remunerationTotal" type="int"/>
+        <property name="canceledTotal" type="int"/>
+        <property name="refundTotal" type="int"/>
     </transfer>
 
     <transfer name="TaxTotal">
@@ -475,12 +543,18 @@
     <transfer name="ProductOffer">
         <property name="merchantReference" type="string"/>
         <property name="merchantName" type="string"/>
+        <property name="concreteSku" type="string"/>
+        <property name="productOfferReference" type="string"/>
+        <property name="isActive" type="bool"/>
+        <property name="approvalStatus" type="string"/>
     </transfer>
 
     <transfer name="ProductOfferCriteria">
         <property name="productOfferReference" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="approvalStatuses" type="string[]" singular="approvalStatus"/>
+        <property name="productOfferReferences" type="string[]" singular="productOfferReference"/>
+        <property name="productOfferConditions" type="ProductOfferConditions" strict="true"/>
     </transfer>
 
     <transfer name="RecurringScheduleEventResponse" strict="true">
@@ -503,6 +577,18 @@
         <property name="isValid" type="bool"/>
         <property name="itemReviews" type="RecurringScheduleItemReview[]" singular="itemReview"/>
         <property name="blockingErrors" type="RecurringScheduleError[]" singular="blockingError"/>
+        <property name="orderReview" type="RecurringScheduleOrderReview"/>
+        <property name="unflaggedPriceChanges" type="RecurringScheduleItemReview[]" singular="unflaggedPriceChange"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleOrderReview" strict="true">
+        <property name="reviewReason" type="string"/>
+        <property name="previousTotal" type="int"/>
+        <property name="currentTotal" type="int"/>
+        <property name="tolerancePercent" type="decimal"/>
+        <property name="increasePercent" type="string"/>
+        <property name="driftedItems" type="RecurringScheduleItemReview[]" singular="driftedItem"/>
+        <property name="isOrderTotalOnly" type="bool"/>
     </transfer>
 
     <transfer name="RecurringScheduleItemReview" strict="true">
@@ -513,6 +599,7 @@
         <property name="isPurchasable" type="bool"/>
         <property name="acceptedQuantity" type="int"/>
         <property name="isRemoved" type="bool"/>
+        <property name="isFlaggedByOrderTotal" type="bool"/>
         <property name="substituteOptions" type="RecurringScheduleSubstituteOption[]" singular="substituteOption"/>
     </transfer>
 
@@ -532,20 +619,25 @@
         <property name="blockingErrors" type="RecurringScheduleError[]" singular="blockingError"/>
         <property name="originalTotal" type="int"/>
         <property name="updatedTotal" type="int"/>
+        <property name="totalChangePercent" type="string"/>
         <property name="removedItemCount" type="int"/>
         <property name="priceChangeCount" type="int"/>
         <property name="substitutedCount" type="int"/>
         <property name="unavailableCount" type="int"/>
         <property name="resolvedAddedItems" type="array" singular="resolvedAddedItems"/>
         <property name="shippingAddressChoices" type="RecurringScheduleShippingAddressChoice[]" singular="shippingAddressChoice"/>
+        <property name="orderReview" type="RecurringScheduleOrderReview"/>
+        <property name="unflaggedPriceChanges" type="RecurringScheduleItemReview[]" singular="unflaggedPriceChange"/>
     </transfer>
 
     <transfer name="CompanyBusinessUnitCriteriaFilter">
         <property name="idCompany" type="int"/>
+        <property name="pagination" type="Pagination"/>
     </transfer>
 
     <transfer name="Locale">
         <property name="localeName" type="string"/>
+        <property name="idLocale" type="int"/>
     </transfer>
 
     <transfer name="Mail">
@@ -571,6 +663,7 @@
     <transfer name="CompanyBusinessUnit">
         <property name="name" type="string"/>
         <property name="idCompanyBusinessUnit" type="int"/>
+        <property name="uuid" type="string"/>
     </transfer>
 
     <transfer name="MailTemplate">
@@ -590,6 +683,7 @@
     <transfer name="CustomerResponse">
         <property name="isSuccess" type="bool"/>
         <property name="customerTransfer" type="Customer"/>
+        <property name="hasCustomer" type="bool"/>
     </transfer>
 
     <transfer name="CartChange">
@@ -598,6 +692,7 @@
     </transfer>
 
     <transfer name="PriceProduct">
+        <property name="moneyValue" type="MoneyValue"/>
     </transfer>
 
     <transfer name="ConfiguredBundle">
@@ -625,15 +720,19 @@
     </transfer>
 
     <transfer name="CompanyUnitAddressCriteriaFilter">
+        <property name="idCompanyBusinessUnit" type="int"/>
     </transfer>
 
     <transfer name="CompanyUnitAddress">
+        <property name="idCompanyUnitAddress" type="int"/>
     </transfer>
 
     <transfer name="ShipmentMethodsCollection">
+        <property name="shipmentMethods" type="ShipmentMethods[]" singular="shipmentMethods"/>
     </transfer>
 
     <transfer name="ProductOfferStorageCriteria">
+        <property name="productConcreteSkus" type="string[]" singular="productConcreteSku"/>
     </transfer>
 
     <transfer name="ProductOfferStorage">
@@ -642,6 +741,8 @@
         <property name="price" type="CurrentProductPrice"/>
         <property name="isNeverOutOfStock" type="bool" strict="true"/>
         <property name="stockQuantity" type="float" strict="true"/>
+        <property name="productConcreteSku" type="string"/>
+        <property name="productOfferReference" type="string"/>
     </transfer>
 
     <transfer name="ShipmentTypeStorage" strict="true">
@@ -650,22 +751,29 @@
     </transfer>
 
     <transfer name="ShipmentTypeStorageConditions" strict="true">
+        <property name="storeName" type="string"/>
     </transfer>
 
     <transfer name="ShipmentTypeStorageCriteria" strict="true">
+        <property name="shipmentTypeStorageConditions" type="ShipmentTypeStorageConditions"/>
     </transfer>
 
     <transfer name="ShipmentType" strict="true">
         <property name="key" type="string"/>
+        <property name="uuid" type="string"/>
     </transfer>
 
     <transfer name="ProductView">
         <property name="name" type="string"/>
         <property name="price" type="int"/>
         <property name="baseUnit" type="ProductMeasurementUnit" strict="true"/>
+        <property name="idProductConcrete" type="int"/>
+        <property name="sku" type="string"/>
+        <property name="available" type="bool"/>
     </transfer>
 
     <transfer name="ProductOfferConditions" strict="true">
+        <property name="productOfferReferences" type="string[]" singular="productOfferReference"/>
     </transfer>
 
     <transfer name="CurrentProductPrice">
@@ -673,10 +781,12 @@
     </transfer>
 
     <transfer name="ProductOfferCollection">
+        <property name="productOffers" type="ProductOffer[]" singular="productOffer"/>
     </transfer>
 
     <transfer name="MerchantCriteria">
         <property name="merchantReferences" type="string[]" singular="merchantReference"/>
+        <property name="isActive" type="bool"/>
     </transfer>
 
     <transfer name="MerchantCollection">
@@ -689,12 +799,18 @@
     </transfer>
 
     <transfer name="ProductConcreteCriteriaFilter">
+        <property name="searchString" type="string"/>
+        <property name="limit" type="int"/>
+        <property name="requestParams" type="array" singular="requestParams"/>
     </transfer>
 
     <transfer name="MerchantStorage">
+        <property name="merchantReference" type="string"/>
+        <property name="name" type="string"/>
     </transfer>
 
     <transfer name="MerchantStorageCriteria">
+        <property name="merchantReferences" type="string[]" singular="merchantReference"/>
     </transfer>
 
     <transfer name="ConcreteAlternativeProductCriteria" strict="true">
@@ -717,15 +833,24 @@
 
     <transfer name="ProductConcrete">
         <property name="isQuantitySplittable" type="bool"/>
+        <property name="fkProductAbstract" type="int"/>
+        <property name="sku" type="string"/>
+        <property name="idProductConcrete" type="int"/>
+        <property name="abstractSku" type="string"/>
+        <property name="attributes" type="array" singular="attribute"/>
     </transfer>
 
     <transfer name="ProductPackagingUnitStorageConditions" strict="true">
+        <property name="productIds" type="int[]" singular="idProduct"/>
     </transfer>
 
     <transfer name="ProductPackagingUnitStorageCriteria" strict="true">
+        <property name="productPackagingUnitStorageConditions" type="ProductPackagingUnitStorageConditions"/>
     </transfer>
 
     <transfer name="ProductMeasurementUnit">
+        <property name="code" type="string" description="A unique code, often for currency, country, or barcode."/>
+        <property name="name" type="string"/>
     </transfer>
 
 
@@ -823,54 +948,228 @@
     <transfer name="CalculatedDiscount">
         <property name="displayName" type="string"/>
         <property name="description" type="string"/>
+        <property name="voucherCode" type="string"/>
+        <property name="quantity" type="int"/>
+        <property name="unitAmount" type="int"/>
+        <property name="sumAmount" type="int"/>
     </transfer>
 
     <transfer name="ProductMeasurementSalesUnit">
+        <property name="conversion" type="float"/>
+        <property name="productMeasurementUnit" type="ProductMeasurementUnit"/>
+        <property name="storeRelation" type="StoreRelation"/>
+        <property name="productMeasurementBaseUnit" type="ProductMeasurementBaseUnit"/>
+        <property name="precision" type="int"/>
     </transfer>
 
     <transfer name="ProductOption">
+        <property name="unitPrice" type="int"/>
+        <property name="quantity" type="int"/>
+        <property name="sku" type="string"/>
+        <property name="groupName" type="string"/>
+        <property name="value" type="string"/>
+        <property name="sumPrice" type="int"/>
+        <property name="taxRate" type="float"/>
     </transfer>
 
     <transfer name="ProductOptionCriteria">
+        <property name="productOptionValueSkus" type="string[]" singular="productOptionValueSku"/>
+        <property name="productConcreteSku" type="string"/>
+        <property name="productOptionGroupIsActive" type="bool"/>
+        <property name="priceMode" type="string"/>
+        <property name="currencyIsoCode" type="string"/>
     </transfer>
 
     <transfer name="PriceProductFilter">
+        <property name="sku" type="string"/>
+        <property name="priceTypeName" type="string"/>
+        <property name="priceMode" type="string"/>
+        <property name="currencyIsoCode" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="quantity" type="int"/>
+        <property name="productOfferReference" type="string"/>
+        <property name="quote" type="Quote"/>
+        <property name="identifier" type="string"/>
     </transfer>
 
     <transfer name="PaymentMethod">
+        <property name="paymentMethodKey" type="string" strict="true"/>
+        <property name="paymentProvider" type="PaymentProvider"/>
     </transfer>
 
     <transfer name="CustomerCriteria">
+        <property name="customerReference" type="string"/>
+        <property name="withExpanders" type="bool"/>
     </transfer>
 
     <transfer name="ProductPackagingUnitAmount">
+        <property name="isAmountVariable" type="bool"/>
+        <property name="amountMin" type="decimal"/>
+        <property name="amountMax" type="decimal"/>
+        <property name="amountInterval" type="decimal"/>
+        <property name="defaultAmount" type="decimal"/>
     </transfer>
 
     <transfer name="ItemCollection">
+        <property name="items" type="Item[]" singular="item"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleStuckItem" strict="true">
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="idStateMachineItemState" type="int"/>
+        <property name="stateName" type="string"/>
+        <property name="stateEnteredAt" type="string"/>
+        <property name="isStateHistoryMissing" type="bool"/>
+        <property name="lastTouchedAt" type="string"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleRecoveryResult" strict="true">
+        <property name="recoveredCount" type="int"/>
+        <property name="skippedCount" type="int"/>
+        <property name="failedCount" type="int"/>
+        <property name="reportedCount" type="int"/>
+        <property name="isAborted" type="bool"/>
     </transfer>
 
     <transfer name="OmsEventTriggerResponse">
+        <property name="messages" type="Message[]" singular="message"/>
     </transfer>
 
     <transfer name="OrderConditions" strict="true">
+        <property name="withOrderExpanderPlugins" type="bool"/>
+        <property name="orderReferences" type="string[]" singular="orderReference"/>
+        <property name="customerReferences" type="string[]" singular="customerReference"/>
+        <property name="storeNames" type="string[]" singular="storeName"/>
+        <property name="createdAtFrom" type="string"/>
+        <property name="createdAtTo" type="string"/>
+        <property name="itemStates" type="string[]" singular="itemState"/>
     </transfer>
 
     <transfer name="OrderCriteria" strict="true">
+        <property name="pagination" type="Pagination"/>
+        <property name="orderConditions" type="OrderConditions"/>
+        <property name="sortCollection" type="Sort[]" singular="sort"/>
     </transfer>
 
     <transfer name="OrderItemFilter">
+        <property name="orderReferences" type="string[]" singular="orderReference"/>
+        <property name="salesOrderItemUuids" type="string[]" singular="salesOrderItemUuid"/>
     </transfer>
 
     <transfer name="Comment">
+        <property name="fkSalesOrder" type="int"/>
+        <property name="idSalesOrderComment" type="int"/>
+        <property name="message" type="string"/>
+        <property name="username" type="string"/>
+        <property name="createdAt" type="string"/>
+        <property name="updatedAt" type="string"/>
     </transfer>
 
     <transfer name="User">
+        <property name="firstName" type="string"/>
+        <property name="lastName" type="string"/>
+        <property name="username" type="string"/>
     </transfer>
 
     <transfer name="Message">
+        <property name="value" type="string"/>
+        <property name="type" type="string"/>
+        <property name="parameters" type="array" singular="parameters"/>
     </transfer>
 
     <transfer name="GiftCard">
+    </transfer>
+
+    <transfer name="OrderCollection">
+        <property name="orders" type="Order[]" singular="order"/>
+    </transfer>
+
+    <transfer name="OrderDetailsComments">
+        <property name="comments" type="Comment[]" singular="comment"/>
+    </transfer>
+
+    <transfer name="ProductPackagingUnitStorageCollection" strict="true">
+        <property name="productPackagingUnitStorages" type="ProductPackagingUnitStorage[]" singular="productPackagingUnitStorage"/>
+    </transfer>
+
+    <transfer name="ProductOfferStorageCollection">
+        <property name="productOffers" type="ProductOfferStorage[]" singular="productOffer"/>
+    </transfer>
+
+    <transfer name="ShipmentTypeStorageCollection" strict="true">
+        <property name="shipmentTypeStorages" type="ShipmentTypeStorage[]" singular="shipmentTypeStorage"/>
+    </transfer>
+
+    <transfer name="ProductOptionCollection">
+        <property name="productOptions" type="ProductOption[]" singular="productOption"/>
+    </transfer>
+
+    <transfer name="CompanyUserCollection">
+        <property name="companyUsers" type="CompanyUser[]" singular="companyUser"/>
+    </transfer>
+
+    <transfer name="PaymentMethods">
+        <property name="methods" type="PaymentMethod[]" singular="method"/>
+    </transfer>
+
+    <transfer name="FlashMessages">
+        <property name="errorMessages" type="array" singular="errorMessage"/>
+        <property name="infoMessages" type="array" singular="infoMessage"/>
+    </transfer>
+
+    <transfer name="CompanyUnitAddressCollection">
+        <property name="companyUnitAddresses" type="CompanyUnitAddress[]" singular="companyUnitAddress"/>
+    </transfer>
+
+    <transfer name="Company">
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="Translation">
+        <property name="glossaryKey" type="GlossaryKey" strict="true"/>
+        <property name="value" type="string"/>
+    </transfer>
+
+    <transfer name="ProductPackagingUnit">
+        <property name="productPackagingUnitAmount" type="ProductPackagingUnitAmount"/>
+    </transfer>
+
+    <transfer name="ItemState">
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="Addresses">
+        <property name="addresses" type="Address[]" singular="address"/>
+    </transfer>
+
+    <transfer name="MoneyValue">
+        <property name="netAmount" type="int"/>
+        <property name="grossAmount" type="int"/>
+    </transfer>
+
+    <transfer name="ShipmentMethods">
+        <property name="methods" type="ShipmentMethod[]" singular="method"/>
+        <property name="shipmentHash" type="string"/>
+    </transfer>
+
+    <transfer name="StoreRelation">
+        <property name="stores" type="Store[]" singular="stores"/>
+    </transfer>
+
+    <transfer name="PaymentProvider">
+        <property name="paymentProviderKey" type="string" description="A unique key identifying a payment provider."/>
+    </transfer>
+
+    <transfer name="ProductPackagingUnitStorage">
+        <property name="idProduct" type="int"/>
+    </transfer>
+
+    <transfer name="GlossaryKey">
+        <property name="key" type="string"/>
+    </transfer>
+
+    <transfer name="ProductMeasurementBaseUnit">
+        <property name="productMeasurementUnit" type="ProductMeasurementUnit"/>
     </transfer>
 
 </transfers>

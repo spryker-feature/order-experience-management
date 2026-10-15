@@ -24,6 +24,8 @@ interface RecurringScheduleReaderInterface
         ?PaginationTransfer $historyPaginationTransfer = null,
     ): ?RecurringScheduleTransfer;
 
+    public function findScheduleWithItems(string $uuid, CustomerTransfer $customerTransfer): ?RecurringScheduleTransfer;
+
     public function findScheduleReview(
         string $uuid,
         CustomerTransfer $customerTransfer,

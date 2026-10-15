@@ -43,6 +43,26 @@ class RecurringScheduleReader implements RecurringScheduleReaderInterface
         return $recurringScheduleCollectionTransfer->getRecurringSchedules()->offsetGet(0);
     }
 
+    public function findScheduleWithItems(string $uuid, CustomerTransfer $customerTransfer): ?RecurringScheduleTransfer
+    {
+        $recurringScheduleCriteriaTransfer = (new RecurringScheduleCriteriaTransfer())
+            ->setRecurringScheduleConditions(
+                (new RecurringScheduleConditionsTransfer())
+                    ->addUuid($uuid)
+                    ->setIsWithItems(true)
+                    ->setIsGroupedByGroupKey(true),
+            )
+            ->setCustomer($customerTransfer);
+
+        $recurringScheduleCollectionTransfer = $this->subscriptionClient->getRecurringScheduleCollection($recurringScheduleCriteriaTransfer);
+
+        if ($recurringScheduleCollectionTransfer->getRecurringSchedules()->count() === 0) {
+            return null;
+        }
+
+        return $recurringScheduleCollectionTransfer->getRecurringSchedules()->offsetGet(0);
+    }
+
     public function getScheduleCollection(
         RecurringScheduleCriteriaTransfer $recurringScheduleCriteriaTransfer,
     ): RecurringScheduleCollectionTransfer {

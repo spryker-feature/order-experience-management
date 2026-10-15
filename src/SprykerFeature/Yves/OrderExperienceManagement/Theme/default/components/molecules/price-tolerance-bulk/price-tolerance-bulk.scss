@@ -1,0 +1,23 @@
+@use 'sass:meta';
+
+@mixin order-experience-management-price-tolerance-bulk($name: '.price-tolerance-bulk') {
+    #{$name} {
+        @if meta.mixin-exists(order-experience-management-price-tolerance-bulk-base-hook) {
+            @include order-experience-management-price-tolerance-bulk-base-hook;
+        }
+
+        &__ignored-notice {
+            display: none;
+        }
+
+        &--order-total-only-mode &__ignored-notice {
+            display: block;
+        }
+
+        &--order-total-only-mode &__content {
+            display: none;
+        }
+
+        @content;
+    }
+}

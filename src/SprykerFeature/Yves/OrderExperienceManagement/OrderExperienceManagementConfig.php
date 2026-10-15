@@ -209,6 +209,39 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Returns the highest price tolerance in percent a buyer may set, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceMaxPercent(): string
+    {
+        return $this->getSharedConfig()->getPriceToleranceMaxPercent();
+    }
+
+    /**
+     * Specification:
+     * - Returns the number of decimal places a price tolerance may have, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceScale(): int
+    {
+        return $this->getSharedConfig()->getPriceToleranceScale();
+    }
+
+    /**
+     * Specification:
+     * - Returns the step of the price tolerance fields, see the shared config.
+     *
+     * @api
+     */
+    public function getPriceToleranceStep(): string
+    {
+        return $this->getSharedConfig()->getPriceToleranceStep();
+    }
+
+    /**
+     * Specification:
      * - Returns the per-item review reason groups counted as price changes on the Review Required page.
      * - Used to mark the lines whose price change the buyer accepts by confirming the order.
      *
@@ -268,6 +301,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED => 'warning',
             SharedOrderExperienceManagementConfig::STATUS_FAILED => 'alert',
             SharedOrderExperienceManagementConfig::STATUS_CANCELLED => 'cancelled',
+            SharedOrderExperienceManagementConfig::STATUS_PROCESSING => 'draft',
         ];
     }
 
@@ -321,6 +355,7 @@ class OrderExperienceManagementConfig extends AbstractBundleConfig
             'recurring_orders.status.review_required' => SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED,
             'recurring_orders.status.failed' => SharedOrderExperienceManagementConfig::STATUS_FAILED,
             'recurring_orders.status.cancelled' => SharedOrderExperienceManagementConfig::STATUS_CANCELLED,
+            'recurring_orders.status.processing' => SharedOrderExperienceManagementConfig::STATUS_PROCESSING,
         ];
     }
 

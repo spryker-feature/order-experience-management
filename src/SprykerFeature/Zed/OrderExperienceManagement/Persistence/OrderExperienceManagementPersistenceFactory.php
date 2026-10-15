@@ -22,6 +22,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\Recur
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleHistoryMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleItemMapper;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleMapper;
+use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\RecurringScheduleStuckItemMapper;
 
 /**
  * @method \SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
@@ -68,6 +69,11 @@ class OrderExperienceManagementPersistenceFactory extends AbstractPersistenceFac
     public function createRecurringScheduleForecastMapper(): RecurringScheduleForecastMapper
     {
         return new RecurringScheduleForecastMapper();
+    }
+
+    public function createRecurringScheduleStuckItemMapper(): RecurringScheduleStuckItemMapper
+    {
+        return new RecurringScheduleStuckItemMapper();
     }
 
     public function createRecurringScheduleHistoryQuery(): SpyRecurringScheduleHistoryQuery

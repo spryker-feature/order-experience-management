@@ -6,6 +6,9 @@
 
 {% define data = {
     unchangedItems: [],
+    priceChanges: {},
+    orderTolerance: null,
+    isProductCheckIgnored: false,
     currencyIsoCode: required,
     priceMode: required,
     itemFlagLabelMap: {},
@@ -29,11 +32,13 @@
             <div class="{{ contentClassName }}">
                 {% set priceModeNet = 'NET_MODE' %}
                 {% for item in data.unchangedItems %}
-                    {% set unitPrice = data.priceMode == priceModeNet ? item.referenceNetPrice : item.referenceGrossPrice %}
+                    {% set referencePrice = data.priceMode == priceModeNet ? item.referenceNetPrice : item.referenceGrossPrice %}
+                    {% set priceChange = data.priceChanges[item.groupKey] ?? null %}
+                    {% set unitPrice = priceChange ? priceChange.current : referencePrice %}
                     {% set currentQuantity = item.nextDeliveryQuantity ?: item.quantity %}
                     {% set gridClassName = 'grid grid--gap grid--middle js-review-total-recalculator__line' %}
                     {% block grid %}
-                        <div class="{{ gridClassName }}" data-unit-price="{{ unitPrice }}" data-quantity="{{ currentQuantity }}" data-line-total="{{ currentQuantity * unitPrice }}">
+                        <div class="{{ gridClassName }}" data-unit-price="{{ unitPrice }}" data-quantity="{{ currentQuantity }}" data-line-total="{{ currentQuantity * unitPrice }}" data-unchanged-price-change="{{ priceChange ? 1 : '' }}">
                             {% block info %}
                                 <div class="col col--expand">
                                     <div>
@@ -62,7 +67,26 @@
                             {% set itemPriceInfoClassName = "col spacing-x" %}
                             {% block itemPriceInfo %}
                                 <div class="{{ itemPriceInfoClassName }}">
-                                    <small>{{ currentQuantity }}x {{ unitPrice | money(true, data.currencyIsoCode) }}</small>
+                                    <small>
+                                        {{ currentQuantity }}x
+                                        {% if priceChange %}
+                                            <s>{{ referencePrice | money(true, data.currencyIsoCode) }}</s>
+                                        {% endif %}
+                                        {{ unitPrice | money(true, data.currencyIsoCode) }}
+                                    </small>
+                                    {% if priceChange %}
+                                        {% set itemTolerance = item.priceTolerancePercent %}
+                                        <br>
+                                        <small class="text-muted" {{ qa('recurring-order-review-unflagged-price-change') }}>
+                                            {% if priceChange.current < priceChange.previous %}
+                                                ({{ 'recurring_orders.review.price_note.decreased' | trans }})
+                                            {% elseif data.isProductCheckIgnored %}
+                                                ({{ 'recurring_orders.review.price_note.within_order_tolerance' | trans({'%tolerance%': data.orderTolerance.trim() ~ '%'}) }})
+                                            {% else %}
+                                                ({{ 'recurring_orders.review.price_note.within_tolerance' | trans({'%tolerance%': itemTolerance.trim() ~ '%'}) }})
+                                            {% endif %}
+                                        </small>
+                                    {% endif %}
                                 </div>
                             {% endblock %}
                         </div>

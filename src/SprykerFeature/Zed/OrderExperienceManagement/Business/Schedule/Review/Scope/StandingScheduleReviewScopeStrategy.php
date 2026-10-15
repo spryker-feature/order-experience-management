@@ -16,6 +16,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\S
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\ScheduleReviewPriceApplierInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Review\Item\ScheduleReviewQuantityApplierInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 
 class StandingScheduleReviewScopeStrategy implements ScheduleReviewScopeStrategyInterface
 {
@@ -25,6 +26,7 @@ class StandingScheduleReviewScopeStrategy implements ScheduleReviewScopeStrategy
         protected readonly ScheduleReviewQuantityApplierInterface $scheduleReviewQuantityApplier,
         protected readonly ScheduleReviewItemUpdatePlanMergerInterface $scheduleReviewItemUpdatePlanMerger,
         protected readonly OrderExperienceManagementEntityManagerInterface $entityManager,
+        protected readonly OrderExperienceManagementRepositoryInterface $repository,
     ) {
     }
 
@@ -60,6 +62,13 @@ class StandingScheduleReviewScopeStrategy implements ScheduleReviewScopeStrategy
             $quantityRecurringScheduleItemTransfers,
         );
 
+        $recurringScheduleItemTransfers = $this->carryHighestPriceTolerance(
+            $recurringScheduleItemTransfers,
+            array_keys($acceptedQuantitiesByGroupKey),
+            $groupKeysByIdRecurringScheduleItem,
+            $collapsedRecurringScheduleItemIds,
+        );
+
         $recurringScheduleItemTransfers = array_diff_key(
             $recurringScheduleItemTransfers,
             array_flip($collapsedRecurringScheduleItemIds),
@@ -67,6 +76,58 @@ class StandingScheduleReviewScopeStrategy implements ScheduleReviewScopeStrategy
 
         $this->entityManager->updateRecurringScheduleItemCollection($recurringScheduleItemTransfers);
         $this->entityManager->deleteRecurringScheduleItemsByIds($collapsedRecurringScheduleItemIds);
+    }
+
+    /**
+     * Rows of one group are merged into the first one, so the survivor takes the highest tolerance of the group: taking
+     * the lowest, or the first row's, could make the order stricter than the buyer last set it. A group with no
+     * tolerance on any row stays not set.
+     *
+     * @param array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer> $recurringScheduleItemTransfers
+     * @param array<string|int> $mergedGroupKeys
+     * @param array<int, string> $groupKeysByIdRecurringScheduleItem
+     * @param array<int> $collapsedRecurringScheduleItemIds
+     *
+     * @return array<int, \Generated\Shared\Transfer\RecurringScheduleItemTransfer>
+     */
+    protected function carryHighestPriceTolerance(
+        array $recurringScheduleItemTransfers,
+        array $mergedGroupKeys,
+        array $groupKeysByIdRecurringScheduleItem,
+        array $collapsedRecurringScheduleItemIds,
+    ): array {
+        if ($collapsedRecurringScheduleItemIds === []) {
+            return $recurringScheduleItemTransfers;
+        }
+
+        $priceTolerancePercentsById = $this->repository->getRecurringScheduleItemPriceTolerancePercentsByIds(
+            array_keys($groupKeysByIdRecurringScheduleItem),
+        );
+
+        foreach ($mergedGroupKeys as $groupKey) {
+            $idsOfGroup = array_keys($groupKeysByIdRecurringScheduleItem, (string)$groupKey, true);
+            $idSurvivor = $idsOfGroup[0] ?? null;
+
+            if ($idSurvivor === null || !isset($recurringScheduleItemTransfers[$idSurvivor])) {
+                continue;
+            }
+
+            $highestPriceTolerancePercent = null;
+
+            foreach ($idsOfGroup as $idRecurringScheduleItem) {
+                $priceTolerancePercent = $priceTolerancePercentsById[$idRecurringScheduleItem] ?? null;
+
+                if ($priceTolerancePercent !== null && ($highestPriceTolerancePercent === null || $priceTolerancePercent->greaterThan($highestPriceTolerancePercent))) {
+                    $highestPriceTolerancePercent = $priceTolerancePercent;
+                }
+            }
+
+            if ($highestPriceTolerancePercent !== null) {
+                $recurringScheduleItemTransfers[$idSurvivor]->setPriceTolerancePercent($highestPriceTolerancePercent);
+            }
+        }
+
+        return $recurringScheduleItemTransfers;
     }
 
     public function applyAddedItemScope(RecurringScheduleItemTransfer $recurringScheduleItemTransfer): void
