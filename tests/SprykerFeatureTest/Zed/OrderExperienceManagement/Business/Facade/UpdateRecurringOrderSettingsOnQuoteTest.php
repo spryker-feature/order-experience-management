@@ -51,7 +51,7 @@ class UpdateRecurringOrderSettingsOnQuoteTest extends Unit
         $this->tester->setDependency(OrderExperienceManagementDependencyProvider::FACADE_QUOTE, $quoteFacadeMock);
 
         $requestTransfer = (new RecurringOrderQuoteUpdateRequestTransfer())
-            ->setIdQuote(PHP_INT_MAX)
+            ->setIdQuote(999999999)
             ->setRecurringOrderSettings(
                 (new RecurringOrderSettingsTransfer())->setCadenceType('monthly'),
             );
