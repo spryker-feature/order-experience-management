@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace SprykerFeatureTest\Zed\OrderExperienceManagement\Business\Schedule\Mapper;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\ConfigurableBundleTemplateTransfer;
+use Generated\Shared\Transfer\ConfiguredBundleTransfer;
 use Generated\Shared\Transfer\ItemTransfer;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\RecurringScheduleItemMapper;
@@ -29,6 +31,8 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\Mapper\Recurr
 class RecurringScheduleItemMapperTest extends Unit
 {
     protected const int ID_RECURRING_SCHEDULE = 7;
+
+    protected const string CONFIGURABLE_BUNDLE_NAME = 'configurable_bundle.templates.all-in.name';
 
     public function testMapItemToRecurringScheduleItemCastsStringReferencePricesToInt(): void
     {
@@ -51,6 +55,46 @@ class RecurringScheduleItemMapperTest extends Unit
         // Assert
         $this->assertSame(500, $recurringScheduleItemTransfer->getReferenceGrossPrice());
         $this->assertSame(450, $recurringScheduleItemTransfer->getReferenceNetPrice());
+    }
+
+    public function testGivenAnItemOfAConfiguredBundleWhenMapItemToRecurringScheduleItemThenTheConfigurableBundleNameIsMapped(): void
+    {
+        // Arrange
+        $itemTransfer = (new ItemTransfer())
+            ->setSku('sku-1')
+            ->setQuantity(1)
+            ->setConfiguredBundle(
+                (new ConfiguredBundleTransfer())
+                    ->setTemplate((new ConfigurableBundleTemplateTransfer())->setName(static::CONFIGURABLE_BUNDLE_NAME)),
+            );
+
+        // Act
+        $recurringScheduleItemTransfer = $this->createMapper()->mapItemToRecurringScheduleItem(
+            $itemTransfer,
+            static::ID_RECURRING_SCHEDULE,
+            [],
+        );
+
+        // Assert
+        $this->assertSame(static::CONFIGURABLE_BUNDLE_NAME, $recurringScheduleItemTransfer->getConfigurableBundleName());
+    }
+
+    public function testGivenAnItemOutsideAConfiguredBundleWhenMapItemToRecurringScheduleItemThenNoConfigurableBundleNameIsMapped(): void
+    {
+        // Arrange
+        $itemTransfer = (new ItemTransfer())
+            ->setSku('sku-1')
+            ->setQuantity(1);
+
+        // Act
+        $recurringScheduleItemTransfer = $this->createMapper()->mapItemToRecurringScheduleItem(
+            $itemTransfer,
+            static::ID_RECURRING_SCHEDULE,
+            [],
+        );
+
+        // Assert
+        $this->assertNull($recurringScheduleItemTransfer->getConfigurableBundleName());
     }
 
     protected function createMapper(): RecurringScheduleItemMapper
