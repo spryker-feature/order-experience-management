@@ -68,7 +68,8 @@ class MonthlyForecastCalculator implements MonthlyForecastCalculatorInterface
             }
 
             $offset += static::FORECAST_BATCH_SIZE;
-        } while (count($recurringScheduleForecastTransfers) === static::FORECAST_BATCH_SIZE);
+            $hasNextBatch = count($recurringScheduleForecastTransfers) === static::FORECAST_BATCH_SIZE;
+        } while ($hasNextBatch);
 
         return $forecastTransfersByCurrency;
     }
