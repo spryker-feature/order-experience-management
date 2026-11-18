@@ -19,8 +19,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderI
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeSalesUnitExpanderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeShipmentExpanderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePriceResolverInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidatorInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeQuoteValidatorInterface;
 
 class OrderIntakeQuoteBuilder implements OrderIntakeQuoteBuilderInterface
 {
@@ -28,8 +27,7 @@ class OrderIntakeQuoteBuilder implements OrderIntakeQuoteBuilderInterface
         protected readonly OrderIntakeQuoteAssemblerInterface $orderIntakeQuoteAssembler,
         protected readonly OrderIntakeQuoteExpanderInterface $orderIntakeQuoteExpander,
         protected readonly OrderIntakeItemExpanderInterface $orderIntakeItemExpander,
-        protected readonly OrderIntakeProductOfferValidatorInterface $orderIntakeProductOfferValidator,
-        protected readonly OrderIntakeMerchantValidatorInterface $orderIntakeMerchantValidator,
+        protected readonly OrderIntakeQuoteValidatorInterface $orderIntakeQuoteValidator,
         protected readonly OrderIntakeSalesUnitExpanderInterface $orderIntakeSalesUnitExpander,
         protected readonly OrderIntakeProductOptionExpanderInterface $orderIntakeProductOptionExpander,
         protected readonly OrderIntakePriceResolverInterface $orderIntakePriceResolver,
@@ -52,15 +50,7 @@ class OrderIntakeQuoteBuilder implements OrderIntakeQuoteBuilderInterface
 
         $quoteTransfer = $this->orderIntakeItemExpander->expandItems($quoteTransfer, $orderIntakeResponseTransfer);
 
-        $quoteTransfer = $this->orderIntakeProductOfferValidator->validateProductOffers(
-            $quoteTransfer,
-            $orderIntakeResponseTransfer,
-        );
-
-        $quoteTransfer = $this->orderIntakeMerchantValidator->validateMerchants(
-            $quoteTransfer,
-            $orderIntakeResponseTransfer,
-        );
+        $quoteTransfer = $this->orderIntakeQuoteValidator->validateQuote($quoteTransfer, $orderIntakeResponseTransfer);
 
         $quoteTransfer = $this->orderIntakeSalesUnitExpander->expandSalesUnits(
             $orderIntakeRequestTransfer,

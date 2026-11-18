@@ -231,14 +231,24 @@ class RecurringScheduleEventRequestMapper implements RecurringScheduleEventReque
             $recurringScheduleItemAdditionTransfer = (new RecurringScheduleItemAdditionTransfer())
                 ->setSku((string)$sku)
                 ->setQuantity((int)$quantity)
-                ->setProductOfferReference($productOfferReference !== null && $productOfferReference !== '' ? (string)$productOfferReference : null)
-                ->setIdShipmentMethod($idShipmentMethod !== null && $idShipmentMethod !== '' ? (int)$idShipmentMethod : null)
-                ->setIdShippingAddress($idShippingAddress !== null && $idShippingAddress !== '' ? (int)$idShippingAddress : null)
-                ->setShippingAddressKey($shippingAddressKey !== null && $shippingAddressKey !== '' ? (string)$shippingAddressKey : null);
+                ->setProductOfferReference($this->toNullableString($productOfferReference))
+                ->setIdShipmentMethod($this->toNullableInt($idShipmentMethod))
+                ->setIdShippingAddress($this->toNullableInt($idShippingAddress))
+                ->setShippingAddressKey($this->toNullableString($shippingAddressKey));
 
             $recurringScheduleEventRequestTransfer->addAddedItem($recurringScheduleItemAdditionTransfer);
         }
 
         return $recurringScheduleEventRequestTransfer;
+    }
+
+    protected function toNullableString(mixed $value): ?string
+    {
+        return $value !== null && $value !== '' ? (string)$value : null;
+    }
+
+    protected function toNullableInt(mixed $value): ?int
+    {
+        return $value !== null && $value !== '' ? (int)$value : null;
     }
 }

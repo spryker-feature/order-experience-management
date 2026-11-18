@@ -98,12 +98,16 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\Produc
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\ProductMeasurementSalesUnitCodeResolverInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Translator\OrderIntakeMessageTranslator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Translator\OrderIntakeMessageTranslatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeItemValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeItemValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeLocaleValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeLocaleValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeQuoteValidator;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeQuoteValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeRequestValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeRequestValidatorInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeStoreValidator;
@@ -134,6 +138,8 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\PlacementCheckou
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\PlacementCheckoutResponseBuilderInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\PlacementQuotePreparer;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\PlacementQuotePreparerInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderPlacementResultHandler;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderPlacementResultHandlerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderPlacer;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderPlacerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Order\RecurringOrderQuoteBuilder;
@@ -305,6 +311,9 @@ use SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementDepend
  * @method \SprykerFeature\Zed\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
  * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementEntityManagerInterface getEntityManager()
  * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface getRepository()
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
 {
@@ -670,6 +679,13 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createUnpurchasableItemChecker(),
             $this->getCheckoutFacade(),
             $this->createPlacementCheckoutResponseBuilder(),
+            $this->createRecurringOrderPlacementResultHandler(),
+        );
+    }
+
+    public function createRecurringOrderPlacementResultHandler(): RecurringOrderPlacementResultHandlerInterface
+    {
+        return new RecurringOrderPlacementResultHandler(
             $this->createRecurringSchedulePlacementHistoryWriter(),
             $this->createRecurringOrderBuyerMailNotificationSender(),
         );
@@ -1371,13 +1387,20 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
             $this->createOrderIntakeQuoteAssembler(),
             $this->createOrderIntakeQuoteExpander(),
             $this->createOrderIntakeItemExpander(),
-            $this->createOrderIntakeProductOfferValidator(),
-            $this->createOrderIntakeMerchantValidator(),
+            $this->createOrderIntakeQuoteValidator(),
             $this->createOrderIntakeSalesUnitExpander(),
             $this->createOrderIntakeProductOptionExpander(),
             $this->createOrderIntakePriceResolver(),
             $this->createOrderIntakePackagingAmountExpander(),
             $this->createOrderIntakeShipmentExpander(),
+        );
+    }
+
+    public function createOrderIntakeQuoteValidator(): OrderIntakeQuoteValidatorInterface
+    {
+        return new OrderIntakeQuoteValidator(
+            $this->createOrderIntakeProductOfferValidator(),
+            $this->createOrderIntakeMerchantValidator(),
         );
     }
 
@@ -1457,7 +1480,12 @@ class OrderExperienceManagementBusinessFactory extends AbstractBusinessFactory
 
     public function createOrderIntakeRequestValidator(): OrderIntakeRequestValidatorInterface
     {
-        return new OrderIntakeRequestValidator();
+        return new OrderIntakeRequestValidator($this->createOrderIntakeItemValidator());
+    }
+
+    public function createOrderIntakeItemValidator(): OrderIntakeItemValidatorInterface
+    {
+        return new OrderIntakeItemValidator();
     }
 
     public function createOrderIntakeCustomerResolver(): OrderIntakeCustomerResolverInterface

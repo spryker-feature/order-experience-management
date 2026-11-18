@@ -81,6 +81,20 @@ class OrderTotalPriceDriftChecker extends AbstractPriceDriftChecker
             return $recurringScheduleValidationResultTransfer;
         }
 
+        return $recurringScheduleValidationResultTransfer
+            ->setOrderReview($this->createOrderReview($previousTotal, $currentTotal, $tolerancePercent, $driftedItemReviewTransfers))
+            ->setIsValid(false);
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemReviewTransfer> $driftedItemReviewTransfers
+     */
+    protected function createOrderReview(
+        int $previousTotal,
+        int $currentTotal,
+        Decimal $tolerancePercent,
+        array $driftedItemReviewTransfers
+    ): RecurringScheduleOrderReviewTransfer {
         $recurringScheduleOrderReviewTransfer = (new RecurringScheduleOrderReviewTransfer())
             ->setReviewReason(SharedOrderExperienceManagementConfig::REVIEW_REASON_GROUP_ORDER_TOTAL_INCREASED)
             ->setPreviousTotal($previousTotal)
@@ -92,9 +106,7 @@ class OrderTotalPriceDriftChecker extends AbstractPriceDriftChecker
             $recurringScheduleOrderReviewTransfer->addDriftedItem($driftedItemReviewTransfer);
         }
 
-        return $recurringScheduleValidationResultTransfer
-            ->setOrderReview($recurringScheduleOrderReviewTransfer)
-            ->setIsValid(false);
+        return $recurringScheduleOrderReviewTransfer;
     }
 
     protected function formatIncreasePercent(int $previousTotal, int $currentTotal): string

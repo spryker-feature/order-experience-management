@@ -13,8 +13,6 @@ use Generated\Shared\Transfer\CheckoutResponseTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Spryker\Shared\Log\LoggerTrait;
 use Spryker\Zed\Checkout\Business\CheckoutFacadeInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Notification\RecurringOrderBuyerMailNotificationSenderInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Schedule\History\RecurringSchedulePlacementHistoryWriterInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementRepositoryInterface;
 use Throwable;
 
@@ -31,8 +29,7 @@ class RecurringOrderPlacer implements RecurringOrderPlacerInterface
         protected UnpurchasableItemCheckerInterface $unpurchasableItemChecker,
         protected CheckoutFacadeInterface $checkoutFacade,
         protected PlacementCheckoutResponseBuilderInterface $checkoutResponseBuilder,
-        protected RecurringSchedulePlacementHistoryWriterInterface $historyWriter,
-        protected RecurringOrderBuyerMailNotificationSenderInterface $mailNotificationSender,
+        protected RecurringOrderPlacementResultHandlerInterface $placementResultHandler,
     ) {
     }
 
@@ -45,8 +42,7 @@ class RecurringOrderPlacer implements RecurringOrderPlacerInterface
         }
 
         $checkoutResponseTransfer = $this->processPlacementSafely($recurringScheduleTransfer);
-        $this->historyWriter->writeHistory($recurringScheduleTransfer, $checkoutResponseTransfer);
-        $this->notifyOnFailure($recurringScheduleTransfer, $checkoutResponseTransfer);
+        $this->placementResultHandler->handleResult($recurringScheduleTransfer, $checkoutResponseTransfer);
 
         return $checkoutResponseTransfer;
     }
@@ -100,21 +96,5 @@ class RecurringOrderPlacer implements RecurringOrderPlacerInterface
         }
 
         return $this->checkoutFacade->placeOrder($reloadedQuoteTransfer);
-    }
-
-    protected function notifyOnFailure(RecurringScheduleTransfer $recurringScheduleTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): void
-    {
-        if ($checkoutResponseTransfer->getIsSuccess()) {
-            return;
-        }
-
-        try {
-            $this->mailNotificationSender->notifyPlacementFailure($recurringScheduleTransfer->getIdRecurringScheduleOrFail());
-        } catch (Throwable $throwable) {
-            $this->getLogger()->error(
-                sprintf('Placement failure notification email could not be sent for schedule ID %d: %s', $recurringScheduleTransfer->getIdRecurringScheduleOrFail(), $throwable->getMessage()),
-                ['exception' => $throwable],
-            );
-        }
     }
 }

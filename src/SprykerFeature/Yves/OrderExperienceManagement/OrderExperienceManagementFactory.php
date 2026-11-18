@@ -111,6 +111,8 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 /**
  * @method \SprykerFeature\Yves\OrderExperienceManagement\OrderExperienceManagementConfig getConfig()
  * @method \SprykerFeature\Client\OrderExperienceManagement\OrderExperienceManagementClientInterface getClient()
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class OrderExperienceManagementFactory extends AbstractFactory
 {

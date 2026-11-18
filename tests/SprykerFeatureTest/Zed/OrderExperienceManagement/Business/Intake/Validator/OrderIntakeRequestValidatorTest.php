@@ -16,6 +16,7 @@ use Generated\Shared\Transfer\OrderIntakeItemTransfer;
 use Generated\Shared\Transfer\OrderIntakeRequestTransfer;
 use Generated\Shared\Transfer\OrderIntakeResponseTransfer;
 use Generated\Shared\Transfer\OrderIntakeSalesUnitTransfer;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeItemValidator;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeRequestValidator;
 
 /**
@@ -597,6 +598,6 @@ class OrderIntakeRequestValidatorTest extends Unit
 
     protected function createValidator(): OrderIntakeRequestValidator
     {
-        return new OrderIntakeRequestValidator();
+        return new OrderIntakeRequestValidator(new OrderIntakeItemValidator());
     }
 }

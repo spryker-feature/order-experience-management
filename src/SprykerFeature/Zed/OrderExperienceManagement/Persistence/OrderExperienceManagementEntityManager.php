@@ -23,6 +23,8 @@ use Spryker\Zed\Propel\Persistence\BatchProcessor\ActiveRecordBatchProcessorTrai
 
 /**
  * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementPersistenceFactory getFactory()
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class OrderExperienceManagementEntityManager extends AbstractEntityManager implements OrderExperienceManagementEntityManagerInterface
 {

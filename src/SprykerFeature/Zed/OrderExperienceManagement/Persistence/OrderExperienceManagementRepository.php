@@ -44,6 +44,9 @@ use SprykerFeature\Zed\OrderExperienceManagement\Persistence\Propel\Mapper\Recur
 
 /**
  * @method \SprykerFeature\Zed\OrderExperienceManagement\Persistence\OrderExperienceManagementPersistenceFactory getFactory()
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class OrderExperienceManagementRepository extends AbstractRepository implements OrderExperienceManagementRepositoryInterface
 {

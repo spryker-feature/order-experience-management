@@ -11,6 +11,9 @@ use Spryker\Yves\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Yves\Kernel\Container;
 use SprykerShop\Yves\MerchantProductOfferWidget\Form\MerchantProductOffersSelectForm;
 
+/**
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ */
 class OrderExperienceManagementDependencyProvider extends AbstractBundleDependencyProvider
 {
     public const string CLIENT_CUSTOMER = 'CLIENT_CUSTOMER';

@@ -23,8 +23,7 @@ use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderI
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteAssemblerInterface;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\OrderIntakeQuoteBuilder;
 use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Resolver\OrderIntakePriceResolverInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeMerchantValidatorInterface;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeProductOfferValidatorInterface;
+use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Validator\OrderIntakeQuoteValidatorInterface;
 
 /**
  * Auto-generated group annotations
@@ -43,8 +42,7 @@ class OrderIntakeQuoteBuilderTest extends Unit
         'assembleQuote',
         'expandQuote',
         'expandItems',
-        'validateProductOffers',
-        'validateMerchants',
+        'validateQuote',
         'expandSalesUnits',
         'expandProductOptions',
         'resolvePrices',
@@ -109,11 +107,8 @@ class OrderIntakeQuoteBuilderTest extends Unit
         $orderIntakeItemExpanderMock = $this->createMock(OrderIntakeItemExpanderInterface::class);
         $orderIntakeItemExpanderMock->method('expandItems')->willReturnCallback($this->recordStep('expandItems', 0));
 
-        $orderIntakeProductOfferValidatorMock = $this->createMock(OrderIntakeProductOfferValidatorInterface::class);
-        $orderIntakeProductOfferValidatorMock->method('validateProductOffers')->willReturnCallback($this->recordStep('validateProductOffers', 0));
-
-        $orderIntakeMerchantValidatorMock = $this->createMock(OrderIntakeMerchantValidatorInterface::class);
-        $orderIntakeMerchantValidatorMock->method('validateMerchants')->willReturnCallback($this->recordStep('validateMerchants', 0));
+        $orderIntakeQuoteValidatorMock = $this->createMock(OrderIntakeQuoteValidatorInterface::class);
+        $orderIntakeQuoteValidatorMock->method('validateQuote')->willReturnCallback($this->recordStep('validateQuote', 0));
 
         $orderIntakeSalesUnitExpanderMock = $this->createMock(OrderIntakeSalesUnitExpanderInterface::class);
         $orderIntakeSalesUnitExpanderMock->method('expandSalesUnits')->willReturnCallback($this->recordStep('expandSalesUnits', 1));
@@ -134,8 +129,7 @@ class OrderIntakeQuoteBuilderTest extends Unit
             $orderIntakeQuoteAssemblerMock,
             $orderIntakeQuoteExpanderMock,
             $orderIntakeItemExpanderMock,
-            $orderIntakeProductOfferValidatorMock,
-            $orderIntakeMerchantValidatorMock,
+            $orderIntakeQuoteValidatorMock,
             $orderIntakeSalesUnitExpanderMock,
             $orderIntakeProductOptionExpanderMock,
             $orderIntakePriceResolverMock,

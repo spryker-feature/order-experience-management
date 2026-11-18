@@ -44,30 +44,56 @@ class RecurringSchedulePriceToleranceValidator implements RecurringSchedulePrice
         array $requestedItemTransfers,
         RecurringScheduleTransfer $existingScheduleTransfer,
     ): ?ErrorTransfer {
-        $orderTolerancePercent = $requestedScheduleTransfer->getPriceTolerancePercent();
-
-        $isIgnoreRequested = $requestedScheduleTransfer->getIsProductPriceChangeIgnored() !== null;
-
-        if ($orderTolerancePercent === null && $requestedItemTransfers === [] && !$isIgnoreRequested) {
+        if (!$this->isToleranceChangeRequested($requestedScheduleTransfer, $requestedItemTransfers)) {
             return null;
         }
 
-        $errorMessage = $orderTolerancePercent === null ? null : $this->findToleranceValueError($orderTolerancePercent);
+        $errorTransfer = $this->findRequestedToleranceError($requestedScheduleTransfer, $requestedItemTransfers, $existingScheduleTransfer);
 
-        if ($errorMessage === null) {
-            $errorMessage = $this->findItemToleranceError($requestedItemTransfers, $existingScheduleTransfer);
-        }
-
-        if ($errorMessage === null && ($orderTolerancePercent !== null || $isIgnoreRequested)) {
-            $errorMessage = $this->findIgnoreSettingError($requestedScheduleTransfer, $existingScheduleTransfer);
-        }
-
-        if ($errorMessage !== null) {
-            return $errorMessage;
+        if ($errorTransfer !== null) {
+            return $errorTransfer;
         }
 
         if ($existingScheduleTransfer->getStatus() === SharedOrderExperienceManagementConfig::STATUS_REVIEW_REQUIRED) {
             return $this->createError(static::GLOSSARY_KEY_PRICE_TOLERANCE_LOCKED_IN_REVIEW);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemTransfer> $requestedItemTransfers
+     */
+    protected function isToleranceChangeRequested(RecurringScheduleTransfer $requestedScheduleTransfer, array $requestedItemTransfers): bool
+    {
+        return $requestedScheduleTransfer->getPriceTolerancePercent() !== null
+            || $requestedItemTransfers !== []
+            || $requestedScheduleTransfer->getIsProductPriceChangeIgnored() !== null;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\RecurringScheduleItemTransfer> $requestedItemTransfers
+     */
+    protected function findRequestedToleranceError(
+        RecurringScheduleTransfer $requestedScheduleTransfer,
+        array $requestedItemTransfers,
+        RecurringScheduleTransfer $existingScheduleTransfer
+    ): ?ErrorTransfer {
+        $orderTolerancePercent = $requestedScheduleTransfer->getPriceTolerancePercent();
+        $errorTransfer = $orderTolerancePercent === null ? null : $this->findToleranceValueError($orderTolerancePercent);
+
+        if ($errorTransfer !== null) {
+            return $errorTransfer;
+        }
+
+        $errorTransfer = $this->findItemToleranceError($requestedItemTransfers, $existingScheduleTransfer);
+
+        if ($errorTransfer !== null) {
+            return $errorTransfer;
+        }
+
+        if ($orderTolerancePercent !== null || $requestedScheduleTransfer->getIsProductPriceChangeIgnored() !== null) {
+            return $this->findIgnoreSettingError($requestedScheduleTransfer, $existingScheduleTransfer);
         }
 
         return null;

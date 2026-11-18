@@ -14,9 +14,6 @@ use Generated\Shared\Transfer\OrderIntakeItemTransfer;
 use Generated\Shared\Transfer\OrderIntakeRequestTransfer;
 use Generated\Shared\Transfer\OrderIntakeResponseTransfer;
 use Generated\Shared\Transfer\OrderIntakeValidationIssueTransfer;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakePackagingAmountExpander;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeProductOptionExpander;
-use SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeSalesUnitExpander;
 
 /**
  * Holds the structural rules `orders.validation.yml` cannot express.
@@ -31,19 +28,11 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
 
     public const string FIELD_ITEM_SHIPMENT_METHOD_PATTERN = 'items[%d].shipment.shipmentMethod';
 
-    protected const string FIELD_ITEM_PATTERN = 'items[%d].%s';
-
     protected const string FIELD_ITEM_SHIPPING_ADDRESS_PATTERN = 'items[%d].shipment.shippingAddress';
 
-    protected const string MESSAGE_REQUIRED = '"%field%" is required.';
-
-    protected const string MESSAGE_QUANTITY_TOO_LOW = '"%field%" must be at least 1.';
-
-    protected const string MESSAGE_AMOUNT_TOO_LOW = '"%field%" must be greater than 0.';
-
-    protected const string MESSAGE_UNIT_PRICE_NEGATIVE = '"%field%" cannot be negative.';
-
-    protected const int MINIMUM_QUANTITY = 1;
+    public function __construct(protected OrderIntakeItemValidatorInterface $orderIntakeItemValidator)
+    {
+    }
 
     public function validate(
         OrderIntakeRequestTransfer $orderIntakeRequestTransfer,
@@ -62,7 +51,7 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
         $index = 0;
 
         foreach ($orderIntakeRequestTransfer->getItems() as $orderIntakeItemTransfer) {
-            $this->validateItem($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
+            $this->orderIntakeItemValidator->validate($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
             $this->validateItemShipmentMethod($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
             $this->validateOptionalAddress(
                 $orderIntakeResponseTransfer,
@@ -73,115 +62,6 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
         }
 
         return $orderIntakeResponseTransfer;
-    }
-
-    protected function validateItem(
-        OrderIntakeResponseTransfer $orderIntakeResponseTransfer,
-        OrderIntakeItemTransfer $orderIntakeItemTransfer,
-        int $index,
-    ): void {
-        $skuField = sprintf(static::FIELD_ITEM_PATTERN, $index, 'sku');
-        $sku = $orderIntakeItemTransfer->getSku();
-
-        if ($sku === null || trim($sku) === '') {
-            $this->addIssue($orderIntakeResponseTransfer, $skuField, static::MESSAGE_REQUIRED);
-        }
-
-        $quantityField = sprintf(static::FIELD_ITEM_PATTERN, $index, 'quantity');
-        $quantity = $orderIntakeItemTransfer->getQuantity();
-
-        if ($quantity === null && $orderIntakeItemTransfer->getSalesUnit()?->getAmount() === null) {
-            $this->addIssue($orderIntakeResponseTransfer, $quantityField, static::MESSAGE_REQUIRED);
-        } elseif ($quantity !== null && $quantity < static::MINIMUM_QUANTITY) {
-            $this->addIssue($orderIntakeResponseTransfer, $quantityField, static::MESSAGE_QUANTITY_TOO_LOW);
-        }
-
-        // Optional: an omitted price is resolved from the catalogue by OrderIntakePriceResolver, and
-        // only a line the catalogue cannot price is rejected — there. A supplied one still wins.
-        $unitCustomPriceField = sprintf(static::FIELD_ITEM_PATTERN, $index, 'unitCustomPrice');
-        $unitCustomPrice = $orderIntakeItemTransfer->getUnitCustomPrice();
-
-        if ($unitCustomPrice !== null && $unitCustomPrice < 0) {
-            $this->addIssue($orderIntakeResponseTransfer, $unitCustomPriceField, static::MESSAGE_UNIT_PRICE_NEGATIVE);
-        }
-
-        $this->validateItemProductOptions($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
-        $this->validateItemSalesUnit($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
-        $this->validateItemPackagingAmount($orderIntakeResponseTransfer, $orderIntakeItemTransfer, $index);
-    }
-
-    /**
-     * Only the shape is checked here. Whether the amount fits the package's configured minimum,
-     * maximum and step needs that package, which is resolved later.
-     *
-     * @see \SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakePackagingAmountExpander
-     */
-    protected function validateItemPackagingAmount(
-        OrderIntakeResponseTransfer $orderIntakeResponseTransfer,
-        OrderIntakeItemTransfer $orderIntakeItemTransfer,
-        int $index,
-    ): void {
-        $amount = $orderIntakeItemTransfer->getPackagingAmount()?->getAmount();
-
-        if ($amount === null || $amount > 0) {
-            return;
-        }
-
-        $field = sprintf(OrderIntakePackagingAmountExpander::FIELD_PACKAGING_AMOUNT_VALUE_PATTERN, $index);
-
-        $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_AMOUNT_TOO_LOW);
-    }
-
-    /**
-     * `code` is what selects the sales unit, so a `salesUnit` object without one names nothing. The
-     * amount itself is checked against the resolved conversion later, where that conversion is known.
-     *
-     * @see \SprykerFeature\Zed\OrderExperienceManagement\Business\Intake\Expander\OrderIntakeSalesUnitExpander
-     */
-    protected function validateItemSalesUnit(
-        OrderIntakeResponseTransfer $orderIntakeResponseTransfer,
-        OrderIntakeItemTransfer $orderIntakeItemTransfer,
-        int $index,
-    ): void {
-        $orderIntakeSalesUnitTransfer = $orderIntakeItemTransfer->getSalesUnit();
-
-        if ($orderIntakeSalesUnitTransfer === null) {
-            return;
-        }
-
-        $code = $orderIntakeSalesUnitTransfer->getCode();
-
-        if ($code === null || trim($code) === '') {
-            $field = sprintf(OrderIntakeSalesUnitExpander::FIELD_SALES_UNIT_CODE_PATTERN, $index);
-
-            $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_REQUIRED);
-        }
-
-        $amount = $orderIntakeSalesUnitTransfer->getAmount();
-
-        if ($amount !== null && $amount <= 0) {
-            $field = sprintf(OrderIntakeSalesUnitExpander::FIELD_SALES_UNIT_AMOUNT_PATTERN, $index);
-
-            $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_AMOUNT_TOO_LOW);
-        }
-    }
-
-    protected function validateItemProductOptions(
-        OrderIntakeResponseTransfer $orderIntakeResponseTransfer,
-        OrderIntakeItemTransfer $orderIntakeItemTransfer,
-        int $index,
-    ): void {
-        foreach ($orderIntakeItemTransfer->getProductOptions() as $productOptionIndex => $orderIntakeProductOptionTransfer) {
-            $sku = $orderIntakeProductOptionTransfer->getSku();
-
-            if ($sku !== null && trim($sku) !== '') {
-                continue;
-            }
-
-            $field = sprintf(OrderIntakeProductOptionExpander::FIELD_PRODUCT_OPTION_SKU_PATTERN, $index, $productOptionIndex);
-
-            $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_REQUIRED);
-        }
     }
 
     protected function validateShippingAddress(
@@ -228,7 +108,7 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
         ?AddressTransfer $addressTransfer,
     ): void {
         if ($addressTransfer === null) {
-            $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_REQUIRED);
+            $this->addIssue($orderIntakeResponseTransfer, $field, OrderIntakeItemValidator::MESSAGE_REQUIRED);
 
             return;
         }
@@ -266,7 +146,7 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
 
             $addressFieldPath = sprintf('%s.%s', $field, $addressField);
 
-            $this->addIssue($orderIntakeResponseTransfer, $addressFieldPath, static::MESSAGE_REQUIRED);
+            $this->addIssue($orderIntakeResponseTransfer, $addressFieldPath, OrderIntakeItemValidator::MESSAGE_REQUIRED);
         }
     }
 
@@ -287,7 +167,7 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
         $this->addIssue(
             $orderIntakeResponseTransfer,
             static::FIELD_SHIPMENT_METHOD,
-            static::MESSAGE_REQUIRED,
+            OrderIntakeItemValidator::MESSAGE_REQUIRED,
         );
     }
 
@@ -321,7 +201,7 @@ class OrderIntakeRequestValidator implements OrderIntakeRequestValidatorInterfac
 
         $field = sprintf(static::FIELD_ITEM_SHIPMENT_METHOD_PATTERN, $index);
 
-        $this->addIssue($orderIntakeResponseTransfer, $field, static::MESSAGE_REQUIRED);
+        $this->addIssue($orderIntakeResponseTransfer, $field, OrderIntakeItemValidator::MESSAGE_REQUIRED);
     }
 
     protected function addIssue(
